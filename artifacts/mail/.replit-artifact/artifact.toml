@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "MAIL — AI Email Copilot"
+description = "A premium dark, responsive email copilot prototype with fictional local email data, overview insights, natural-language demo search, composing, and contextual simulated AI assistance. No email service is connected."
+version = "1.0.0"
+id = "artifacts/mail"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20126
+
+[services.development]
+run = "pnpm --filter @workspace/mail run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mail", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mail/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20126"
+BASE_PATH = "/"
