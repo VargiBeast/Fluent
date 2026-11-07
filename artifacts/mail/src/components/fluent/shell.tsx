@@ -1,5 +1,6 @@
-import React, { type ReactNode } from "react";
+import React, { type ReactNode, useState } from "react";
 import { useLocation } from "wouter";
+import { Button } from "./states";
 
 const DESKTOP = [
   { href: "/overview", label: "Overview" },
@@ -13,7 +14,6 @@ const MOBILE = [
   { href: "/overview", label: "Overview" },
   { href: "/inbox", label: "Inbox" },
   { href: "/copilot", label: "Copilot" },
-  { href: "/settings", label: "Settings" },
 ];
 
 export function FluentChrome({
@@ -29,6 +29,7 @@ export function FluentChrome({
   pathname: string;
   onNavigate?: (href: string) => void;
 }) {
+  const [more, setMore] = useState(false);
   return (
     <div
       className="fluent-app"
@@ -38,6 +39,7 @@ export function FluentChrome({
         const href = anchor?.getAttribute("href");
         if (!href || !href.startsWith("/") || href.startsWith("//")) return;
         event.preventDefault();
+        setMore(false);
         onNavigate(href);
       }}
     >
@@ -60,6 +62,7 @@ export function FluentChrome({
             {DESKTOP.map((item) => (
               <a
                 key={item.href}
+                className="nav-link"
                 href={item.href}
                 aria-current={pathname.startsWith(item.href) ? "page" : undefined}
               >
@@ -71,74 +74,47 @@ export function FluentChrome({
             Compose
           </a>
         </aside>
-        <main id="main">{children}</main>
+        <div className="workspace">
+          <main id="main">{children}</main>
+        </div>
       </div>
       <nav className="mobile-nav" aria-label="Primary mobile">
         {MOBILE.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            aria-current={pathname.startsWith(item.href) ? "page" : undefined}
-          >
+          <a key={item.href} href={item.href} aria-current={pathname.startsWith(item.href) ? "page" : undefined}>
             {item.label}
           </a>
         ))}
+        <button type="button" className="more-button" aria-expanded={more} aria-controls="more-sheet" onClick={() => setMore(true)}>
+          More
+        </button>
       </nav>
       <a href="/compose" className="compose-fab">
         Compose
       </a>
+      <div id="more-sheet" className="sheet" role="dialog" aria-label="More destinations" hidden={!more}>
+        <h2>More</h2>
+        <div className="row-actions">
+          <a className="button secondary" href="/sent">
+            Sent
+          </a>
+          <a className="button secondary" href="/settings">
+            Settings
+          </a>
+          <a className="button primary" href="/compose">
+            Compose
+          </a>
+          <Button variant="secondary" type="button" onClick={() => setMore(false)}>
+            Close
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
-export function AppShell({
-  children,
-  demo,
-  email,
-}: {
-  children: ReactNode;
-  demo: boolean;
-  email?: string;
-}) {
+export function AppShell(props: { children: ReactNode; demo: boolean; email?: string }) {
   const [location, navigate] = useLocation();
-  return (
-    <FluentChrome demo={demo} email={email} pathname={location} onNavigate={navigate}>
-      {children}
-    </FluentChrome>
-  );
+  return <FluentChrome {...props} pathname={location} onNavigate={navigate} />;
 }
 
-export function PageHeader({ title, lede }: { title: string; lede?: string }) {
-  return (
-    <header className="page-header">
-      <h1>{title}</h1>
-      {lede ? <p>{lede}</p> : null}
-    </header>
-  );
-}
-
-export function EmptyState({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="empty-state" role="status">
-      <h2>{title}</h2>
-      <p>{body}</p>
-    </div>
-  );
-}
-
-export function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="error-state" role="alert">
-      <h2>Something went wrong</h2>
-      <p>{message}</p>
-    </div>
-  );
-}
-
-export function LoadingState({ label = "Loading" }: { label?: string }) {
-  return (
-    <p className="loading-state" role="status">
-      {label}
-    </p>
-  );
-}
+export { Button, EmptyState, ErrorState, LoadingState, PageHeader } from "./states";

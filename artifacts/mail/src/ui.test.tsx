@@ -51,7 +51,7 @@ describe("fluent interface", () => {
   });
 
   it("collapses the desktop sidebar in the mobile stylesheet", () => {
-    const css = readFileSync(new URL("./index.css", import.meta.url), "utf8");
+    const css = readFileSync(new URL("./fluent.css", import.meta.url), "utf8");
     assert.match(css, /@media \(max-width: 800px\)/);
     assert.match(css, /\.desktop-nav \{\s*display: none;/);
     assert.match(css, /prefers-reduced-motion: reduce/);

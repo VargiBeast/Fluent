@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Route, Router as WouterRouter, Switch } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { AppShell, LoadingState } from "@/components/fluent/shell";
+import { ToastProvider } from "@/components/fluent/toast";
 import { ComposePage } from "@/pages/compose";
 import { CopilotPage } from "@/pages/copilot";
 import { InboxPage } from "@/pages/inbox";
@@ -11,6 +12,7 @@ import { OnboardingPage } from "@/pages/onboarding";
 import { OverviewPage } from "@/pages/overview";
 import { SettingsPage } from "@/pages/settings";
 import { ThreadPage } from "@/pages/thread";
+import { WelcomePage } from "@/pages/welcome";
 import { useSession } from "@/lib/session";
 
 const queryClient = new QueryClient();
@@ -18,7 +20,7 @@ const queryClient = new QueryClient();
 function Guard({ children, requireOnboarding = true }: { children: ReactNode; requireOnboarding?: boolean }) {
   const session = useSession();
   if (session.isLoading) return <LoadingState label="Checking session" />;
-  if (!session.data?.authenticated || !session.data.user) return <Redirect href="/" />;
+  if (!session.data?.authenticated || !session.data.user) return <Redirect href="/login" />;
   if (requireOnboarding && !session.data.user.onboarded) return <Redirect href="/onboarding" />;
   return (
     <AppShell demo={session.data.user.isDemo} email={session.data.user.email}>
@@ -30,7 +32,7 @@ function Guard({ children, requireOnboarding = true }: { children: ReactNode; re
 function OnboardingGuard() {
   const session = useSession();
   if (session.isLoading) return <LoadingState label="Checking session" />;
-  if (!session.data?.authenticated || !session.data.user) return <Redirect href="/" />;
+  if (!session.data?.authenticated || !session.data.user) return <Redirect href="/login" />;
   return (
     <AppShell demo={session.data.user.isDemo} email={session.data.user.email}>
       <OnboardingPage />
@@ -41,7 +43,8 @@ function OnboardingGuard() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={LoginPage} />
+      <Route path="/" component={WelcomePage} />
+      <Route path="/login" component={LoginPage} />
       <Route path="/onboarding" component={OnboardingGuard} />
       <Route path="/overview">{() => <Guard><OverviewPage /></Guard>}</Route>
       <Route path="/inbox/:id">{() => <Guard><ThreadPage /></Guard>}</Route>
@@ -58,11 +61,13 @@ function Router() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-      </ErrorBoundary>
+      <ToastProvider>
+        <ErrorBoundary>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </ErrorBoundary>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

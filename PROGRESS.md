@@ -50,6 +50,12 @@ UI tests are server render plus the stylesheet. A local Chrome session also open
 
 Docs and `vercel.json` are prepared. No Vercel project was created or deployed. No Supabase project was created or migrated.
 
+## Design pass
+
+Completed on this branch after `a4d5761`. Central tokens in `artifacts/mail/src/fluent.css`. Public introduction at `/`. Inbox gained filters, categories, star/read, and next page. Sent search stays in Sent. Drafts can be listed, reopened, and updated. Mobile More sheet includes Sent. Visual QA is in `docs/design/RESPONSIVE_QA.md`.
+
+The least-privilege database issue, live-model grounding, and hosting gaps from the independent audit were not treated as fixed.
+
 ## Remaining
 
 Google OAuth client, `TOKEN_ENCRYPTION_KEY`, a new FLUENT Postgres database, and an optional AI key. Live Gmail and live model behavior are unverified until those exist.

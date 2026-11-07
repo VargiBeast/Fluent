@@ -4,6 +4,7 @@ import {
   approvalBodySchema,
   consumeApprovalSchema,
   draftBodySchema,
+  draftUpdateSchema,
   labelBodySchema,
   preferencesSchema,
   searchBodySchema,
@@ -232,7 +233,7 @@ router.post("/search", async (req, res) => {
         isDemo: user.isDemo,
         config,
         fetchImpl: requestFetch(req),
-        view: "all",
+        view: body.view ?? "all",
         pageToken: body.pageToken,
         query: interpretation.gmailQuery,
       })
@@ -327,6 +328,22 @@ router.post("/ai/overview", async (req, res) => {
 router.get("/drafts", async (req, res) => {
   const user = requireUser(req);
   res.json({ drafts: await listDrafts(user.userId), sent: false });
+});
+
+router.put("/drafts/:draftId", async (req, res) => {
+  const user = requireUser(req);
+  const body = draftUpdateSchema.parse(req.body ?? {});
+  res.json(
+    await saveDraft({
+      userId: user.userId,
+      id: req.params.draftId,
+      kind: body.kind ?? "compose",
+      threadId: body.threadId,
+      toEmail: body.toEmail,
+      subject: body.subject,
+      body: body.body ?? "",
+    }),
+  );
 });
 
 router.post("/drafts", async (req, res) => {

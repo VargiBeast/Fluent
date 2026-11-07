@@ -165,6 +165,14 @@ paths:
       responses:
         "200":
           description: Labeled overview. It cannot archive or delete.
+  /drafts/{draftId}:
+    put:
+      operationId: updateDraft
+      responses:
+        "200":
+          description: Existing local draft updated. Nothing is sent.
+        "404":
+          description: Draft not found for this user.
   /drafts:
     get:
       operationId: listDrafts

@@ -360,6 +360,19 @@ describe("http app", { concurrency: 1 }, () => {
     assert.equal((expired.json as { error: { code: string } }).error.code, "SESSION_EXPIRED");
   });
 
+  it("keeps a sent search inside sent mail", async () => {
+    const demo = await request("/api/auth/demo", { method: "POST", body: "{}" });
+    await request("/api/gmail/sync", { method: "POST", body: "{}", cookie: demo.cookie });
+    const found = await request("/api/search", {
+      method: "POST",
+      cookie: demo.cookie,
+      body: JSON.stringify({ query: "invoice", view: "sent" }),
+    });
+    assert.equal(found.response.status, 200);
+    const subjects = (found.json as { threads: Array<{ subject: string }> }).threads.map((thread) => thread.subject);
+    assert.equal(subjects.some((subject) => /invoice/i.test(subject)), false);
+  });
+
   it("has no send route", () => {
     const routes = walk(app);
     assert.equal(routes.some((route) => route.toLowerCase().includes("send")), false);

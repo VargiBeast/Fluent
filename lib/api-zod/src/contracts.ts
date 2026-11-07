@@ -17,6 +17,7 @@ export const searchBodySchema = z
   .object({
     query: z.string().trim().min(1).max(400),
     pageToken: z.string().max(512).optional(),
+    view: z.enum(["inbox", "sent", "starred", "all", "trash"]).optional(),
   })
   .strict();
 

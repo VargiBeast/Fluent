@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from "react";
+import { Button } from "./states";
 
 export function ConfirmDialog({
   open,
   title,
   body,
   confirmLabel,
+  pending,
   onConfirm,
   onCancel,
 }: {
@@ -12,6 +14,7 @@ export function ConfirmDialog({
   title: string;
   body: string;
   confirmLabel: string;
+  pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -26,13 +29,13 @@ export function ConfirmDialog({
     <dialog ref={ref} className="confirm-dialog" onClose={onCancel} aria-labelledby="confirm-title">
       <h2 id="confirm-title">{title}</h2>
       <p>{body}</p>
-      <div className="dialog-actions">
-        <button type="button" className="button secondary" onClick={onCancel}>
+      <div className="dialog-actions row-actions">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
           Cancel
-        </button>
-        <button type="button" className="button danger" onClick={onConfirm}>
-          {confirmLabel}
-        </button>
+        </Button>
+        <Button type="button" variant="danger" onClick={onConfirm} disabled={pending}>
+          {pending ? "Working" : confirmLabel}
+        </Button>
       </div>
     </dialog>
   );
