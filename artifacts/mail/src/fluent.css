@@ -70,6 +70,8 @@ code,
 
 .fluent-app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(720px 280px at 0% 0%, rgba(128, 107, 255, 0.12), transparent 55%),
     var(--fluent-bg);
@@ -85,11 +87,13 @@ code,
 .fluent-frame {
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr);
-  min-height: calc(100vh - 42px);
+  flex: 1;
+  min-height: 0;
 }
 .desktop-nav {
   position: sticky;
   top: 0;
+  align-self: start;
   height: 100vh;
   padding: var(--space-5) var(--space-4);
   background: var(--fluent-bg-2);
@@ -134,7 +138,8 @@ code,
 }
 .nav-link[aria-current="page"],
 .mobile-nav a[aria-current="page"] {
-  background: rgba(128, 107, 255, 0.22);
+  background: #34315a;
+  color: #f5f5fa;
 }
 .nav-link:hover,
 .button:hover {
@@ -142,7 +147,7 @@ code,
 }
 .compose-link,
 .button.primary {
-  background: linear-gradient(180deg, var(--fluent-purple-2), var(--fluent-purple));
+  background: #806bff;
   color: #16141f;
   font-weight: 650;
   justify-content: center;
@@ -259,9 +264,9 @@ textarea {
   cursor: pointer;
 }
 .chip[aria-pressed="true"] {
-  background: rgba(67, 185, 255, 0.16);
-  color: var(--fluent-text);
-  border-color: rgba(67, 185, 255, 0.4);
+  background: #2a3d4d;
+  color: #f5f5fa;
+  border-color: #43b9ff;
 }
 .thread-list {
   list-style: none;
@@ -438,29 +443,54 @@ textarea {
 .login-screen {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(280px, 1.1fr) minmax(320px, 0.9fr);
+  place-items: center;
+  padding: var(--space-6) var(--space-5);
+}
+.login-layout {
+  width: min(1040px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: stretch;
+}
+.login-story,
+.login-panel {
+  min-width: 0;
+  border: 1px solid var(--fluent-line);
+  border-radius: var(--radius-l);
+  background: var(--fluent-card);
+  box-shadow: var(--elev-1);
 }
 .login-story {
-  padding: var(--space-8) var(--space-7);
+  padding: var(--space-6);
+  display: flex;
+}
+.login-story-copy {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
-  min-width: 0;
-  background:
-    linear-gradient(180deg, rgba(16, 17, 22, 0.1), #101116 78%),
-    radial-gradient(500px 240px at 20% 20%, rgba(67, 185, 255, 0.18), transparent 60%);
+  gap: var(--space-4);
+  margin: auto 0;
+}
+.login-story-copy h1 {
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+}
+.login-story-copy ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--fluent-text-2);
+  display: grid;
+  gap: var(--space-2);
 }
 .login-panel {
   display: grid;
-  place-items: center;
+  align-content: center;
   padding: var(--space-6);
 }
 .login-card {
-  width: min(100%, 440px);
+  width: 100%;
 }
 .mobile-nav,
-.compose-fab,
 .more-button {
   display: none;
 }
@@ -485,56 +515,52 @@ textarea {
   .desktop-nav {
     display: none;
   }
-  .workspace {
-    padding-bottom: 8.5rem;
+  .fluent-app {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
   }
-  .mobile-nav,
-  .compose-fab {
-    display: flex;
+  .fluent-frame {
+    overflow: hidden;
+  }
+  .workspace {
+    height: 100%;
+    overflow: auto;
+    padding-bottom: var(--space-5);
   }
   .mobile-nav {
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
+    display: flex;
+    position: static;
+    flex-shrink: 0;
     justify-content: space-between;
+    gap: 2px;
     padding: 6px;
-    background: rgba(23, 24, 32, 0.94);
-    border: 1px solid var(--fluent-line);
-    border-radius: var(--radius-pill);
-    z-index: 15;
+    background: var(--fluent-bg-2);
+    border-top: 1px solid var(--fluent-line);
   }
   .mobile-nav a,
   .more-button {
-    min-width: 44px;
-    justify-content: center;
-    padding: 0 8px;
-    font-size: 0.78rem;
-  }
-  .compose-fab {
-    position: fixed;
-    right: 16px;
-    bottom: 78px;
-    z-index: 16;
+    display: inline-flex;
+    flex: 1;
+    min-width: 0;
     min-height: 48px;
-    padding: 0 16px;
-    border-radius: var(--radius-pill);
-    background: var(--fluent-purple);
-    color: #16141f;
-    text-decoration: none;
-    font-weight: 680;
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 0.72rem;
   }
   .login-screen {
-    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
   }
-  .login-story {
-    min-height: 28vh;
-    padding: var(--space-6) var(--space-4);
+  .login-layout {
+    grid-template-columns: 1fr;
   }
   .toast-stack {
     left: 16px;
     right: 16px;
-    bottom: 84px;
+    top: 12px;
+    bottom: auto;
     width: auto;
   }
 }

@@ -18,11 +18,19 @@ export function LoginPage() {
   });
   return (
     <div className="login-screen" data-screen="login">
+      <div className="login-layout">
       <section className="login-story">
-        <p className="badge">FLUENT</p>
-        <h1>Email, without the effort.</h1>
-        <p>Sign in first. Connecting a mailbox is a later, separate consent.</p>
-        <Link href="/">Product introduction</Link>
+        <div className="login-story-copy">
+          <p className="badge">FLUENT</p>
+          <h1>Email, without the effort.</h1>
+          <p>Sign in first. Connecting a mailbox is a later, separate consent.</p>
+          <ul>
+            <li>Read the conversation before you answer.</li>
+            <li>Drafts stay in FLUENT. Nothing is sent.</li>
+            <li>Archive and Trash each ask again.</li>
+          </ul>
+          <Link href="/">Product introduction</Link>
+        </div>
       </section>
       <section className="login-panel">
         <div className="login-card">
@@ -63,6 +71,7 @@ export function LoginPage() {
           {demo.isError ? <ErrorState message={demo.error instanceof ApiClientError ? demo.error.message : "Demo sign-in failed"} /> : null}
         </div>
       </section>
+      </div>
     </div>
   );
 }

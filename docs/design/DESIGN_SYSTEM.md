@@ -30,7 +30,7 @@ Spacing: 4, 8, 12, 16, 24, 32, 48, 64. Radius: 8, 12, 18, pill. Cards use a hair
 
 ## Components
 
-`Button`, `PageHeader`, `EmptyState`, `ErrorState`, `LoadingState` (skeleton), `ConfirmDialog`, `ToastProvider`, and `FluentChrome` / `AppShell`. Icons in the mailbox are the star and read marks at a 44px target. The same button classes are used on every screen.
+Primary buttons use solid `#806bff` with `#16141f` text. The current navigation item is `#34315a`. A pressed filter chip is `#2a3d4d`. Those fills keep the contrast measurable. Shared pieces are `Button`, `PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`, `ConfirmDialog`, `ToastProvider`, and `FluentChrome`. Star and read controls are 44px. The mobile bar is a layout row, not a floating layer.
 
 ## What this is not
 

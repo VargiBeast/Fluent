@@ -168,9 +168,10 @@ export async function listThreads(input: {
   if (mode === "demo") {
     await seedDemo(input.userId, input.userEmail);
     const threads = await readLocalThreads(input.userId, input.view, input.query);
+    const pageSize = input.view === "all" ? 50 : 2;
     const offset = input.pageToken?.startsWith("demo:") ? Number(input.pageToken.slice(5)) : 0;
-    const page = threads.slice(offset, offset + 20);
-    const next = offset + 20 < threads.length ? `demo:${offset + 20}` : null;
+    const page = threads.slice(offset, offset + pageSize);
+    const next = offset + pageSize < threads.length ? `demo:${offset + pageSize}` : null;
     return { threads: page, nextPageToken: next, source: "demo", exhaustive: false };
   }
   if (mode === "gmail") {

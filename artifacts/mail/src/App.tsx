@@ -15,7 +15,9 @@ import { ThreadPage } from "@/pages/thread";
 import { WelcomePage } from "@/pages/welcome";
 import { useSession } from "@/lib/session";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+});
 
 function Guard({ children, requireOnboarding = true }: { children: ReactNode; requireOnboarding?: boolean }) {
   const session = useSession();

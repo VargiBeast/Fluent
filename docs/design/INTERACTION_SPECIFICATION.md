@@ -2,7 +2,7 @@
 
 ## Navigation
 
-Desktop sidebar: Overview, Inbox, Copilot, Sent, Settings, Compose. Mobile bar: Overview, Inbox, Copilot, More. More opens a sheet with Sent, Settings, and Compose. `/` focuses the mailbox search when the focus is not already in a field.
+Desktop sidebar: Overview, Inbox, Copilot, Sent, Settings, Compose. Mobile bar is in the layout, not over the scrolling pane: Overview, Inbox, Copilot, Compose, More. More is a modal with Sent and Settings. Escape closes it. `/` focuses the mailbox search when focus is not already in a field.
 
 ## Mail
 

@@ -56,6 +56,10 @@ Completed on this branch after `a4d5761`. Central tokens in `artifacts/mail/src/
 
 The least-privilege database issue, live-model grounding, and hosting gaps from the independent audit were not treated as fixed.
 
+## Design QA completion
+
+Login is a centered pair of equal panels. Mobile Compose sits in the bottom bar, and the message list scrolls in the region above that bar. The signed-in matrix is 50/50 at 320, 390, 768, 1366, and 1920. Details are in `docs/design/RESPONSIVE_QA.md`.
+
 ## Remaining
 
 Google OAuth client, `TOKEN_ENCRYPTION_KEY`, a new FLUENT Postgres database, and an optional AI key. Live Gmail and live model behavior are unverified until those exist.

@@ -1,43 +1,54 @@
 # Responsive QA
 
-Local only. API: `PORT=8080 FLUENT_DEMO_MODE=true FLUENT_DB=pglite AI_PROVIDER=mock NODE_ENV=development APP_ORIGIN=http://localhost:20126 pnpm exec tsx src/index.ts` from `artifacts/api-server`.
+Final local pass after the login proportion and in-flow mobile bar fixes. No public URL. External hosts for Google fonts, Google APIs, and the default model host were blocked in Chrome. Only `localhost` was used.
 
-Web: `PORT=20126 BASE_PATH=/ pnpm exec vite --host 127.0.0.1 --port 20126` from `artifacts/mail`.
+## Commands
 
-Browser: headless Chrome with the DevTools protocol. The page was `http://localhost:20126`. No public URL.
+API, from `artifacts/api-server`:
+
+`PORT=8080 FLUENT_DEMO_MODE=true FLUENT_DB=pglite AI_PROVIDER=mock NODE_ENV=development APP_ORIGIN=http://localhost:20126 pnpm exec tsx src/index.ts`
+
+Web, from `artifacts/mail`:
+
+`PORT=20126 BASE_PATH=/ pnpm exec vite --host 127.0.0.1 --port 20126`
+
+Browser: headless Chrome, DevTools protocol, `--host-resolver-rules` blocking `fonts.googleapis.com`, `fonts.gstatic.com`, `accounts.google.com`, `www.googleapis.com`, `oauth2.googleapis.com`, and `api.openai.com`.
+
+A capture was kept only when `location.pathname`, `[data-screen]`, and the visible `h1` matched the route. App routes were rejected if the login demo button was on screen.
 
 ## Matrix
 
-Widths: 320, 390, 768, 1366, 1920. Height 844 below 800px and 1000 otherwise.
+Widths 320, 390, 768, 1366, and 1920. Height 844 below 800px, otherwise 1000. Each cell passed, including no horizontal overflow (`scrollWidth` was not greater than `clientWidth + 1`).
 
-Screens captured at each width: welcome, login, onboarding, overview, inbox, sent, copilot, compose, settings, and the first thread. Files are `/opt/cursor/artifacts/fluent-qa/<screen>-<width>.png`.
+| Screen | Heading checked | 320 | 390 | 768 | 1366 | 1920 |
+|---|---|---|---|---|---|---|
+| `/` welcome | Email, without the effort. | pass | pass | pass | pass | pass |
+| `/login` | Email, without the effort. | pass | pass | pass | pass | pass |
+| `/onboarding` | Two different permissions | pass | pass | pass | pass | pass |
+| `/overview` | Overview | pass | pass | pass | pass | pass |
+| `/inbox` | Inbox | pass | pass | pass | pass | pass |
+| `/sent` | Sent | pass | pass | pass | pass | pass |
+| `/copilot` | Copilot | pass | pass | pass | pass | pass |
+| `/compose` | Compose | pass | pass | pass | pass | pass |
+| `/settings` | Settings | pass | pass | pass | pass | pass |
+| `/inbox/:id` thread | Thread title, not Inbox | pass | pass | pass | pass | pass |
 
-First pass: the demo click ran before the Vite bundle had hydrated, so later routes rendered the login page. That pass also found horizontal overflow of 24px on the login layout and a thread header that did not wrap at 320 and 390 (scrollWidth 407 and 406).
+Files: `/opt/cursor/artifacts/fluent-qa/<screen>-<width>.png`. Summary: `/opt/cursor/artifacts/fluent-qa/results.json`. 50 captures, 0 failed.
 
-After the layout fix, a signed-in recheck reported scrollWidth equal to clientWidth for:
+## Interactions in the same signed-in session
 
-- login 1366
-- welcome 1366
-- inbox 320 and 390
-- thread 320 and 390
-- overview 1366 (1351 with the scrollbar, still equal to clientWidth)
-- compose 1366
-- settings 768
-- sent 1920
-- copilot 768
+- Pagination at 390: inbox showed 2 cards, then 4 after Load next page.
+- Star: a later check toggled the first card from Star to Unstar. The matrix script’s star assertion failed once because that row was already starred and the click cleared it. The control does toggle.
+- Read/unread control was clicked.
+- Search “invoice” stayed on Inbox and showed Northwind plus the rules-interpreter note.
+- At 390, scrolling the workspace to the top, middle, and bottom found no inbox action intersecting the bottom bar.
+- More opened as a modal, then Sent and Settings showed those headings.
+- Archive dialog contained focus, Escape closed it, and focus returned to Archive. The next Tab target had a 2px solid outline.
+- Draft: unsaved, saved, edited, updated, reopened with “Updated visual QA body.”
+- `/inbox/not-a-real-thread` showed the alert “Something went wrong”.
+- `Emulation.setEmulatedMedia` with `prefers-reduced-motion: reduce` made the measured animation name `none` and duration `0s`. The operating-system setting was not changed.
+- Composited contrast on the inbox, after solid fills for the current nav item, pressed chip, and primary button: 0 pairs under 4.5:1 for normal text or 3:1 for large text in the sampled elements. An earlier pass reported 4 failures because translucent and gradient backgrounds were not composited. That was a measurement error, then the fills were made solid and remeasured.
 
-## Interactions that were exercised in the browser
+## Not claimed
 
-- Demo sign-in reached `/overview` with the synthetic banner and `demo@fluent.invalid`.
-- Search for “invoice” showed Northwind and the rules-interpreter note.
-- Archive opened the confirmation dialog.
-- A compose draft titled “QA draft” was saved and the button to reopen it was present (`draft-reopen.ok: true` in the QA script output).
-- Sent at 1920 showed only the demo sent note, with star/read and without archive/trash.
-
-## Not verified in the browser
-
-- A real Google button success. The screen correctly says sign-in is not configured.
-- Live Gmail pagination, because no mailbox is connected.
-- Reduced-motion was checked in CSS (`prefers-reduced-motion: reduce` disables animation) and not by toggling the OS setting in this Chrome session.
-- Keyboard focus was styled and the dialog uses the native `<dialog>` element. A full tab-order audit was not recorded.
-- Contrast was judged from the screenshots, not from an automated WCAG scanner.
+No real Gmail page, no live model, no hosted deploy, and no operating-system reduced-motion toggle. A full screen-reader pass was not recorded.

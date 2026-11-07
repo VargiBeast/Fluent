@@ -1,4 +1,4 @@
-import React, { type ReactNode, useState } from "react";
+import React, { type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./states";
 
@@ -14,6 +14,7 @@ const MOBILE = [
   { href: "/overview", label: "Overview" },
   { href: "/inbox", label: "Inbox" },
   { href: "/copilot", label: "Copilot" },
+  { href: "/compose", label: "Compose" },
 ];
 
 export function FluentChrome({
@@ -30,6 +31,20 @@ export function FluentChrome({
   onNavigate?: (href: string) => void;
 }) {
   const [more, setMore] = useState(false);
+  const moreRef = useRef<HTMLDialogElement>(null);
+  const moreOpener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const dialog = moreRef.current;
+    if (!dialog) return;
+    if (more && !dialog.open) {
+      moreOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      dialog.showModal();
+    }
+    if (!more && dialog.open) {
+      dialog.close();
+      moreOpener.current?.focus();
+    }
+  }, [more]);
   return (
     <div
       className="fluent-app"
@@ -88,10 +103,13 @@ export function FluentChrome({
           More
         </button>
       </nav>
-      <a href="/compose" className="compose-fab">
-        Compose
-      </a>
-      <div id="more-sheet" className="sheet" role="dialog" aria-label="More destinations" hidden={!more}>
+      <dialog
+        id="more-sheet"
+        className="sheet"
+        ref={moreRef}
+        aria-label="More destinations"
+        onClose={() => setMore(false)}
+      >
         <h2>More</h2>
         <div className="row-actions">
           <a className="button secondary" href="/sent">
@@ -100,14 +118,11 @@ export function FluentChrome({
           <a className="button secondary" href="/settings">
             Settings
           </a>
-          <a className="button primary" href="/compose">
-            Compose
-          </a>
           <Button variant="secondary" type="button" onClick={() => setMore(false)}>
             Close
           </Button>
         </div>
-      </div>
+      </dialog>
     </div>
   );
 }
