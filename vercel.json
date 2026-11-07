@@ -1,11 +1,36 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/mail run build",
-  "outputDirectory": "artifacts/mail/dist/public",
+  "services": {
+    "api-server": {
+      "root": "artifacts/api-server",
+      "framework": "express",
+      "entrypoint": "dist/index.mjs",
+      "installCommand": "pnpm install --frozen-lockfile --dir ../..",
+      "buildCommand": "pnpm --dir ../.. --filter @workspace/api-server run build",
+      "devCommand": "pnpm --dir ../.. --filter @workspace/api-server exec tsx src/index.ts"
+    },
+    "mail": {
+      "root": "artifacts/mail",
+      "framework": "vite",
+      "installCommand": "pnpm install --frozen-lockfile --dir ../..",
+      "buildCommand": "pnpm --dir ../.. --filter @workspace/mail run build",
+      "devCommand": "pnpm --dir ../.. --filter @workspace/mail exec vite --host 127.0.0.1",
+      "outputDirectory": "dist/public",
+      "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+      ]
+    },
+    "mockup-sandbox": {
+      "root": "artifacts/mockup-sandbox",
+      "framework": "vite",
+      "installCommand": "pnpm install --frozen-lockfile --dir ../..",
+      "buildCommand": "pnpm --dir ../.. --filter @workspace/mockup-sandbox run build",
+      "outputDirectory": "dist"
+    }
+  },
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": { "service": "api-server" } },
+    { "source": "/(.*)", "destination": { "service": "mail" } }
   ],
   "headers": [
     {

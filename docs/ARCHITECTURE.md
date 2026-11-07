@@ -11,13 +11,14 @@ FLUENT keeps the existing pnpm workspace:
 
 Express stays. It is not rewritten as a parallel set of route handlers.
 
-- `artifacts/api-server/src/app.ts` is the application.
-- `artifacts/api-server/src/index.ts` listens only when it is the process entry and `VERCEL` is unset.
-- `api/[...path].ts` re-exports the same app for Vercel's Node function.
-- `vercel.json` builds the API and the Vite client, serves the client as static files, and leaves `/api/*` to the function.
-- The Vite dev server proxies `/api` to `127.0.0.1:8080`.
+Proposed services, pending owner confirmation, are `api-server`, `mail`, and an internal `mockup-sandbox`. Public rewrites send `/api/(.*)` to `api-server` and every other path to `mail`. There are no service bindings: the browser calls `/api` on the same origin, and no service function calls another service.
 
-Do not deploy this until a dedicated FLUENT Vercel project exists. No public production or preview deployment is part of this branch.
+- `artifacts/api-server/src/app.ts` is the application and mounts routes at `/api`.
+- `artifacts/api-server/src/index.ts` listens only when it is the process entry and `VERCEL` is unset. The service entry after build is `dist/index.mjs`.
+- There is no root `api/[...path].ts`. A root function would match `/api` before the service rewrite.
+- The Vite dev server proxies `/api` to `127.0.0.1:8080`. That proxy is local development only and is not a binding.
+
+Do not deploy this until a dedicated FLUENT Vercel project exists and the owner confirms the service names, public routes, and the absence of bindings. No public production or preview deployment is part of this branch.
 
 ## Data
 

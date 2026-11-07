@@ -6,7 +6,7 @@ Source before this work: `main` at `e3f0dc1c473deb13681847adcd79d14295a3593d`.
 
 ## Phase 1 — Repository and architecture
 
-Completed. Reinspected the scaffold. Kept Express, Vite, Drizzle, and the OpenAPI package. One API, not a second framework. Vercel hosts the same Express app through `api/[...path].ts`.
+Completed. Reinspected the scaffold. Kept Express, Vite, Drizzle, and the OpenAPI package. One API, not a second framework. The later services proposal replaced the root `api/[...path].ts` adapter.
 
 ## Phase 2 — Foundation
 
@@ -59,6 +59,10 @@ The least-privilege database issue, live-model grounding, and hosting gaps from 
 ## Design QA completion
 
 Login is a centered pair of equal panels. Mobile Compose sits in the bottom bar, and the message list scrolls in the region above that bar. The signed-in matrix is 50/50 at 320, 390, 768, 1366, and 1920. Details are in `docs/design/RESPONSIVE_QA.md`.
+
+## Vercel services proposal
+
+`vercel.json` now proposes three services. Public traffic is `/api/(.*)` to `api-server` and `/(.*)` to `mail`. `mockup-sandbox` has no public rewrite. Bindings are omitted. Names, public routes, and that binding graph still need owner confirmation. No deploy or project link was run. Details are in `docs/DEPLOYMENT.md`.
 
 ## Remaining
 
