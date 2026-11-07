@@ -1,62 +1,68 @@
-import { type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
-import {
-  Route,
-  Switch,
-  useLocation,
-  Router as WouterRouter,
-} from 'wouter';
+import { type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Redirect, Route, Router as WouterRouter, Switch } from "wouter";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { AppShell, LoadingState } from "@/components/fluent/shell";
+import { ComposePage } from "@/pages/compose";
+import { CopilotPage } from "@/pages/copilot";
+import { InboxPage } from "@/pages/inbox";
+import { LoginPage } from "@/pages/login";
+import { OnboardingPage } from "@/pages/onboarding";
+import { OverviewPage } from "@/pages/overview";
+import { SettingsPage } from "@/pages/settings";
+import { ThreadPage } from "@/pages/thread";
+import { useSession } from "@/lib/session";
 
 const queryClient = new QueryClient();
 
-function Home() {
+function Guard({ children, requireOnboarding = true }: { children: ReactNode; requireOnboarding?: boolean }) {
+  const session = useSession();
+  if (session.isLoading) return <LoadingState label="Checking session" />;
+  if (!session.data?.authenticated || !session.data.user) return <Redirect href="/" />;
+  if (requireOnboarding && !session.data.user.onboarded) return <Redirect href="/onboarding" />;
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Replit Agent is building...
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Your app will appear here once it's ready.
-        </p>
-      </div>
-    </div>
+    <AppShell demo={session.data.user.isDemo} email={session.data.user.email}>
+      {children}
+    </AppShell>
+  );
+}
+
+function OnboardingGuard() {
+  const session = useSession();
+  if (session.isLoading) return <LoadingState label="Checking session" />;
+  if (!session.data?.authenticated || !session.data.user) return <Redirect href="/" />;
+  return (
+    <AppShell demo={session.data.user.isDemo} email={session.data.user.email}>
+      <OnboardingPage />
+    </AppShell>
   );
 }
 
 function Router() {
   return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route component={NotFound} />
-      </Switch>
-    </RoutedErrorBoundary>
+    <Switch>
+      <Route path="/" component={LoginPage} />
+      <Route path="/onboarding" component={OnboardingGuard} />
+      <Route path="/overview">{() => <Guard><OverviewPage /></Guard>}</Route>
+      <Route path="/inbox/:id">{() => <Guard><ThreadPage /></Guard>}</Route>
+      <Route path="/inbox">{() => <Guard><InboxPage /></Guard>}</Route>
+      <Route path="/sent">{() => <Guard><InboxPage view="sent" /></Guard>}</Route>
+      <Route path="/copilot">{() => <Guard><CopilotPage /></Guard>}</Route>
+      <Route path="/compose">{() => <Guard><ComposePage /></Guard>}</Route>
+      <Route path="/settings">{() => <Guard requireOnboarding={false}><SettingsPage /></Guard>}</Route>
+      <Route>{() => <Redirect href="/" />}</Route>
+    </Switch>
   );
 }
 
-function RoutedErrorBoundary({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
-}
-
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+      <ErrorBoundary>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }
-
-export default App;

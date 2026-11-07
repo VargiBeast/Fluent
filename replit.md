@@ -1,6 +1,6 @@
-# [Project name]
+# FLUENT
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Email, without the effort. The API, schema, and screens live in this repo. A hosted database and a public deployment are not provisioned.
 
 ## Run & Operate
 
@@ -8,8 +8,10 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/db run migrate` — apply reviewed SQL migrations when `DATABASE_URL` points at a FLUENT database
+- `pnpm run test` — API, security, and interface tests
+- Demo without Google or Postgres: `FLUENT_DEMO_MODE=true`, `FLUENT_DB=pglite`, `AI_PROVIDER=mock`
+- See `docs/ENVIRONMENT.md` for every environment name
 
 ## Stack
 
@@ -30,7 +32,7 @@ _Populate as you build — non-obvious choices a reader couldn't infer from the 
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Sign-in, a separate Gmail connection, inbox, thread, overview, copilot, local drafts, search, and approval-gated archive or trash. Live Google, Gmail, and model calls stay blocked until their credentials exist. Demo mode is labeled and refused in production.
 
 ## User preferences
 

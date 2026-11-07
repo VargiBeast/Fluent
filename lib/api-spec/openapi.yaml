@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: FLUENT HTTP contract. There is no send operation.
 servers:
   - url: /api
     description: Base API path
@@ -16,7 +16,6 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +23,170 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/config:
+    get:
+      operationId: authConfig
+      responses:
+        "200":
+          description: Public setup state. Names only, never secret values.
+  /auth/session:
+    get:
+      operationId: authSession
+      responses:
+        "200":
+          description: Current session or anonymous.
+        "401":
+          description: Expired or revoked session.
+  /auth/google/start:
+    get:
+      operationId: googleLoginStart
+      responses:
+        "302":
+          description: Redirect to Google when configured.
+        "503":
+          description: Google OAuth or encryption is not configured.
+  /auth/google/callback:
+    get:
+      operationId: googleLoginCallback
+      responses:
+        "302":
+          description: Session cookie set and browser returns to the app.
+        "400":
+          description: OAuth state mismatch, expiry, or reuse.
+  /auth/demo:
+    post:
+      operationId: demoLogin
+      responses:
+        "200":
+          description: Labeled synthetic session. Disabled in production.
+        "503":
+          description: Demo mode is off.
+  /auth/logout:
+    post:
+      operationId: logout
+      responses:
+        "200":
+          description: Session revoked.
+  /gmail/status:
+    get:
+      operationId: gmailStatus
+      responses:
+        "200":
+          description: Connection state without tokens.
+  /gmail/connect/start:
+    get:
+      operationId: gmailConnectStart
+      responses:
+        "302":
+          description: Incremental consent for gmail.modify.
+  /gmail/connect/callback:
+    get:
+      operationId: gmailConnectCallback
+      responses:
+        "302":
+          description: Encrypted tokens stored for the signed-in user.
+  /gmail/disconnect:
+    post:
+      operationId: gmailDisconnect
+      responses:
+        "200":
+          description: Tokens cleared and revocation attempted.
+  /gmail/sync:
+    post:
+      operationId: gmailSync
+      responses:
+        "200":
+          description: One page of mail, or the synthetic demo mailbox.
+  /threads:
+    get:
+      operationId: listThreads
+      responses:
+        "200":
+          description: A page of conversations. Not exhaustive.
+  /threads/{threadId}:
+    get:
+      operationId: getThread
+      responses:
+        "200":
+          description: Sanitized conversation.
+        "404":
+          description: Missing or owned by someone else.
+  /threads/{threadId}/flags:
+    post:
+      operationId: setThreadFlags
+      responses:
+        "200":
+          description: Read or starred state changed by the signed-in user.
+  /approvals:
+    post:
+      operationId: createApproval
+      responses:
+        "200":
+          description: Short-lived confirmation for archive or trash.
+  /threads/{threadId}/archive:
+    post:
+      operationId: archiveThread
+      responses:
+        "200":
+          description: INBOX label removed after approval.
+        "403":
+          description: Approval missing, expired, reused, or owned by another user.
+  /threads/{threadId}/trash:
+    post:
+      operationId: trashThread
+      responses:
+        "200":
+          description: Conversation moved to Trash. Not permanently deleted.
+        "403":
+          description: Approval missing, expired, reused, or owned by another user.
+  /search:
+    post:
+      operationId: searchMail
+      responses:
+        "200":
+          description: Interpreted search. exhaustive is always false.
+  /ai/threads/{threadId}/summary:
+    post:
+      operationId: summarizeThread
+      responses:
+        "200":
+          description: Grounded summary. Mock results are marked mock.
+        "503":
+          description: AI provider is not configured.
+  /ai/drafts:
+    post:
+      operationId: draftReply
+      responses:
+        "200":
+          description: Editable draft text. Nothing is sent.
+  /ai/overview:
+    post:
+      operationId: inboxOverview
+      responses:
+        "200":
+          description: Labeled overview. It cannot archive or delete.
+  /drafts:
+    get:
+      operationId: listDrafts
+      responses:
+        "200":
+          description: Local drafts.
+    post:
+      operationId: createDraft
+      responses:
+        "201":
+          description: Local draft saved. sent is false.
+  /preferences:
+    get:
+      operationId: getPreferences
+      responses:
+        "200":
+          description: User preferences.
+    put:
+      operationId: updatePreferences
+      responses:
+        "200":
+          description: User preferences updated.
 components:
   schemas:
     HealthStatus:
@@ -33,4 +196,3 @@ components:
           type: string
       required:
         - status
-
