@@ -1,3 +1,4 @@
+import { FocusMenu } from "./FocusMode";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { BarChart3, ChevronDown, MailMinus, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck, Sparkles } from "lucide-react";
@@ -121,6 +122,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <BarChart3 className="size-4" aria-hidden />
         <span className="flex-1">Inbox stats</span>
       </NavLink>
+      <FocusMenu className={item(false)} />
       <NavLink to={withAccount("/app/newsletters")} onClick={onNavigate} className={({ isActive }) => item(isActive)}>
         <MailMinus className="size-4" aria-hidden />
         <span className="flex-1">Unsubscribe</span>

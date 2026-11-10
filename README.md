@@ -30,6 +30,10 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - **Snooze** (later today, tomorrow, weekend, next week) into a Snoozed folder, and **remind me if no reply** for sent mail. Both return automatically on the next sync after they are due, so no cron is needed.
 - **Follow-up radar** in the AI Overview: sent mail still waiting on a reply, and questions you haven't answered, with one-click drafted nudges (confirm first)
 - Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `x`, `z`, `g i`, `g o`, `?`), a **⌘K command palette** (go anywhere, run conversation actions, or ask Copilot), **⌘J** for Copilot, and dark (default), light or system theme
+- **Private notes**: pin a note only you can see to any conversation (`n` or ⌘K). Notes are encrypted with AES-256-GCM and bound to your user and the thread.
+- **Unsubscribe assistant**: lists newsletter senders, least-opened first. On your click it can one-click unsubscribe (RFC 8058, with SSRF-safe outbound requests), send a mailto unsubscribe, or archive everything from a sender (with undo).
+- **Voice dictation** in the composer and Copilot (Web Speech API). Spoken commands only ever create a draft.
+- **Accent colours** (purple, blue, teal, rose, orange), each checked for WCAG AA contrast in light and dark. **Focus mode** shows only important mail for 30 minutes, 1 hour or until tomorrow morning. Both are in Settings and ⌘K. Toasts follow the light or dark theme and stay clear of the composer's bottom bar.
 - **Installable app (PWA)**: add FLUENT to your home screen on Android or iOS. It has a manifest, icons and safe-area support. The service worker caches only the static app shell and never `/api` or email.
 
 **AI** (Google Gemini by default, with xAI Grok or OpenAI as options, through the Vercel AI SDK)

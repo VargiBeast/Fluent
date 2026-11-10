@@ -15,6 +15,8 @@ import { CopilotProvider, useCopilot } from "./copilot/context";
 import { CopilotHost } from "./copilot/Copilot";
 import { CommandPalette } from "./CommandPalette";
 import { InstallHint } from "./InstallHint";
+import { FocusBanner } from "./FocusMode";
+import { useFocusMode } from "@/lib/focus";
 
 export const SidebarContext = { open: () => {} };
 
@@ -61,8 +63,11 @@ function Shell() {
           </RD.Content>
         </RD.Portal>
       </RD.Root>
-      <main id="main" className="min-w-0 flex-1">
-        <Outlet />
+      <main id="main" className="flex min-w-0 flex-1 flex-col">
+        <FocusBanner />
+        <div className="min-h-0 flex-1">
+          <Outlet />
+        </div>
       </main>
       <LazyComposer />
       <CopilotHost />
@@ -137,6 +142,7 @@ function useMailSync() {
   const qc = useQueryClient();
   const { session } = useSession();
   const notif = session?.settings?.notifications;
+  const focusing = useFocusMode().active;
   useEffect(() => {
     let stopped = false;
     const tick = async () => {
@@ -152,7 +158,7 @@ function useMailSync() {
           void qc.invalidateQueries({ queryKey: ["snoozes"] });
           if (notif?.inApp !== false) toast(back === 1 ? "1 conversation is back in your Inbox" : `${back} conversations are back in your Inbox`, { description: r.remindersDue ? "Including a reminder: nobody replied yet." : "Your snooze ended." });
         }
-        if (r.newInbox > 0) {
+        if (r.newInbox > 0 && !focusing) {
           const msg = r.newInbox === 1 ? "1 new email" : `${r.newInbox} new emails`;
           if (notif?.inApp !== false) toast(msg, { description: "Your inbox was updated." });
           if (notif?.desktop && "Notification" in window && Notification.permission === "granted" && document.hidden === false) {
@@ -172,7 +178,7 @@ function useMailSync() {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [qc, notif?.inApp, notif?.desktop]);
+  }, [qc, notif?.inApp, notif?.desktop, focusing]);
 }
 
 // The rich-text composer (TipTap/ProseMirror) is the heaviest part of the app, so it loads on first use,
