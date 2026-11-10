@@ -74,6 +74,11 @@ function fakeAnswer(all: string): { task: string; text: string } {
         actionItems: [{ task: "Reply with confirmation", owner: "you", due: "Thursday" }],
         deadlines: [{ what: "Sign-off", when: "Friday" }],
         needsReply: true,
+        ...(/This is a long thread/.test(all) ? {
+          asks: [{ who: "Marcus Chen", wants: "Alex to own the release notes by Wednesday" }, { who: "Priya Patel", wants: "to know if Alex needs screenshots" }],
+          decisions: ["Ship v2.3 after QA sign-off"],
+          openQuestions: ["Who updates the status page?"],
+        } : {}),
       };
       break;
     case "explain":

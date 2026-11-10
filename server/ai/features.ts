@@ -17,10 +17,12 @@ async function loadThreadForAi(userId: string, policy: AiPolicy, accountId: stri
   return t;
 }
 
+const THREAD_WINDOW = 20;
+
 function threadBlocks(t: ThreadDetail): string {
   return t.messages
     .filter((m) => !m.isDraft)
-    .slice(-12)
+    .slice(-THREAD_WINDOW)
     .map((m, i) => emailBlock({
       ref: `m${i + 1}`,
       from: m.isFromMe ? `${fmt(m.from)} (the user)` : fmt(m.from),
@@ -45,20 +47,37 @@ export const insightsSchema = z.object({
   deadlines: z.array(z.object({ what: z.string().max(200), when: z.string().max(100) })).max(6),
   needsReply: z.boolean(),
   quickReplies: z.array(z.string().max(60)).max(3).default([]),
+  // Long threads only (LONG_THREAD+ messages): who is asking for what, what has been settled, and what is still open.
+  asks: z.array(z.object({ who: z.string().max(100), wants: z.string().max(300) })).max(6).default([]),
+  decisions: z.array(z.string().max(300)).max(6).default([]),
+  openQuestions: z.array(z.string().max(300)).max(4).default([]),
 });
 export type Insights = z.infer<typeof insightsSchema>;
+
+export const LONG_THREAD = 4;
 
 export async function threadInsights(userId: string, accountId: string, threadId: string): Promise<Insights> {
   const policy = await loadPolicy(userId);
   const t = await loadThreadForAi(userId, policy, accountId, threadId);
+  const count = t.messages.filter((m) => !m.isDraft).length;
+  const long = count >= LONG_THREAD;
   const out = await aiCall({
     task: "insights",
-    system: `Summarise an email conversation for the user (${t.accountEmail}). ${todayContext()} Be concise and specific: 2-3 sentences of summary, then key points, concrete action items for the user, explicit deadlines with dates, whether the user needs to reply, and up to 3 very short reply options (2-5 words each) the user could pick.`,
-    prompt: `Conversation:\n${threadBlocks(t)}`,
+    system: `Summarise an email conversation for the user (${t.accountEmail}). ${todayContext()} Be concise and specific: 2-3 sentences of summary, then key points, concrete action items for the user, explicit deadlines with dates, whether the user needs to reply, and up to 3 very short reply options (2-5 words each) the user could pick.`
+      + (long
+        ? ` This is a long thread (${count} messages). Also fill "asks": each participant who wants something, by name, and exactly what they want (from whom, by when if stated); "decisions": what has been agreed or settled, latest decision wins if it changed; "openQuestions": what is still unresolved. Only include what the emails actually say.`
+        : ` Leave "asks", "decisions" and "openQuestions" empty.`),
+    prompt: `Conversation${count > THREAD_WINDOW ? ` (last ${THREAD_WINDOW} of ${count} messages)` : ""}:\n${threadBlocks(t)}`,
     schema: insightsSchema,
   });
   await recordAudit(userId, policy, "thread_summary", [{ accountId, threadId, subject: t.subject }]);
-  return { ...out, quickReplies: out.quickReplies ?? [] };
+  return {
+    ...out,
+    quickReplies: out.quickReplies ?? [],
+    asks: long ? out.asks ?? [] : [],
+    decisions: long ? out.decisions ?? [] : [],
+    openQuestions: long ? out.openQuestions ?? [] : [],
+  };
 }
 
 export async function explainThread(userId: string, accountId: string, threadId: string): Promise<string> {

@@ -28,6 +28,26 @@ describe("AI workflows (HTTP-level Gemini fake)", () => {
     expect(req.input).toContain('<email ref=\\"m1\\"');
   });
 
+  it("long threads also get who-wants-what, decisions and open questions; short ones don't", async () => {
+    type I = { asks: Array<{ who: string; wants: string }>; decisions: string[]; openQuestions: string[] };
+    const short = await c.json<I>("/api/ai/insights", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-team" }) });
+    expect(short.body).toMatchObject({ asks: [], decisions: [], openQuestions: [] });
+    expect(JSON.stringify(lastAi().body)).toContain("Leave \\\"asks\\\"");
+    // Two replies make t-team a 4-message thread.
+    const t = await c.json<{ messages: Array<{ subject: string; messageIdHeader: string }> }>(`/api/mail/threads/${accountId}/t-team`);
+    const m = t.body.messages.at(-1)!;
+    for (const text of ["I'll take the release notes.", "Screenshots would help, thanks."]) {
+      const r = await c.json("/api/compose/send", { method: "POST", body: JSON.stringify({ accountId, to: ["marcus@northwind.example"], subject: `Re: ${m.subject}`, html: `<p>${text}</p>`, text, threadId: "t-team", inReplyTo: m.messageIdHeader, references: m.messageIdHeader }) });
+      expect(r.status).toBe(200);
+    }
+    const long = await c.json<I>("/api/ai/insights", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-team" }) });
+    expect(long.status).toBe(200);
+    expect(JSON.stringify(lastAi().body)).toContain("This is a long thread (4 messages)");
+    expect(long.body.asks[0]).toMatchObject({ who: "Marcus Chen" });
+    expect(long.body.decisions).toHaveLength(1);
+    expect(long.body.openQuestions).toHaveLength(1);
+  });
+
   it("neutralises delimiter-spoofing and keeps injection text as data", async () => {
     await c.json("/api/ai/insights", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-injection" }) });
     const req = lastAi();
