@@ -261,6 +261,12 @@ test("⌘K command palette navigates and runs conversation actions", async () =>
   await expect(palette.getByRole("option").first()).toContainText("Starred");
   await input.press("Enter");
   await expect(page).toHaveURL(/\/app\/starred/);
+  for (const [query, url] of [["inbox stats", /\/app\/stats$/], ["read later", /\/app\/later$/], ["templates", /\/app\/settings\/templates$/], ["signature", /\/app\/settings\/signatures$/]] as const) {
+    await page.keyboard.press("Control+k");
+    await input.fill(query);
+    await input.press("Enter");
+    await expect(page).toHaveURL(url);
+  }
 
   await page.goto("/app/inbox");
   await page.locator('[data-thread-id="t-social"]').click();
