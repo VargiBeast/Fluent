@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { singleKeysOff } from "@/lib/prefs";
 import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { PenSquare } from "lucide-react";
 import * as RD from "@radix-ui/react-dialog";
@@ -17,6 +18,7 @@ import { CommandPalette } from "./CommandPalette";
 import { InstallHint } from "./InstallHint";
 import { FocusBanner } from "./FocusMode";
 import { useFocusMode } from "@/lib/focus";
+import { setPrefs } from "@/lib/prefs";
 
 export const SidebarContext = { open: () => {} };
 
@@ -44,6 +46,9 @@ function Shell() {
   const onboarding = location.pathname.startsWith("/app/onboarding");
   const density = session?.settings?.appearance.density ?? "comfortable";
   SidebarContext.open = () => setDrawer(true);
+  const g = session?.settings?.general;
+  const keys = session?.settings?.shortcuts.enabled ?? true;
+  setPrefs({ language: g?.language ?? "auto", timeZone: g?.timeZone ?? "auto", shortcuts: keys });
   useGlobalShortcuts();
   useMailSync();
 
@@ -85,7 +90,8 @@ function ComposeFab() {
   const inThread = useMatch("/app/:folder/:accountId/:threadId");
   const inSettings = useMatch("/app/settings/*");
   const inOnboarding = useMatch("/app/onboarding/*");
-  if (isOpen || composer.requests.length > 0 || inThread || inSettings || inOnboarding) return null;
+  const inAccount = useMatch("/app/account");
+  if (isOpen || composer.requests.length > 0 || inThread || inSettings || inOnboarding || inAccount) return null;
   return (
     <button
       type="button"
@@ -110,6 +116,7 @@ function useGlobalShortcuts() {
   const pendingG = useRef(0);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (singleKeysOff(e)) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
       if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector("[role=dialog]")) return;
@@ -143,7 +150,7 @@ function useMailSync() {
   const qc = useQueryClient();
   const { session } = useSession();
   const notif = session?.settings?.notifications;
-  const focusing = useFocusMode().active;
+  const focusing = useFocusMode().active && session?.settings?.focus.muteToasts !== false;
   useEffect(() => {
     let stopped = false;
     const tick = async () => {

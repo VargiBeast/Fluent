@@ -4,6 +4,8 @@ import type { Settings, SettingsPatch } from "@shared/settings";
 import { api, errorMessage } from "./api";
 import type { SessionData } from "./session";
 
+export const SETTINGS_SAVED_EVENT = "fluent:settings-saved";
+
 /** PATCH settings with an optimistic update of the cached session. */
 export function useUpdateSettings() {
   const qc = useQueryClient();
@@ -25,6 +27,7 @@ export function useUpdateSettings() {
       toast.error("Couldn't save settings", { description: errorMessage(e) });
     },
     onSuccess: (r, patch) => {
+      window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT));
       qc.setQueryData<SessionData>(["session"], (s) => (s ? { ...s, settings: r.settings, onboarded: patch.onboarded ?? s.onboarded } : s));
       if (patch.ai || patch.privacy) void qc.invalidateQueries({ queryKey: ["overview"] });
     },

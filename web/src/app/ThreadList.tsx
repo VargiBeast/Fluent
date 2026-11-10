@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { singleKeysOff } from "@/lib/prefs";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AlertTriangle, Check, ChevronDown, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Reply, Search, Sparkles, Star, Wand2, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -192,6 +193,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
   // x toggles the open conversation, Esc clears the selection.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (singleKeysOff(e)) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
       if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector("[role=dialog]")) return;
@@ -277,7 +279,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
         <div role="alert" className="mx-3 mt-3 flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-fg-2">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
           <span className="flex-1">{accountErrors.map((e) => e.message).join(" ")}</span>
-          <Link to="/app/settings/accounts" className="shrink-0 font-medium text-accent-ink hover:underline">Fix</Link>
+          <Link to="/app/account#accounts" className="shrink-0 font-medium text-accent-ink hover:underline">Fix</Link>
         </div>
       )}
 
@@ -291,7 +293,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
             icon={<AlertTriangle className="size-5" />}
             title="Couldn't load your mail"
             description={errorMessage(threads.error)}
-            action={<div className="flex gap-2"><Button onClick={() => void threads.refetch()}>Try again</Button><Link to="/app/settings/accounts"><Button variant="ghost">Account settings</Button></Link></div>}
+            action={<div className="flex gap-2"><Button onClick={() => void threads.refetch()}>Try again</Button><Link to="/app/account#accounts"><Button variant="ghost">Account settings</Button></Link></div>}
           />
         ) : all.length === 0 ? (
           <EmptyState
@@ -589,7 +591,7 @@ function SearchPill({ inputRef, value, onChange, searching, aiOn, onOpenSidebar,
             <Sparkles className="size-[18px]" />
           </IconButton>
         )}
-        <button type="button" onClick={() => navigate("/app/settings/accounts")} aria-label="Accounts and settings" className="shrink-0 rounded-full p-0.5 focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] lg:hidden">
+        <button type="button" onClick={() => navigate("/app/account#accounts")} aria-label="Accounts and settings" className="shrink-0 rounded-full p-0.5 focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] lg:hidden">
           <Avatar name={session?.user?.name ?? "Me"} email={session?.user?.email} src={session?.user?.picture} size={32} />
         </button>
       </form>

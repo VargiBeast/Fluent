@@ -262,7 +262,7 @@ test("⌘K command palette navigates and runs conversation actions", async () =>
   await expect(palette.getByRole("option").first()).toContainText("Starred");
   await input.press("Enter");
   await expect(page).toHaveURL(/\/app\/starred/);
-  for (const [query, url] of [["inbox stats", /\/app\/stats$/], ["read later", /\/app\/later$/], ["templates", /\/app\/settings\/templates$/], ["signature", /\/app\/settings\/signatures$/]] as const) {
+  for (const [query, url] of [["inbox stats", /\/app\/stats$/], ["read later", /\/app\/later$/], ["templates", /\/app\/settings\/templates$/], ["signature", /\/app\/settings\/templates$/], ["account", /\/app\/account$/]] as const) {
     await page.keyboard.press("Control+k");
     await input.fill(query);
     await input.press("Enter");
@@ -394,8 +394,91 @@ test("settings: appearance, labels & filters, and sessions work", async () => {
   await dialog.getByRole("button", { name: "Create filter" }).click();
   await expect(page.getByRole("list", { name: "Filters" })).toContainText("digest@forum.example");
 
-  await page.goto("/app/settings/security");
+  await page.goto("/app/settings/security"); // moved to the Account page
+  await expect(page).toHaveURL(/\/app\/account#sessions$/);
   await expect(page.getByText("This device")).toBeVisible();
+});
+
+test("settings: every section saves with visible feedback, and preferences take effect", async () => {
+  await page.goto("/app/settings");
+  await expect(page).toHaveURL(/\/app\/settings\/general$/);
+  const nav = page.getByRole("navigation", { name: "Settings sections" });
+  for (const name of ["General", "Appearance", "Notifications", "Copilot & AI", "Privacy", "Keyboard shortcuts", "Templates & signatures", "Labels & filters", "About"]) {
+    await expect(nav.getByRole("link", { name })).toBeVisible();
+  }
+  // General: language and default view persist and apply.
+  await page.getByLabel("Language", { exact: true }).selectOption("nb-NO");
+  await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+  await page.getByLabel("Default view").selectOption("overview");
+  await shot(page, "38-settings-general");
+  await page.goto("/app");
+  await expect(page).toHaveURL(/\/app\/overview$/);
+  await page.goto("/app/settings/general");
+  await expect(page.getByLabel("Language", { exact: true })).toHaveValue("nb-NO");
+  await page.getByLabel("Language", { exact: true }).selectOption("auto");
+  await page.getByLabel("Default view").selectOption("inbox");
+  await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+  // Shortcuts: single keys can be turned off; c then does nothing.
+  await nav.getByRole("link", { name: "Keyboard shortcuts" }).click();
+  await page.getByRole("switch", { name: "Single-key shortcuts" }).click();
+  await expect(page.getByRole("switch", { name: "Single-key shortcuts" })).toHaveAttribute("aria-checked", "false");
+  await page.goto("/app/inbox");
+  await page.locator("[data-thread-id]").first().waitFor();
+  await page.keyboard.press("c");
+  await page.waitForTimeout(300);
+  await expect(page.getByLabel("Message body")).toHaveCount(0);
+  await page.goto("/app/settings/shortcuts");
+  await page.getByRole("switch", { name: "Single-key shortcuts" }).click();
+  await expect(page.getByRole("switch", { name: "Single-key shortcuts" })).toHaveAttribute("aria-checked", "true");
+
+  // Copilot & AI: the daily brief can be turned off.
+  await page.goto("/app/settings/ai");
+  await expect(page.getByText(/Provider:/)).toBeVisible();
+  await page.getByRole("switch", { name: "Show the daily brief" }).click();
+  await page.goto("/app/inbox");
+  await page.locator("[data-thread-id]").first().waitFor();
+  await expect(page.getByTestId("daily-brief")).toHaveCount(0);
+  await page.goto("/app/settings/ai");
+  await page.getByRole("switch", { name: "Show the daily brief" }).click();
+  await expect(page.getByRole("switch", { name: "Show the daily brief" })).toHaveAttribute("aria-checked", "true");
+
+  // Notifications: focus mode defaults.
+  await page.goto("/app/settings/notifications");
+  await page.getByLabel("Default focus length").selectOption("1h");
+  await expect(page.getByLabel("Default focus length")).toHaveValue("1h");
+  await page.getByLabel("Default focus length").selectOption("30m");
+
+  await page.goto("/app/settings/about");
+  await expect(page.getByText(/^0\.\d+\.\d+/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy policy" })).toBeVisible();
+  await page.goto("/app/settings/signatures");
+  await expect(page).toHaveURL(/\/app\/settings\/templates$/);
+});
+
+test("account page: profile, connected Gmail with plain-language permissions, sessions, export, guarded delete", async () => {
+  await page.goto("/app/account");
+  await expect(page.getByRole("heading", { name: "Account", level: 1 })).toBeVisible();
+  await expect(page.getByText("alex@fluent.test").first()).toBeVisible();
+  const accounts = page.getByRole("region", { name: "Connected accounts" });
+  await expect(accounts.getByText("Connected", { exact: true })).toBeVisible();
+  await expect(accounts.getByRole("list", { name: /Permissions for/ })).toContainText("never delete it permanently");
+  await expect(accounts.getByText(/last synced|not synced yet/)).toBeVisible();
+  await expect(accounts.getByRole("button", { name: /Add account/ })).toBeVisible();
+  await expect(page.getByText("This device")).toBeVisible();
+  await page.getByRole("button", { name: "Sign out everywhere" }).click();
+  await expect(page.getByRole("alertdialog", { name: "Sign out everywhere?" }).or(page.getByRole("dialog", { name: "Sign out everywhere?" }))).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Download export" })).toBeVisible();
+  await shot(page, "39-account");
+  await page.getByRole("button", { name: /Delete my FLUENT account/ }).click();
+  const dlg = page.getByRole("dialog", { name: "Delete your FLUENT account?" });
+  const confirm = dlg.getByRole("button", { name: "Delete account" });
+  await dlg.getByLabel(/Type Delete my account/).fill("DELETE");
+  await expect(confirm).toBeDisabled();
+  await dlg.getByLabel(/Type Delete my account/).fill("Delete my account");
+  await expect(confirm).toBeEnabled();
+  await dlg.getByRole("button", { name: "Cancel" }).click();
 });
 
 test("no uncaught errors during the session", async () => {

@@ -46,6 +46,12 @@ test("mobile: landing, inbox, reader, navigation drawer, overview and privacy", 
   await shot(page, "13-mobile-overview");
 
   await page.goto("/app/settings");
+  await expect(page.getByRole("link", { name: /Account, connected Gmail/ })).toBeVisible();
+  await shot(page, "40-mobile-settings");
+  await page.getByRole("link", { name: /Account, connected Gmail/ }).click();
+  await expect(page.getByRole("heading", { name: "Account", level: 1 })).toBeVisible();
+  await shot(page, "41-mobile-account");
+  await page.getByRole("button", { name: "Back to settings" }).click();
   await page.getByRole("link", { name: "Privacy" }).click();
   await expect(page.getByRole("heading", { name: "Privacy", level: 1 })).toBeVisible();
   await shot(page, "14-mobile-privacy");

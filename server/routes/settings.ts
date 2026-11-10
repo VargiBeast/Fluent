@@ -6,7 +6,7 @@ import type { AppEnv } from "../lib/context.js";
 import { destroySession, requireUser } from "../auth/session.js";
 import { getDb } from "../db/client.js";
 import { accounts, aiAudit, securityEvents, sessions, userSettings, users, dailyBriefs } from "../db/schema.js";
-import { parseSettings, settingsPatchSchema } from "../../shared/settings.js";
+import { DELETE_ACCOUNT_PHRASE, parseSettings, settingsPatchSchema } from "../../shared/settings.js";
 import { getOwnedAccount, listAccounts, logSecurityEvent, toPublicAccount } from "../services/accounts.js";
 import { decrypt } from "../crypto.js";
 import { revokeToken } from "../auth/google.js";
@@ -61,6 +61,15 @@ settingsRoutes.post("/security/sessions/revoke-others", async (c) => {
   const user = requireUser(c);
   const r = await getDb().delete(sessions).where(and(eq(sessions.userId, user.id), ne(sessions.id, c.get("sessionId") ?? ""))).returning({ id: sessions.id });
   await logSecurityEvent(user.id, "sessions_revoked", String(r.length));
+  return c.json({ revoked: r.length });
+});
+
+/** Sign out everywhere, this browser included. */
+settingsRoutes.post("/security/sessions/revoke-all", async (c) => {
+  const user = requireUser(c);
+  const r = await getDb().delete(sessions).where(eq(sessions.userId, user.id)).returning({ id: sessions.id });
+  await logSecurityEvent(user.id, "sessions_revoked", String(r.length));
+  await destroySession(c).catch(() => undefined);
   return c.json({ revoked: r.length });
 });
 
@@ -188,7 +197,7 @@ settingsRoutes.get("/privacy/export", async (c) => {
 
 settingsRoutes.delete("/me", async (c) => {
   const user = requireUser(c);
-  const body = z.object({ confirm: z.literal("DELETE") }).strict().parse(await c.req.json());
+  const body = z.object({ confirm: z.literal(DELETE_ACCOUNT_PHRASE) }).strict().parse(await c.req.json());
   void body;
   const accs = await listAccounts(user.id);
   const results = await Promise.all(accs.map((a) => revokeAccount(a)));

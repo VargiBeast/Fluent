@@ -8,18 +8,30 @@ import { api, errorMessage } from "@/lib/api";
 import { plural, refreshMail, runBulk, undoToast } from "@/lib/bulk";
 import { cn } from "@/lib/cn";
 import { displayName } from "@/lib/format";
+import { effectiveLanguage, effectiveTimeZone } from "@/lib/prefs";
+import { useSession } from "@/lib/session";
 import { Button, IconButton } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { Skeleton } from "@/components/ui/misc";
 
-const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-const lang = () => (navigator.language || "en").slice(0, 24);
-const today = () => new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const tz = effectiveTimeZone;
+const lang = effectiveLanguage;
+const today = () => new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: tz() }).format(new Date());
+
+/** Settings > Copilot & AI: the brief can be off, or held back until a chosen hour (in the user's time zone). */
+function useBriefGate() {
+  const ai = useSession().session?.settings?.ai;
+  const on = ai?.dailyBrief !== false;
+  const hour = ai?.briefHour ?? 0;
+  const nowHour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: tz() }).format(new Date()));
+  return { on, ready: on && nowHour >= hour, hour };
+}
 const DISMISS_KEY = "fluent.brief.dismissed";
 
 /** Fetches (and, the first time each day, generates) the Copilot daily brief. */
-export function useDailyBrief() {
+export function useDailyBrief(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["brief", today()],
     queryFn: () => api.get<DailyBrief>(`/ai/brief?${new URLSearchParams({ tz: tz(), lang: lang() })}`),
     staleTime: 30 * 60_000,
@@ -30,7 +42,8 @@ export function useDailyBrief() {
 /** Copilot's morning summary. `compact` is the collapsible strip at the top of the inbox; the Overview shows it open. */
 export function DailyBriefCard({ compact = false }: { compact?: boolean }) {
   const qc = useQueryClient();
-  const q = useDailyBrief();
+  const gate = useBriefGate();
+  const q = useDailyBrief(gate.ready);
   const [open, setOpen] = useState(!compact);
   const [dismissed, setDismissed] = useState(() => compact && localStorage.getItem(DISMISS_KEY) === today());
   const [confirm, setConfirm] = useState(false);
@@ -39,6 +52,15 @@ export function DailyBriefCard({ compact = false }: { compact?: boolean }) {
   const b = q.data;
 
   if (dismissed) return null;
+  if (!gate.ready) {
+    if (compact) return null;
+    return (
+      <p className="rounded-2xl bg-surface-2 px-4 py-3 text-[13px] text-fg-3">
+        {gate.on ? `Your daily brief appears at ${String(gate.hour).padStart(2, "0")}:00.` : "The daily brief is turned off."}{" "}
+        <Link to="/app/settings/ai" className="text-accent-ink hover:underline">Change in Settings</Link>
+      </p>
+    );
+  }
   if (q.isLoading) return <div className={cn(compact ? "mx-3 mt-1" : "")}><Skeleton className={compact ? "h-11 rounded-2xl" : "h-14 rounded-2xl"} /></div>;
   if (q.isError || !b) return compact ? null : <p className="text-[13px] text-fg-3">Daily brief unavailable: {errorMessage(q.error)}</p>;
 

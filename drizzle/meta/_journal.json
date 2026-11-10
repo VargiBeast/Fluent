@@ -64,6 +64,13 @@
       "when": 1794340324329,
       "tag": "0008_daily_briefs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794346171183,
+      "tag": "0009_account_last_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { singleKeysOff } from "@/lib/prefs";
 import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle, Archive, ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, CornerUpLeft, Download, FileText, Forward, Image as ImageIcon,
@@ -212,6 +213,7 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
 function useReaderShortcuts(map: Record<string, () => void>) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (singleKeysOff(e)) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;

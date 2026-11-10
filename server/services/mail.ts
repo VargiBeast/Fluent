@@ -307,7 +307,7 @@ export async function syncChanges(userId: string): Promise<{ changed: boolean; n
     try {
       if (!a.historyId) {
         const p = await gm.request<{ historyId: string }>("GET", "/profile");
-        await getDb().update(accounts).set({ historyId: p.historyId }).where(eq(accounts.id, a.id));
+        await getDb().update(accounts).set({ historyId: p.historyId, lastSyncedAt: new Date() }).where(eq(accounts.id, a.id));
         return { accountId: a.id, changed: false, newInbox: 0 };
       }
       let changed = false;
@@ -326,13 +326,13 @@ export async function syncChanges(userId: string): Promise<{ changed: boolean; n
         }
         pageToken = h.nextPageToken;
       } while (pageToken && ++pages < 5);
-      if (latest !== a.historyId) await getDb().update(accounts).set({ historyId: latest }).where(eq(accounts.id, a.id));
+      await getDb().update(accounts).set({ historyId: latest, lastSyncedAt: new Date() }).where(eq(accounts.id, a.id));
       return { accountId: a.id, changed, newInbox };
     } catch (err) {
       if (err instanceof HttpError && err.status === 404) {
         // History too old: reset baseline and ask the client to refresh everything.
         const p = await gm.request<{ historyId: string }>("GET", "/profile");
-        await getDb().update(accounts).set({ historyId: p.historyId }).where(eq(accounts.id, a.id));
+        await getDb().update(accounts).set({ historyId: p.historyId, lastSyncedAt: new Date() }).where(eq(accounts.id, a.id));
         return { accountId: a.id, changed: true, newInbox: 0 };
       }
       return { accountId: a.id, changed: false, newInbox: 0, error: err instanceof HttpError ? err.code : "error" };

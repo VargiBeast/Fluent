@@ -1,15 +1,19 @@
+import { prefs } from "./prefs";
+
+const dayKey = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: prefs.timeZone }).format(d);
+
 export function listDate(iso: string, now = new Date()): string {
   const d = new Date(iso);
-  const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const sameDay = dayKey(d) === dayKey(now);
+  if (sameDay) return d.toLocaleTimeString(prefs.locale, { hour: "2-digit", minute: "2-digit", timeZone: prefs.timeZone });
   const diffDays = (now.getTime() - d.getTime()) / 86400_000;
-  if (diffDays < 6) return d.toLocaleDateString(undefined, { weekday: "short" });
-  if (d.getFullYear() === now.getFullYear()) return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  if (diffDays < 6) return d.toLocaleDateString(prefs.locale, { weekday: "short", timeZone: prefs.timeZone });
+  if (d.getFullYear() === now.getFullYear()) return d.toLocaleDateString(prefs.locale, { month: "short", day: "numeric", timeZone: prefs.timeZone });
+  return d.toLocaleDateString(prefs.locale, { year: "numeric", month: "short", day: "numeric", timeZone: prefs.timeZone });
 }
 
 export function fullDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString(prefs.locale, { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: prefs.timeZone });
 }
 
 export function relative(iso: string, now = new Date()): string {

@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { singleKeysOff } from "@/lib/prefs";
 import { Dialog } from "@/components/ui/Dialog";
 import { Kbd } from "@/components/ui/misc";
 
 const Ctx = createContext<{ open: () => void }>({ open: () => {} });
 
-const GROUPS: Array<[string, Array<[string, string]>]> = [
+export const GROUPS: Array<[string, Array<[string, string]>]> = [
   ["Navigation", [["j / k", "Next / previous conversation"], ["Enter", "Open selected conversation"], ["Esc", "Close conversation"], ["/", "Search"], ["g then i", "Go to Inbox"], ["g then o", "Go to AI Overview"], ["g then s", "Go to Starred"]]],
   ["Actions", [["c", "Compose"], ["r", "Reply"], ["a", "Reply all"], ["f", "Forward"], ["e", "Archive"], ["#", "Move to Trash (asks first)"], ["s", "Star / unstar"], ["u", "Mark as unread"], ["z", "Snooze or remind"], ["b", "Save to / remove from Read later"], ["n", "Add or edit a private note"]]],
   ["Compose", [["⌘/Ctrl + Enter", "Send"], ["⌘/Ctrl + ;", "Insert a template"], ["Esc", "Close composer (draft kept)"]]],
@@ -16,6 +17,7 @@ export function ShortcutsProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (singleKeysOff(e)) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
       if (e.key === "?") {

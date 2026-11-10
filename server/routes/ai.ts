@@ -5,6 +5,8 @@ import { requireUser } from "../auth/session.js";
 import { rateLimit } from "../lib/rateLimit.js";
 import { getDailyBrief, LANG_RE } from "../ai/brief.js";
 import { aiConfigured } from "../env.js";
+import { loadSettings } from "../ai/policy.js";
+import { HttpError } from "../lib/errors.js";
 import { answerAboutThread, askInbox, buildOverview, draftEmail, explainThread, interpretSearch, loadPolicy, replySuggestions, rewriteText, securityReview, threadInsights } from "../ai/features.js";
 
 const uuid = z.string().uuid();
@@ -93,6 +95,7 @@ aiRoutes.get("/brief", rateLimit("brief", 60), (c, next) => (c.req.query("refres
     lang: z.string().max(24).regex(LANG_RE).optional(),
     refresh: z.enum(["1"]).optional(),
   }).strict().parse(c.req.query());
+  if (!(await loadSettings(user.id)).ai.dailyBrief) throw new HttpError(403, "brief_off", "The daily brief is turned off in Settings.");
   return c.json(await getDailyBrief(user.id, { account: q.account, tz: q.tz, lang: q.lang, refresh: q.refresh === "1" }));
 });
 

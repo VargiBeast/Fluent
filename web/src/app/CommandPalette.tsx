@@ -5,8 +5,7 @@ import { ACCENTS } from "@shared/settings";
 import { FOCUS_CHOICES } from "@shared/focus";
 import { FOCUS_LABELS, useFocusMode } from "@/lib/focus";
 import {
-  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, MailMinus, Palette, Focus, Search, SearchCheck, Send, StickyNote, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
-} from "lucide-react";
+  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, MailMinus, Palette, Focus, Search, SearchCheck, Send, StickyNote, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2, UserRound } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useSession } from "@/lib/session";
 import { useUpdateSettings } from "@/lib/settings";
@@ -69,11 +68,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       { id: "go-drafts", group: "Go to", title: "Drafts", shortcut: "g d", icon: <File />, run: go("/app/drafts") },
       { id: "go-archive", group: "Go to", title: "Archive", icon: <Archive />, run: go("/app/archive") },
       { id: "go-trash", group: "Go to", title: "Trash", icon: <Trash2 />, run: go("/app/trash") },
-      { id: "settings", group: "Settings", title: "Open settings", keywords: "preferences", icon: <Settings />, run: go("/app/settings/profile") },
+      { id: "settings", group: "Settings", title: "Open settings", keywords: "preferences", icon: <Settings />, run: go("/app/settings") },
+      { id: "account", group: "Settings", title: "Account", keywords: "profile connected accounts sessions sign out export delete", icon: <UserRound />, run: go("/app/account") },
       { id: "privacy", group: "Settings", title: "Privacy dashboard", keywords: "ai log exclusions export", icon: <ShieldCheck />, run: go("/app/settings/privacy") },
       { id: "labels", group: "Settings", title: "Labels & filters", icon: <Tag />, run: go("/app/settings/labels") },
       { id: "templates", group: "Settings", title: "Templates (saved replies)", keywords: "snippets canned responses", icon: <FileStack />, run: go("/app/settings/templates") },
-      { id: "signatures", group: "Settings", title: "Signatures & sender name", keywords: "signature display name from send-as", icon: <PenLine />, run: go("/app/settings/signatures") },
+      { id: "signatures", group: "Settings", title: "Signatures & sender name", keywords: "signature display name from send-as", icon: <PenLine />, run: go("/app/settings/templates") },
       {
         id: "theme", group: "Settings", title: theme === "light" ? "Switch to dark theme" : "Switch to light theme", keywords: "appearance mode dark light",
         icon: theme === "light" ? <Moon /> : <Sun />, run: () => update.mutate({ appearance: { theme: theme === "light" ? "dark" : "light" } }),

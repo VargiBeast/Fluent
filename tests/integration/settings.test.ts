@@ -65,6 +65,41 @@ describe("Settings", () => {
     expect(ev.body.events.map((e) => e.type)).toContain("sessions_revoked");
   });
 
+  it("saves general, shortcut, brief and focus preferences and validates them", async () => {
+    const ok = { general: { language: "nb-NO", timeZone: "Europe/Oslo", defaultView: "overview" }, shortcuts: { enabled: false }, ai: { dailyBrief: false, briefHour: 7 }, focus: { defaultChoice: "1h", muteToasts: false } };
+    expect((await c.json("/api/settings", { method: "PATCH", body: JSON.stringify(ok) })).status).toBe(200);
+    const g = await c.json<{ settings: typeof ok & { focus: { until: string | null } } }>("/api/settings");
+    expect(g.body.settings.general).toEqual(ok.general);
+    expect(g.body.settings.shortcuts.enabled).toBe(false);
+    expect(g.body.settings.ai).toMatchObject(ok.ai);
+    expect(g.body.settings.focus).toMatchObject(ok.focus);
+    // The brief is off, so it is neither generated nor served.
+    expect((await c.json("/api/ai/brief")).status).toBe(403);
+    for (const bad of [{ general: { timeZone: "Mars/Olympus" } }, { general: { language: "not a language!" } }, { general: { defaultView: "spam" } }, { ai: { briefHour: 24 } }, { focus: { defaultChoice: "forever" } }, { shortcuts: { enabled: "no" } }]) {
+      expect((await c.json("/api/settings", { method: "PATCH", body: JSON.stringify(bad) })).status).toBe(400);
+    }
+    await c.json("/api/settings", { method: "PATCH", body: JSON.stringify({ general: { language: "auto", timeZone: "auto", defaultView: "inbox" }, shortcuts: { enabled: true }, ai: { dailyBrief: true, briefHour: 0 }, focus: { defaultChoice: "30m", muteToasts: true } }) });
+  });
+
+  it("records the last successful Gmail sync per account", async () => {
+    await c.json("/api/mail/sync");
+    await c.json("/api/mail/sync");
+    const s = await c.json<{ accounts: Array<{ lastSyncedAt: string | null }> }>("/api/auth/session");
+    expect(Date.now() - Date.parse(s.body.accounts[0]!.lastSyncedAt ?? "")).toBeLessThan(60_000);
+  });
+
+  it("signs out everywhere, this session included", async () => {
+    const a = new Client(h);
+    await a.login();
+    const b = new Client(h);
+    await b.login();
+    const r = await a.json<{ revoked: number }>("/api/security/sessions/revoke-all", { method: "POST" });
+    expect(r.body.revoked).toBeGreaterThanOrEqual(2);
+    expect((await a.json("/api/mail/threads")).status).toBe(401);
+    expect((await b.json("/api/mail/threads")).status).toBe(401);
+    await c.login();
+  });
+
   it("does not let another user touch this user's accounts or privacy data", async () => {
     await fetch(`${h.google.url}/__control/identity`, { method: "POST", body: JSON.stringify({ sub: "3003", email: "eve@fluent.test", name: "Eve" }) });
     const other = new Client(h);
@@ -80,7 +115,9 @@ describe("Settings", () => {
   it("deleting all data requires typed confirmation, revokes Google tokens and removes every row", async () => {
     expect((await c.json("/api/me", { method: "DELETE", body: JSON.stringify({}) })).status).toBe(400);
     const before = h.google.state.revoked.length;
-    const r = await c.json<{ ok: boolean }>("/api/me", { method: "DELETE", body: JSON.stringify({ confirm: "DELETE" }) });
+    expect((await c.json("/api/me", { method: "DELETE", body: JSON.stringify({ confirm: "DELETE" }) })).status).toBe(400);
+    expect((await c.json("/api/me", { method: "DELETE", body: JSON.stringify({ confirm: "delete my account" }) })).status).toBe(400);
+    const r = await c.json<{ ok: boolean }>("/api/me", { method: "DELETE", body: JSON.stringify({ confirm: "Delete my account" }) });
     expect(r.status).toBe(200);
     expect(h.google.state.revoked.length).toBeGreaterThan(before);
     expect((await c.json("/api/mail/threads")).status).toBe(401);
