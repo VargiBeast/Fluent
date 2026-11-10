@@ -31,6 +31,27 @@ describe("Settings", () => {
     expect((await c.json("/api/settings", { method: "PATCH", body: JSON.stringify({ isAdmin: true }) })).status).toBe(400);
   });
 
+  it("saves the accent colour and focus mode per user, and bounds the focus period", async () => {
+    const until = new Date(Date.now() + 30 * 60_000).toISOString();
+    expect((await c.json("/api/settings", { method: "PATCH", body: JSON.stringify({ appearance: { accent: "teal" }, focus: { until } }) })).status).toBe(200);
+    const g = await c.json<{ settings: { appearance: { accent: string; theme: string }; focus: { until: string | null } } }>("/api/settings");
+    expect(g.body.settings.appearance.accent).toBe("teal");
+    expect(Date.parse(g.body.settings.focus.until!)).toBe(Date.parse(until));
+    // Another user sees their own defaults.
+    await fetch(`${h.google.url}/__control/identity`, { method: "POST", body: JSON.stringify({ sub: "7118", email: "fay@fluent.test", name: "Fay" }) });
+    const other = new Client(h);
+    await other.login();
+    await fetch(`${h.google.url}/__control/reset`, { method: "POST" });
+    const o = await other.json<{ settings: { appearance: { accent: string }; focus: { until: string | null } } }>("/api/settings");
+    expect(o.body.settings.appearance.accent).toBe("purple");
+    expect(o.body.settings.focus.until).toBeNull();
+    for (const bad of [{ appearance: { accent: "neon" } }, { focus: { until: new Date(Date.now() + 3 * 86400_000).toISOString() } }, { focus: { until: "2000-01-01T00:00:00Z" } }, { focus: { until: "soon" } }, { focus: { until: null, extra: 1 } }]) {
+      expect((await c.json("/api/settings", { method: "PATCH", body: JSON.stringify(bad) })).status).toBe(400);
+    }
+    expect((await c.json("/api/settings", { method: "PATCH", body: JSON.stringify({ focus: { until: null } }) })).status).toBe(200);
+    expect((await c.json<{ settings: { focus: { until: string | null } } }>("/api/settings")).body.settings.focus.until).toBeNull();
+  });
+
   it("lists sessions and revokes other sessions", async () => {
     const second = new Client(h);
     await second.login();

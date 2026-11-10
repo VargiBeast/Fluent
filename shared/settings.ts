@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { focusUntilSchema } from "./focus.js";
 
 /** Accent colours. Purple is FLUENT's brand default; each one has light and dark tokens in index.css. */
 export const ACCENTS = ["purple", "blue", "teal", "rose", "orange"] as const;
@@ -36,6 +37,10 @@ export const settingsSchema = z.object({
     /** Seconds FLUENT waits before actually sending, so you can undo. */
     undoSendSeconds: z.enum(["0", "5", "10", "20"]).default("5"),
   }).prefault({}),
+  /** Focus mode: while `until` is in the future the inbox shows only important mail. */
+  focus: z.object({
+    until: z.string().datetime({ offset: true }).nullable().catch(null).default(null),
+  }).prefault({}),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -64,6 +69,7 @@ export const settingsPatchSchema = z.object({
   }).partial().strict().optional(),
   profile: z.object({ displayName: z.string().max(120) }).partial().strict().optional(),
   compose: z.object({ undoSendSeconds: z.enum(["0", "5", "10", "20"]) }).partial().strict().optional(),
+  focus: z.object({ until: focusUntilSchema }).strict().optional(),
   onboarded: z.boolean().optional(),
 }).strict();
 
