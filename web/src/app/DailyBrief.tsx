@@ -39,7 +39,7 @@ export function DailyBriefCard({ compact = false }: { compact?: boolean }) {
   const b = q.data;
 
   if (dismissed) return null;
-  if (q.isLoading) return <div className={cn(compact ? "mx-3 mt-3" : "")}><Skeleton className="h-14 rounded-2xl" /></div>;
+  if (q.isLoading) return <div className={cn(compact ? "mx-3 mt-1" : "")}><Skeleton className={compact ? "h-11 rounded-2xl" : "h-14 rounded-2xl"} /></div>;
   if (q.isError || !b) return compact ? null : <p className="text-[13px] text-fg-3">Daily brief unavailable: {errorMessage(q.error)}</p>;
 
   const counts = [
@@ -87,34 +87,40 @@ export function DailyBriefCard({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <section aria-label="Daily brief" data-testid="daily-brief" className={cn("ai-block rounded-2xl", compact ? "mx-3 mt-3" : "")}>
-      <div className="flex items-start gap-3 px-4 py-3">
-        <Sun className="mt-0.5 size-4 shrink-0 text-ai-title" aria-hidden />
-        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => compact && setOpen((o) => !o)} aria-expanded={open} disabled={!compact}>
-          <p className="text-[12px] font-medium uppercase tracking-wide text-ai-title">Daily brief</p>
-          <p className={cn("mt-0.5 text-[13.5px] text-fg", compact && !open && "line-clamp-1")}>
-            {b.headline ?? (empty ? "Nothing needs your attention right now." : "Here's what matters today.")}
-          </p>
-          {counts && <p className="mt-0.5 text-[12px] text-fg-3">{counts}</p>}
-        </button>
-        <div className="flex shrink-0 items-center gap-0.5">
+    <section aria-label="Daily brief" data-testid="daily-brief" className={cn("rounded-2xl", compact ? cn("mx-3 mt-1", open ? "ai-block" : "bg-surface-2") : "ai-block")}>
+      {compact ? (
+        <div className="flex h-11 items-center gap-2.5 pl-3.5 pr-1">
+          <Sun className="size-4 shrink-0 text-ai-title" aria-hidden />
+          <button type="button" className="flex min-w-0 flex-1 items-center gap-1.5 self-stretch text-left" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+            <span className="sr-only">Daily brief: </span>
+            <span className="min-w-0 truncate text-[13px] text-fg-2">{b.headline ?? (empty ? "Nothing needs your attention right now." : "Here's what matters today.")}</span>
+            <ChevronDown className={cn("size-4 shrink-0 text-fg-3 transition-transform", open && "rotate-180")} aria-hidden />
+          </button>
+          {open && b.aiStatus === "ok" && (
+            <IconButton label="Regenerate brief" size="sm" onClick={() => void refresh()} disabled={refreshing}>
+              <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
+            </IconButton>
+          )}
+          <IconButton label="Hide brief for today" size="sm" onClick={() => { localStorage.setItem(DISMISS_KEY, today()); setDismissed(true); }}>
+            <X className="size-4" />
+          </IconButton>
+        </div>
+      ) : (
+        <div className="flex items-start gap-3 px-4 py-3">
+          <Sun className="mt-0.5 size-4 shrink-0 text-ai-title" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-medium uppercase tracking-wide text-ai-title">Daily brief</p>
+            <p className="mt-0.5 text-[13.5px] text-fg">{b.headline ?? (empty ? "Nothing needs your attention right now." : "Here's what matters today.")}</p>
+            {counts && <p className="mt-0.5 text-[12px] text-fg-3">{counts}</p>}
+          </div>
           {b.aiStatus === "ok" && (
             <IconButton label="Regenerate brief" size="sm" onClick={() => void refresh()} disabled={refreshing}>
               <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
             </IconButton>
           )}
-          {compact && (
-            <>
-              <IconButton label={open ? "Collapse brief" : "Expand brief"} size="sm" onClick={() => setOpen((o) => !o)}>
-                <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
-              </IconButton>
-              <IconButton label="Hide brief for today" size="sm" onClick={() => { localStorage.setItem(DISMISS_KEY, today()); setDismissed(true); }}>
-                <X className="size-4" />
-              </IconButton>
-            </>
-          )}
         </div>
-      </div>
+      )}
+      {compact && open && counts && <p className="-mt-1 px-4 pb-2 pl-10 text-[12px] text-fg-3">{counts}</p>}
       {open && !empty && (
         <div className={cn("grid gap-4 border-t border-[var(--ai-border)] px-4 py-3", !compact && "md:grid-cols-3")}>
           <BriefList title="Most important" icon={<Star className="size-3.5" />} items={b.important} max={compact ? 3 : undefined} />

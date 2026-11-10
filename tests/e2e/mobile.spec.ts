@@ -53,7 +53,7 @@ test("mobile: long-press selects, bottom action bar marks unread", async ({ page
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   const bar = page.getByRole("toolbar", { name: /Bulk actions/ });
   await expect(bar).toContainText("1 selected");
-  await expect(page.locator("[data-copilot-fab]")).toBeHidden(); // the bar owns the bottom edge
+  await expect(page.locator("[data-fab]")).toBeHidden(); // the bar owns the bottom edge
   await expect(page).toHaveURL(/\/app\/inbox$/); // long-press didn't open the conversation
   await shot(page, "27-mobile-bulk-bar");
   await bar.getByRole("button", { name: "Mark unread" }).click();
@@ -98,7 +98,8 @@ test("mobile: swipe left to reply shows three AI suggestions as an editable draf
 test("mobile: Copilot plans an action, confirms it and shows the result", async ({ page }) => {
   const errors = trackErrors(page);
   await signIn(page);
-  await page.getByRole("button", { name: "Ask Copilot" }).click(); // floating button
+  await expect(page.getByRole("button", { name: "Compose" })).toBeVisible(); // the one floating button
+  await page.getByRole("button", { name: "Ask with Copilot" }).click(); // in the search pill
   const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
   await expect(panel).toBeVisible();
   await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("Star everything from riverside");

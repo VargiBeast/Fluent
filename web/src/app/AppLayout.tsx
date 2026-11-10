@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { PenSquare } from "lucide-react";
 import * as RD from "@radix-ui/react-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -72,28 +72,29 @@ function Shell() {
       <LazyComposer />
       <CopilotHost />
       <PaletteHost />
-      <CopilotFab />
+      <ComposeFab />
       <InstallHint />
     </div>
   );
 }
 
-/** Mobile: a floating Copilot button on list screens that opens Copilot as a full-screen sheet. */
-function CopilotFab() {
-  const { isOpen, open } = useCopilot();
+/** Mobile: the one floating action on list screens, a Compose pill. Copilot lives in the search pill and ⌘J. */
+function ComposeFab() {
+  const composer = useComposer();
+  const { isOpen } = useCopilot();
   const inThread = useMatch("/app/:folder/:accountId/:threadId");
   const inSettings = useMatch("/app/settings/*");
-  const { config } = useSession();
-  if (isOpen || inThread || inSettings || !config?.ai) return null;
+  const inOnboarding = useMatch("/app/onboarding/*");
+  if (isOpen || composer.requests.length > 0 || inThread || inSettings || inOnboarding) return null;
   return (
     <button
       type="button"
-      onClick={() => open()}
-      aria-label="Ask Copilot"
-      data-copilot-fab=""
-      className="fixed bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-accent px-4 text-[14px] font-medium text-accent-fg shadow-[0_10px_30px_-8px_var(--accent)] animate-in active:scale-95 lg:hidden"
+      onClick={() => composer.open({ mode: "new" })}
+      aria-label="Compose"
+      data-fab=""
+      className="fixed bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 items-center gap-2.5 rounded-2xl bg-accent px-5 text-[15px] font-semibold text-accent-fg shadow-[0_4px_14px_-4px_rgba(0,0,0,0.4)] animate-in active:scale-95 lg:hidden"
     >
-      <Sparkles className="size-4" /> Copilot
+      <PenSquare className="size-[18px]" aria-hidden /> Compose
     </button>
   );
 }

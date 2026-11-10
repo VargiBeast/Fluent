@@ -45,7 +45,8 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - Draft new emails or replies from an instruction, then make them shorter or longer, fix grammar, or change the tone
 - **Ask your inbox** ("what did Ola say about the invoice in October?"): the AI turns the question into up to three Gmail searches, and each one is validated against an allowlist of operators before it runs. FLUENT reads the top matches and answers in your language with clickable sources. If nothing matches, it says so instead of guessing. The Gmail query is shown, and every ask is audit-logged and rate-limited. Open it from Copilot or from ⌘K → "Ask your inbox".
 - **Daily brief**: the first time you open FLUENT each day, Copilot writes a morning summary in your language. It covers the most important new mail, what's waiting on your reply, and what's safe to archive, with one-click Archive (confirm, then undo). The brief sits at the top of the inbox and in the AI Overview. It is generated on demand (no cron) and cached encrypted per user per day. Your privacy exclusions apply, and starred or important mail is never suggested for archiving.
-- **Copilot, front and centre**: an "Ask Copilot" bar at the top of every mail list, ⌘J anywhere, "Ask Copilot about this email" in the reader, a floating Copilot button on mobile that opens a full-screen sheet, and a wide panel you can expand to a large centered view
+- **Calm, Gmail-like layout**: a single search pill, a small section switcher (Primary, Promotions, Social, Updates, Forums, Unread) instead of chips, a one-line dismissible daily brief, quiet rows with the star on the right and a small unread dot, one Compose button on mobile, and a muted palette where the accent is kept for primary actions
+- **Copilot, front and centre**: one calm "Search or ask Copilot" pill at the top of every mail list (plain text searches Gmail, a question or the sparkle button goes to Copilot, "Smart search" turns plain language into a Gmail query), ⌘J anywhere, "Ask Copilot about this email" in the reader, a full-screen Copilot sheet on mobile, and a wide panel you can expand to a large centered view
 - **Copilot actions**: tell it what to do ("archive newsletters from this week", "star everything from Sofia", "draft follow-ups"). It shows a plan with every affected conversation and the full draft text. Nothing runs until you confirm, Trash and send need an extra confirmation, and archive, star, read and label changes can be undone.
 - **AI Overview**: a daily briefing of what needs a reply, what you're waiting on, deadlines and important mail. A Gmail-only triage still works without AI.
 - A mandatory confirmation step before any AI-written text is sent
@@ -74,7 +75,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 
 <table>
 <tr>
-<td><img src="docs/screenshots/24-inbox-ask-copilot-bar.png" alt="Ask Copilot bar in the inbox" /></td>
+<td><img src="docs/screenshots/24-inbox-ask-copilot-bar.png" alt="Search or ask Copilot from one pill in the inbox" /></td>
 <td><img src="docs/screenshots/25-copilot-expanded.png" alt="Copilot expanded with a plan" /></td>
 </tr>
 <tr>

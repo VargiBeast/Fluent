@@ -120,10 +120,9 @@ test("composes a new email with AI help, formatting and confirmation", async () 
 
 test("natural-language search turns a request into a visible Gmail query", async () => {
   await page.goto("/app/inbox");
-  await page.getByRole("button", { name: "Ask AI" }).click();
-  const search = page.getByRole("searchbox", { name: "Natural-language search" }).or(page.getByRole("textbox", { name: "Natural-language search" }));
+  const search = page.getByRole("searchbox", { name: "Search mail or ask Copilot" });
   await search.fill("Find the invoice I received last month");
-  await search.press("Enter");
+  await page.getByRole("group", { name: "Search options" }).getByRole("button", { name: /Smart search/ }).click();
   await expect(page.getByText(/Gmail query: invoice/)).toBeVisible();
   await expect(page.locator('[data-thread-id="t-invoice"]')).toBeVisible();
   await expect(page.locator('[data-thread-id="t-receipt"]')).toBeVisible();
@@ -207,11 +206,13 @@ test("Copilot turns an instruction into a plan, runs it only after Confirm, and 
   expect(errors).toEqual([]);
 });
 
-test("Copilot is front and centre: the inbox Ask bar sends straight to Copilot, which expands", async () => {
+test("Copilot is front and centre: the search pill sends straight to Copilot, which expands", async () => {
   await page.goto("/app/inbox");
+  const pill = page.getByRole("searchbox", { name: "Search mail or ask Copilot" });
+  await pill.fill("Star everything from marcus");
+  await expect(page.getByRole("group", { name: "Search options" }).getByRole("button", { name: /Ask Copilot: “Star everything/ })).toBeVisible();
   await shot(page, "24-inbox-ask-copilot-bar");
-  await page.getByRole("textbox", { name: "Ask Copilot" }).fill("Star everything from marcus");
-  await page.getByRole("textbox", { name: "Ask Copilot" }).press("Enter");
+  await page.getByRole("button", { name: "Ask with Copilot" }).click();
   const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
   await expect(panel.getByTestId("plan-card").getByText(/Star 1 conversation/)).toBeVisible();
   await panel.getByRole("button", { name: "Expand Copilot" }).click();
@@ -302,8 +303,8 @@ test("daily brief: generated on first open of the day, archives bulk mail with c
   await page.goto("/app/inbox");
   const brief = page.getByTestId("daily-brief");
   await expect(brief.getByText(/Good morning/)).toBeVisible();
+  await brief.getByRole("button", { name: /Daily brief:/ }).click();
   await expect(brief.getByText(/safe to archive/)).toBeVisible();
-  await brief.getByRole("button", { name: "Expand brief" }).click();
   await expect(brief.getByText("Awaiting your reply", { exact: true })).toBeVisible();
   await shot(page, "30-daily-brief");
   await brief.getByRole("button", { name: /^Archive \d+$/ }).click();
