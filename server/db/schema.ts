@@ -79,3 +79,19 @@ export const rateLimits = pgTable("rate_limits", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull().default(0),
 }, (t) => [primaryKey({ columns: [t.key, t.windowStart] })]);
+
+/**
+ * Copilot action plans awaiting confirmation. The resolved plan (thread ids, subjects, draft text) is
+ * AES-GCM encrypted. A plan is single-use, short-lived and bound to the user and the session that
+ * created it; logging out deletes it.
+ */
+export const copilotPlans = pgTable("copilot_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sessionId: text("session_id").notNull().references(() => sessions.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("plan"), // "plan" | "undo"
+  dataEnc: text("data_enc").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+}, (t) => [index("copilot_plans_user_idx").on(t.userId, t.createdAt)]);

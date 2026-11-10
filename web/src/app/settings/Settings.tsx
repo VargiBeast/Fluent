@@ -319,6 +319,9 @@ const FEATURE_LABEL: Record<string, string> = {
   nl_search: "Natural-language search",
   ask_inbox: "Ask your inbox",
   overview: "AI Overview",
+  copilot_plan: "Copilot: planned actions",
+  copilot_execute: "Copilot: actions you confirmed",
+  copilot_undo: "Copilot: undo",
 };
 
 function PrivacySection() {

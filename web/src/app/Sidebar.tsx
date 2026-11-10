@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
-import { ChevronDown, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck } from "lucide-react";
+import { ChevronDown, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/ui/Avatar";
@@ -16,6 +16,7 @@ import { api, errorMessage } from "@/lib/api";
 import { FOLDER_META, OverviewIcon, SIDEBAR_FOLDERS } from "./nav";
 import { useComposer } from "./composer/context";
 import { useShortcutsDialog } from "./Shortcuts";
+import { useCopilot } from "./copilot/context";
 
 const ACCOUNT_COLORS = ["#a78bfa", "#38bdf8", "#f472b6", "#34d399", "#fbbf24"];
 
@@ -29,6 +30,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const labels = useLabels(account);
   const composer = useComposer();
   const shortcuts = useShortcutsDialog();
+  const copilot = useCopilot();
   const [labelOpen, setLabelOpen] = useState(false);
   const accounts = session?.accounts ?? [];
   const user = session?.user;
@@ -100,6 +102,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <Search className="size-4" aria-hidden />
         <span className="flex-1 text-left">Search</span>
         <kbd className="text-[11px] text-fg-3">/</kbd>
+      </button>
+      <button
+        type="button"
+        onClick={() => { onNavigate?.(); copilot.open(); }}
+        className="mb-2 -mt-1 flex h-9 w-full items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] text-fg-2 hover:bg-surface-2 hover:text-fg"
+      >
+        <Sparkles className="size-4 text-accent-400" aria-hidden />
+        <span className="flex-1 text-left">Copilot</span>
+        <kbd className="text-[11px] text-fg-3">⌘K</kbd>
       </button>
 
       <NavLink to={withAccount("/app/overview")} onClick={onNavigate} className={({ isActive }) => item(isActive)}>

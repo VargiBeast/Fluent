@@ -40,3 +40,24 @@ test("mobile: landing, inbox, reader, navigation drawer, overview and privacy", 
   expect(overflow).toBeLessThanOrEqual(0);
   expect(errors).toEqual([]);
 });
+
+test("mobile: Copilot plans an action, confirms it and shows the result", async ({ page }) => {
+  const errors = trackErrors(page);
+  await signIn(page);
+  await page.getByRole("button", { name: "Open navigation" }).first().click();
+  await page.getByRole("dialog", { name: "Navigation" }).getByRole("button", { name: /Copilot/ }).click();
+  const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
+  await expect(panel).toBeVisible();
+  await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("Star everything from riverside");
+  await panel.getByRole("button", { name: "Send to Copilot" }).click();
+  const card = panel.getByTestId("plan-card");
+  await expect(card.getByText("Star 1 conversation")).toBeVisible();
+  await expect(card.getByText(/Parent–teacher conference/)).toBeVisible();
+  await shot(page, "18-mobile-copilot-plan");
+  await card.getByRole("button", { name: /Confirm/ }).click();
+  await expect(card.getByTestId("plan-result")).toContainText("starred 1 conversation");
+  await shot(page, "19-mobile-copilot-result");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  expect(errors).toEqual([]);
+});

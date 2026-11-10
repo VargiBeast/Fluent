@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AlarmClock, AlertCircle, Clock, Hourglass, Inbox, Menu, MessageSquareReply, RefreshCw, Sparkles, Star } from "lucide-react";
@@ -11,7 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
 import { SidebarContext } from "./AppLayout";
-import { CopilotPanel } from "./copilot/Copilot";
+import { useCopilot } from "./copilot/context";
 
 interface OverviewData {
   generatedAt: string;
@@ -38,7 +37,7 @@ const threadHref = (t: ThreadSummary, folder = "inbox") => `/app/${folder}/${t.a
 
 export function OverviewPage() {
   const { session } = useSession();
-  const [copilot, setCopilot] = useState(false);
+  const copilot = useCopilot();
   const q = useQuery({ queryKey: ["overview"], queryFn: () => api.get<OverviewData>("/ai/overview"), staleTime: 5 * 60_000, retry: false });
   const d = q.data;
   const firstName = (session?.settings?.profile.displayName || session?.user?.name || "").split(" ")[0];
@@ -55,7 +54,7 @@ export function OverviewPage() {
           <IconButton label="Refresh overview" onClick={() => void q.refetch()} disabled={q.isFetching}>
             <RefreshCw className={cn("size-4", q.isFetching && "animate-spin")} />
           </IconButton>
-          <Button variant="ai" size="sm" icon={<Sparkles className="size-3.5" />} onClick={() => setCopilot(true)}>Ask Copilot</Button>
+          <Button variant="ai" size="sm" icon={<Sparkles className="size-3.5" />} onClick={() => copilot.open()}>Ask Copilot</Button>
         </div>
       </header>
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
@@ -87,7 +86,6 @@ export function OverviewPage() {
           ) : null}
         </div>
       </div>
-      <CopilotPanel open={copilot} onOpenChange={setCopilot} />
     </div>
   );
 }

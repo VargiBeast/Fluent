@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { useSession } from "@/lib/session";
 import { ThreadList } from "./ThreadList";
 import { Reader } from "./reader/Reader";
-import { CopilotPanel } from "./copilot/Copilot";
+import { useCopilot } from "./copilot/context";
 import { SidebarContext } from "./AppLayout";
 
 export function MailView() {
@@ -14,7 +14,7 @@ export function MailView() {
   const navigate = useNavigate();
   const { session } = useSession();
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
-  const [copilot, setCopilot] = useState(false);
+  const copilot = useCopilot();
   const fullPane = session?.settings?.appearance.readingPane === "full";
   const selectedKey = accountId && threadId ? `${accountId}:${threadId}` : undefined;
   const idx = threads.findIndex((t) => `${t.accountId}:${t.id}` === selectedKey);
@@ -66,11 +66,10 @@ export function MailView() {
           threadId={threadId}
           folder={folder}
           onClose={close}
-          onOpenCopilot={() => setCopilot(true)}
+          onOpenCopilot={() => copilot.open()}
           position={idx >= 0 ? { index: idx, total: threads.length, prev: idx > 0 ? () => go(threads[idx - 1]) : undefined, next: idx < threads.length - 1 ? () => go(threads[idx + 1]) : undefined } : undefined}
         />
       </div>
-      <CopilotPanel open={copilot} onOpenChange={setCopilot} context={accountId && threadId ? { accountId, threadId } : undefined} />
     </div>
   );
 }

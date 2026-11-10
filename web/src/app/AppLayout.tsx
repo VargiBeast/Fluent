@@ -11,6 +11,8 @@ import { ComposerProvider, useComposer } from "./composer/context";
 import { ComposerHost } from "./composer/Composer";
 import { ShortcutsProvider } from "./Shortcuts";
 import { Splash } from "@/components/Splash";
+import { CopilotProvider } from "./copilot/context";
+import { CopilotHost } from "./copilot/Copilot";
 
 export const SidebarContext = { open: () => {} };
 
@@ -23,7 +25,9 @@ export function AppLayout() {
   return (
     <ComposerProvider>
       <ShortcutsProvider>
-        <Shell />
+        <CopilotProvider>
+          <Shell />
+        </CopilotProvider>
       </ShortcutsProvider>
     </ComposerProvider>
   );
@@ -59,6 +63,7 @@ function Shell() {
         <Outlet />
       </main>
       <ComposerHost />
+      <CopilotHost />
     </div>
   );
 }
