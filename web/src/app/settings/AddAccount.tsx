@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Mail, Server } from "lucide-react";
 import type { ImapAccountInput, MailServerPreset } from "@shared/imap";
 import { api, errorMessage } from "@/lib/api";
+import { useSession } from "@/lib/session";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
@@ -13,18 +14,25 @@ type Choice = { kind: "google" } | { kind: "preset"; preset: MailServerPreset } 
 /** "Add account": Google (OAuth) or any IMAP/SMTP mailbox with an app password. */
 export function AddAccountDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [choice, setChoice] = useState<Choice | null>(null);
+  const { config } = useSession();
   const providers = useQuery({ queryKey: ["mail-providers"], queryFn: () => api.get<{ imapPresets: MailServerPreset[] }>("/mail-accounts/providers"), enabled: open, staleTime: 3600_000 });
   const close = (o: boolean) => {
     onOpenChange(o);
     if (!o) setChoice(null);
   };
-  const option = "flex w-full items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-left text-[13.5px] text-fg hover:border-line-strong";
+  const option = "flex w-full items-center gap-3 disabled:cursor-not-allowed disabled:opacity-60 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-left text-[13.5px] text-fg hover:border-line-strong";
   return (
     <Dialog open={open} onOpenChange={close} title={choice ? choiceTitle(choice) : "Add an account"} description={choice ? undefined : "FLUENT shows every account in one inbox, and you can switch between them in the sidebar."}>
       {!choice ? (
         <div className="space-y-2">
           <button type="button" className={option} onClick={() => { window.location.href = "/api/auth/google/start?mode=link"; }}>
             <Mail className="size-4 text-fg-3" aria-hidden /> Gmail or Google Workspace
+          </button>
+          <button type="button" className={option} disabled={!config?.microsoft} aria-describedby={config?.microsoft ? undefined : "outlook-not-configured"}
+            onClick={() => { window.location.href = "/api/auth/microsoft/start"; }}>
+            <Mail className="size-4 text-fg-3" aria-hidden />
+            <span className="flex-1">Outlook or Microsoft 365</span>
+            {!config?.microsoft && <span id="outlook-not-configured" className="text-[12px] text-fg-3">Not configured</span>}
           </button>
           {(providers.data?.imapPresets ?? []).map((p) => (
             <button key={p.id} type="button" className={option} onClick={() => setChoice({ kind: "preset", preset: p })}>

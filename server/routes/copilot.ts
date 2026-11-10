@@ -8,8 +8,8 @@ import { COPILOT_LIMITS } from "../../shared/copilot.js";
 import { cancelPlan, createNudgePlan, createPlan, executePlan, executeUndo } from "../copilot/service.js";
 
 const uuid = z.string().uuid();
-const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
-const threadKey = z.string().regex(/^[0-9a-f-]{36}:(?:[A-Za-z0-9_-]{1,128}|new)$/i);
+const gid = z.string().regex(/^[A-Za-z0-9_=.~-]{1,256}$/);
+const threadKey = z.string().regex(/^[0-9a-f-]{36}:(?:[A-Za-z0-9_=.~-]{1,256}|new)$/i);
 
 export const copilotRoutes = new Hono<AppEnv>();
 copilotRoutes.use("*", async (c, next) => {

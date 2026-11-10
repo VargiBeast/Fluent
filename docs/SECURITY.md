@@ -104,6 +104,13 @@ Until then, keep the app in **Testing** with named test users.
 
 Security contact: to be added by the owner (see the placeholders in `web/src/pages/Legal.tsx`).
 
+## Outlook / Microsoft 365 (Graph)
+- Access and refresh tokens are AES-GCM encrypted. The AAD is `userId:ms:<object id>`, the same as Gmail tokens. Rotated refresh tokens replace the old one, and a revoked grant marks the account `needs_reauth`. Tokens are never logged.
+- FLUENT only calls the fixed Graph base (`https://graph.microsoft.com/v1.0`). Pagination and delta links are followed only if they start with that base, so a tampered `history_id` can't point requests elsewhere.
+- Message ids are charset- and length-checked and percent-encoded before they go into a Graph path. Search text is placed inside a quoted KQL string with quotes and backslashes removed.
+- Logs record the status, the Graph error code and the path with ids masked. They never include bodies or subjects.
+- Deleting through the drafts API refuses any message that isn't a draft. As everywhere, AI features never send or delete.
+
 ## IMAP/SMTP accounts (app passwords and outbound connections)
 - **App passwords:** the password, username and server names are stored as one AES-GCM blob in `accounts.credentials_enc`. The purpose is `mail-credentials` and the AAD is `userId:providerAccountId`. They're never returned by the API or logged. Connection errors log only an error code.
 - **Server checks:** server names must be DNS names; IP literals, ports and userinfo are rejected by zod. Ports are limited to 993 (IMAP/TLS), 465 (SMTP/TLS) and 587 (SMTP with required STARTTLS). TLS 1.2+ is required, with certificate checks against the server name.

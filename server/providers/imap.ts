@@ -166,7 +166,7 @@ export function imapSearch(q: string | undefined): SearchObject {
 }
 
 const addr = (a: { name?: string; address?: string } | undefined): Address => ({ name: a?.name || a?.address || "", email: (a?.address ?? "").toLowerCase() });
-const addrList = (v: AddressObject | AddressObject[] | undefined): Address[] =>
+export const addrList = (v: AddressObject | AddressObject[] | undefined): Address[] =>
   (Array.isArray(v) ? v : v ? [v] : []).flatMap((o) => o.value).map(addr).filter((x) => x.email);
 
 function labelsFor(box: Box, flags: Set<string>): string[] {
@@ -201,12 +201,16 @@ function summary(a: AccountRow, box: Box, m: FetchMessageObject): ThreadSummary 
 }
 
 function detail(a: AccountRow, box: Box, uid: number, flags: Set<string>, p: ParsedMail): MessageDetail {
-  const id = encodeId(box, uid);
+  return mimeDetail(a, encodeId(box, uid), { labelIds: labelsFor(box, flags), unread: !flags.has("\\Seen"), sent: box === "sent", draft: box === "drafts" || flags.has("\\Draft") }, p);
+}
+
+/** A parsed RFC 5322 message as FLUENT's MessageDetail (shared by providers that hand out raw MIME). */
+export function mimeDetail(a: AccountRow, id: string, f: { labelIds: string[]; unread: boolean; sent: boolean; draft: boolean }, p: ParsedMail): MessageDetail {
   const from = addrList(p.from)[0] ?? { name: "unknown", email: "" };
   const html = typeof p.html === "string" ? p.html : null;
   const text = p.text ?? (html ? htmlToText(html) : null);
-  const isFromMe = from.email === a.email.toLowerCase() || box === "sent";
-  const isDraft = box === "drafts" || flags.has("\\Draft");
+  const isFromMe = from.email === a.email.toLowerCase() || f.sent;
+  const isDraft = f.draft;
   const replyTo = addrList(p.replyTo);
   const attachments = p.attachments.map((x, i) => ({
     attachmentId: `a${i}`, messageId: id, filename: x.filename || `attachment-${i + 1}`, mimeType: x.contentType, size: x.size,
@@ -223,8 +227,8 @@ function detail(a: AccountRow, box: Box, uid: number, flags: Set<string>, p: Par
     bodyHtml: html,
     bodyText: text,
     attachments,
-    labelIds: labelsFor(box, flags),
-    unread: !flags.has("\\Seen"),
+    labelIds: f.labelIds,
+    unread: f.unread,
     isFromMe,
     isDraft,
     security: isFromMe || isDraft ? null : assessMessage({

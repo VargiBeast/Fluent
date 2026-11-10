@@ -3,7 +3,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { ZodError } from "zod";
 import { HttpError } from "./lib/errors.js";
 import { logger } from "./logger.js";
-import { aiConfigured, aiProvider, getEnv, googleConfigured } from "./env.js";
+import { aiConfigured, aiProvider, getEnv, googleConfigured, microsoftConfigured } from "./env.js";
 import { aiModelId } from "./ai/core.js";
 import type { AppEnv } from "./lib/context.js";
 import { sessionMiddleware } from "./auth/session.js";
@@ -77,6 +77,7 @@ export function createApp() {
   app.get("/config", (c) =>
     c.json({
       google: googleConfigured(),
+      microsoft: microsoftConfigured(),
       ai: aiConfigured(),
       database: hasDatabase(),
       aiProvider: aiProvider(),

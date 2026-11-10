@@ -24,6 +24,7 @@ cp .env.example .env
 | `DATABASE_SSL` | no | `auto` (default: TLS for non-localhost hosts), `require` or `disable`. |
 | `TOKEN_ENCRYPTION_KEY` | yes for sign-in | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts OAuth tokens and audit subjects. Changing it invalidates stored tokens (users must sign in again). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | for Gmail | OAuth 2.0 "Web application" client. |
+| `MS_CLIENT_ID` / `MS_CLIENT_SECRET` | for Outlook / Microsoft 365 | Microsoft Entra app registration (see [§4b](#4b-microsoft-entra-id-outlook--microsoft-365-mailboxes)). Outlook shows "Not configured" without them. |
 | `AI_PROVIDER` | no | `google`, `xai` or `openai`. If empty, the provider is picked from the keys that are set: Gemini first, then xAI, then OpenAI. |
 | `AI_MODEL` | no | Overrides the default model (`gemini-3.5-flash-lite` for Gemini, `grok-4.7` for xAI, `gpt-4.1-mini` for OpenAI). |
 | `GOOGLE_GENERATIVE_AI_API_KEY` / `XAI_API_KEY` / `OPENAI_API_KEY` | for AI | Key for the selected provider. Without it, AI features report "not configured". |
@@ -52,6 +53,62 @@ Migrations are plain SQL under `drizzle/`. `0001_lockdown.sql` enables row-level
 6. Copy the client ID and secret into `.env`.
 
 `gmail.modify` is a **restricted** scope. In Testing mode it works for listed test users only (refresh tokens for apps in Testing expire after 7 days). Publishing to all users requires Google's OAuth app verification **and** an annual third-party security assessment (CASA). See [SECURITY.md](SECURITY.md#google-oauth-verification-and-casa).
+
+## 4b. Microsoft Entra ID (Outlook / Microsoft 365 mailboxes)
+
+FLUENT connects Outlook.com, Hotmail, Live and Microsoft 365 work or school mailboxes through Microsoft Graph. It uses OAuth 2.0 authorization code + PKCE on the server, with the same encrypted state cookie as Google. A free app registration is enough. Until `MS_CLIENT_ID` and `MS_CLIENT_SECRET` are set, the **Add account** dialog shows Outlook as **Not configured**, and `/api/auth/microsoft/start` sends you back to the Account page.
+
+### Redirect URIs FLUENT uses
+The callback is always `<APP_URL>/api/auth/microsoft/callback` (see `microsoftRedirectUri()` in `server/env.ts`). It must match the `APP_URL` of that environment exactly: scheme, host, no trailing slash.
+
+| Environment | APP_URL | Redirect URI to register |
+|---|---|---|
+| Production | `https://fluent-sandy-seven.vercel.app` | `https://fluent-sandy-seven.vercel.app/api/auth/microsoft/callback` |
+| Preview (the `rebuild` branch) | `https://fluent-git-rebuild-vargs-projects-93e3d823.vercel.app` | `https://fluent-git-rebuild-vargs-projects-93e3d823.vercel.app/api/auth/microsoft/callback` |
+| Local dev | `http://localhost:5173` | `http://localhost:5173/api/auth/microsoft/callback` |
+
+Each preview deployment also gets its own URL (`fluent-<hash>-vargs-projects-93e3d823.vercel.app`), which changes on every push. Microsoft doesn't allow wildcards in Web redirect URIs, so those URLs **can't** sign in. Use the stable branch alias above, which is what the preview `APP_URL` is set to. If you later add a custom domain or another preview branch, add `https://<that host>/api/auth/microsoft/callback` as an extra redirect URI and set that environment's `APP_URL` to the same origin.
+
+### Steps
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) (or the [Azure portal](https://portal.azure.com)) with any Microsoft account. A free account works, and no subscription is needed for an app registration.
+2. Go to **Microsoft Entra ID → App registrations → New registration**. In the Azure portal: search for "Microsoft Entra ID", then **App registrations → + New registration**.
+3. Fill in the form:
+   - **Name:** `FLUENT` (users see this on the consent screen).
+   - **Supported account types:** **Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)**. This matches the `common` authority FLUENT uses.
+   - **Redirect URI:** platform **Web**, value `https://fluent-sandy-seven.vercel.app/api/auth/microsoft/callback`.
+   - Click **Register**.
+4. On the app's **Overview** page, copy the **Application (client) ID**. This is `MS_CLIENT_ID`. You don't need the Directory (tenant) ID.
+5. **Authentication** (in the left menu):
+   - Under **Web → Redirect URIs**, click **Add URI** and add the preview and local URIs from the table above (production is already there).
+   - Leave **Front-channel logout URL** empty.
+   - Under **Implicit grant and hybrid flows**, leave both **Access tokens** and **ID tokens** unchecked.
+   - Under **Advanced settings**, leave **Allow public client flows** set to **No**. FLUENT is a confidential web client with a secret.
+   - Click **Save**.
+6. **API permissions → + Add a permission → Microsoft Graph → Delegated permissions**:
+   - Tick these four: **offline_access**, **User.Read**, **Mail.ReadWrite** and **Mail.Send**. Use the search box; offline_access is under "OpenId permissions".
+   - Click **Add permissions**. `User.Read` is usually listed already; keep it.
+   - Remove anything else FLUENT doesn't use, so the list is exactly these four.
+   - None of them needs admin consent ("Admin consent required: No").
+7. **Certificates & secrets → Client secrets → + New client secret**:
+   - Description: `fluent-production`.
+   - Expires: **180 days** (recommended) or **12 months**. The maximum the portal offers is 24 months.
+   - Click **Add**, then copy the **Value** column right away. It's shown only once, and the "Secret ID" is *not* the secret. This is `MS_CLIENT_SECRET`.
+   - Put a reminder in your calendar before it expires. When it does, Outlook sign-in and token refresh stop working until you create a new secret and update the env var. Optionally create a separate secret for Preview.
+8. Set the env vars. Never paste the values into chat, issues, commits or logs.
+   - **Vercel:** in **Project → Settings → Environment Variables**, add `MS_CLIENT_ID` and `MS_CLIENT_SECRET`.
+     - Mark `MS_CLIENT_SECRET` **Sensitive**.
+     - Tick **Production**, and **Preview** limited to the `rebuild` branch, like the other preview variables.
+     - Then redeploy (Deployments → ⋯ → Redeploy), because env changes only apply to new deployments.
+   - **Local:** add both to `.env`.
+9. Check it: `GET /api/config` should report `"microsoft": true`. Then open **Account → Add account → Outlook or Microsoft 365**, sign in, and accept the consent screen. You come back to `/app/account?connected=outlook`.
+
+### Consent notes for work and school tenants
+- **Personal accounts** (outlook.com, hotmail.com, live.com) always see a user consent screen for the four permissions.
+- **Work or school accounts:** the four permissions are user-consentable by default. However, many organisations restrict user consent, for example "Allow user consent for apps from verified publishers" only, or no user consent at all. Users there see **"Need admin approval"**, and FLUENT shows `error=admin_consent_required` or `access_denied`.
+  - A **Global Administrator, Application Administrator or Cloud Application Administrator** of that tenant can approve FLUENT for everyone. Either open `https://login.microsoftonline.com/<tenant-id-or-domain>/adminconsent?client_id=<MS_CLIENT_ID>`, or sign in once as that admin and go to **Entra ID → Enterprise applications → FLUENT → Permissions → Grant admin consent for <tenant>**.
+  - To make user consent work in tenants that allow only verified publishers, complete **Publisher verification** (**Branding & properties → Publisher verification**). This needs a Microsoft AI Cloud Partner Program ID. Until then, the consent screen shows the app as "unverified".
+- **Conditional Access** or **"users can register applications = No"** settings in a tenant don't affect *using* FLUENT, only registering apps. The registration in step 2 can live in any tenant, including a personal one.
+- Users can remove FLUENT's access at any time at https://myaccount.microsoft.com → **App permissions** (work/school) or https://account.live.com/consent/Manage (personal). Disconnecting the account in FLUENT deletes its stored tokens.
 
 ## 5. AI
 

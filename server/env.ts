@@ -11,6 +11,9 @@ const schema = z.object({
   DATABASE_SSL: z.enum(["require", "disable", "auto"]).default("auto"),
   TOKEN_ENCRYPTION_KEY: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
+  /** Microsoft Entra app registration (Outlook / Microsoft 365 mailboxes). */
+  MS_CLIENT_ID: z.string().optional(),
+  MS_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   // Empty means "pick automatically" (see aiProvider()).
   AI_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["google", "xai", "openai"]).optional()),
@@ -23,6 +26,7 @@ const schema = z.object({
   // Test-only endpoint overrides. Ignored when NODE_ENV=production.
   FLUENT_TEST_GOOGLE_BASE: z.string().url().optional(),
   FLUENT_TEST_AI_BASE: z.string().url().optional(),
+  FLUENT_TEST_MS_BASE: z.string().url().optional(),
   /** Routes *.fluent.test IMAP/SMTP hosts to plaintext fakes on 127.0.0.1, e.g. "993=14993,465=14465". Ignored when NODE_ENV=production. */
   FLUENT_TEST_MAIL_PORTS: z.string().regex(/^\d+=\d+(,\d+=\d+)*$/).optional(),
 });
@@ -100,4 +104,25 @@ export function aiBaseUrl(): string | undefined {
 
 export function redirectUri(): string {
   return `${getEnv().APP_URL.replace(/\/$/, "")}/api/auth/google/callback`;
+}
+
+export function microsoftConfigured(): boolean {
+  const e = getEnv();
+  return Boolean(e.MS_CLIENT_ID && e.MS_CLIENT_SECRET && e.TOKEN_ENCRYPTION_KEY && e.DATABASE_URL);
+}
+
+/** Microsoft identity platform (common authority: personal + work/school accounts) and Graph. Test override only outside production. */
+export function microsoftEndpoints() {
+  const e = getEnv();
+  const base = !isProduction() && e.FLUENT_TEST_MS_BASE ? e.FLUENT_TEST_MS_BASE.replace(/\/$/, "") : undefined;
+  const login = base ?? "https://login.microsoftonline.com";
+  return {
+    authorize: `${login}/common/oauth2/v2.0/authorize`,
+    token: `${login}/common/oauth2/v2.0/token`,
+    graph: base ? `${base}/graph/v1.0` : "https://graph.microsoft.com/v1.0",
+  };
+}
+
+export function microsoftRedirectUri(): string {
+  return `${getEnv().APP_URL.replace(/\/$/, "")}/api/auth/microsoft/callback`;
 }

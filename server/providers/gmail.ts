@@ -11,10 +11,17 @@ import type { AccountRow } from "../services/accounts.js";
 import type { BulkActionSpec, DraftContents, LabelsInfo, ListOptions, MailProvider, OutgoingMessage, SavedDraft, SyncResult } from "./types.js";
 
 const META_HEADERS = ["From", "To", "Cc", "Subject", "Date"];
-export const MAIL_ID = /^[A-Za-z0-9_-]{1,128}$/;
+export const MAIL_ID = /^[A-Za-z0-9_=.~-]{1,256}$/;
 
 export function assertMailId(id: string, what = "id"): string {
   if (!MAIL_ID.test(id)) throw badRequest(`Invalid ${what}`);
+  return id;
+}
+
+/** Gmail's own ids are stricter than the cross-provider format. */
+const GMAIL_NATIVE_ID = /^[A-Za-z0-9_-]{1,128}$/;
+function gmailId(id: string, what = "id"): string {
+  if (!GMAIL_NATIVE_ID.test(id)) throw badRequest(`Invalid ${what}`);
   return id;
 }
 
@@ -27,7 +34,7 @@ const CATEGORY_LABEL: Record<Category, string> = {
 };
 
 export function folderQuery(folder: ListOptions["folder"], category?: Category, labelId?: string): { labelIds: string[]; q: string; includeSpamTrash: boolean } {
-  if (labelId) return { labelIds: [assertMailId(labelId, "label")], q: "", includeSpamTrash: false };
+  if (labelId) return { labelIds: [gmailId(labelId, "label")], q: "", includeSpamTrash: false };
   switch (folder) {
     case "inbox": return { labelIds: ["INBOX", ...(category ? [CATEGORY_LABEL[category]] : [])], q: "", includeSpamTrash: false };
     case "starred": return { labelIds: ["STARRED"], q: "", includeSpamTrash: false };
@@ -86,7 +93,7 @@ export class GmailProvider implements MailProvider {
 
   async getThread(threadId: string): Promise<ThreadDetail> {
     const a = this.account;
-    const t = await this.gm.request<GmailThread>("GET", `/threads/${assertMailId(threadId)}`, { query: { format: "full" } });
+    const t = await this.gm.request<GmailThread>("GET", `/threads/${gmailId(threadId)}`, { query: { format: "full" } });
     const messages = (t.messages ?? []).map((m) => parseMessage(m, a.email));
     const labelIds = [...new Set(messages.flatMap((m) => m.labelIds))];
     const firstReal = messages.find((m) => !m.isDraft) ?? messages[0];
@@ -106,7 +113,7 @@ export class GmailProvider implements MailProvider {
   }
 
   async threadAction(threadId: string, action: ThreadAction): Promise<void> {
-    const id = assertMailId(threadId);
+    const id = gmailId(threadId);
     const spec = ACTIONS[action];
     if (spec.trash) return void (await this.gm.request("POST", `/threads/${id}/trash`));
     if (spec.untrash) return void (await this.gm.request("POST", `/threads/${id}/untrash`));
@@ -148,7 +155,7 @@ export class GmailProvider implements MailProvider {
     for (const l of [...add, ...remove]) {
       if (!userLabels.has(l) && !SYSTEM_MUTABLE.has(l)) throw badRequest("Unknown label");
     }
-    await this.gm.request("POST", `/threads/${assertMailId(threadId)}/modify`, { body: { addLabelIds: add, removeLabelIds: remove } });
+    await this.gm.request("POST", `/threads/${gmailId(threadId)}/modify`, { body: { addLabelIds: add, removeLabelIds: remove } });
   }
 
   async labels(): Promise<LabelsInfo> {
@@ -171,7 +178,7 @@ export class GmailProvider implements MailProvider {
   }
 
   async getAttachment(messageId: string, attachmentId: string): Promise<Buffer> {
-    const r = await this.gm.request<{ data?: string }>("GET", `/messages/${assertMailId(messageId)}/attachments/${assertMailId(attachmentId.slice(0, 128), "attachment")}`);
+    const r = await this.gm.request<{ data?: string }>("GET", `/messages/${gmailId(messageId)}/attachments/${gmailId(attachmentId.slice(0, 128), "attachment")}`);
     return decodeB64Url(r.data ?? "");
   }
 

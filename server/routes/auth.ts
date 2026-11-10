@@ -5,10 +5,11 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import type { AppEnv } from "../lib/context.js";
 import { decrypt, encrypt, pkceChallenge, randomToken, safeEqual } from "../crypto.js";
-import { googleConfigured, secureCookies } from "../env.js";
+import { googleConfigured, microsoftConfigured, secureCookies } from "../env.js";
+import { buildMicrosoftAuthorizeUrl, exchangeMicrosoftCode, fetchMicrosoftProfile } from "../auth/microsoft.js";
 import { buildAuthorizeUrl, exchangeCode, verifyIdToken } from "../auth/google.js";
 import { createSession, destroySession, requireUser } from "../auth/session.js";
-import { getOwnedAccount, listAccounts, logSecurityEvent, toPublicAccount, upsertAccount, upsertUser } from "../services/accounts.js";
+import { getOwnedAccount, listAccounts, logSecurityEvent, toPublicAccount, upsertAccount, upsertMicrosoftAccount, upsertUser } from "../services/accounts.js";
 import { getDb } from "../db/client.js";
 import { userSettings } from "../db/schema.js";
 import { rateLimit } from "../lib/rateLimit.js";
@@ -131,6 +132,60 @@ authRoutes.get("/google/callback", rateLimit("auth", 30), async (c) => {
   } catch (err) {
     const code = err instanceof HttpError ? err.code : "signin_failed";
     logger.warn({ code, err: err instanceof Error ? err.message : "unknown" }, "oauth_callback_failed");
+    return fail(code);
+  }
+});
+
+// ---------------- Microsoft (Outlook / Microsoft 365 mailboxes) ----------------
+// Same pattern as Google: an encrypted, HttpOnly, SameSite=Lax state cookie holding state + PKCE verifier,
+// bound to the signed-in user. Outlook is an extra mailbox, so it always needs a FLUENT session (link mode).
+const MS_OAUTH_COOKIE = "fluent_oauth_ms";
+
+interface MsOAuthState { state: string; verifier: string; userId: string; exp: number }
+
+authRoutes.get("/microsoft/start", rateLimit("auth", 30), async (c) => {
+  if (!microsoftConfigured()) return c.redirect("/app/account?error=outlook_not_configured", 302);
+  const user = c.get("user");
+  if (!user) return c.redirect("/?error=session_required", 302);
+  const q = z.object({ account: z.string().uuid().optional() }).parse(c.req.query());
+  const loginHint = q.account ? (await getOwnedAccount(user.id, q.account)).email : undefined;
+  const st: MsOAuthState = { state: randomToken(24), verifier: randomToken(48), userId: user.id, exp: Date.now() + OAUTH_TTL_MS };
+  setCookie(c, MS_OAUTH_COOKIE, encrypt(JSON.stringify(st), "oauth-ms"), {
+    httpOnly: true,
+    secure: secureCookies(),
+    sameSite: "Lax",
+    path: "/api/auth",
+    maxAge: OAUTH_TTL_MS / 1000,
+  });
+  return c.redirect(buildMicrosoftAuthorizeUrl({ state: st.state, codeChallenge: pkceChallenge(st.verifier), loginHint }), 302);
+});
+
+authRoutes.get("/microsoft/callback", rateLimit("auth", 30), async (c) => {
+  const raw = getCookie(c, MS_OAUTH_COOKIE);
+  deleteCookie(c, MS_OAUTH_COOKIE, { path: "/api/auth", secure: secureCookies() });
+  const fail = (code: string) => c.redirect(`/app/account?error=${encodeURIComponent(code)}`, 302);
+  if (!raw) return fail("state_missing");
+  let st: MsOAuthState;
+  try {
+    st = JSON.parse(decrypt(raw, "oauth-ms")) as MsOAuthState;
+  } catch {
+    return fail("state_invalid");
+  }
+  const q = c.req.query();
+  if (!q.state || !safeEqual(q.state, st.state) || st.exp < Date.now()) return fail("state_invalid");
+  if (q.error) return fail(q.error === "access_denied" ? "access_denied" : q.error === "consent_required" ? "admin_consent_required" : "oauth_error");
+  if (!q.code || q.code.length > 4096) return fail("code_missing");
+  const user = c.get("user");
+  if (!user || user.id !== st.userId) return fail("session_mismatch");
+  try {
+    const tokens = await exchangeMicrosoftCode(q.code, st.verifier);
+    const profile = await fetchMicrosoftProfile(tokens.access_token);
+    const acc = await upsertMicrosoftAccount(user.id, profile, tokens);
+    await logSecurityEvent(user.id, "account_connected", `outlook:${profile.email}`);
+    return c.redirect(acc.status === "active" ? "/app/account?connected=outlook" : `/app/account?error=${acc.status === "insufficient_scopes" ? "insufficient_scopes" : "offline_access_missing"}`, 302);
+  } catch (err) {
+    const code = err instanceof HttpError ? err.code : "signin_failed";
+    logger.warn({ code }, "ms_oauth_callback_failed");
     return fail(code);
   }
 });
