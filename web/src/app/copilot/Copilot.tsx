@@ -41,7 +41,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   context?: { accountId: string; threadId: string };
-  prefill?: { text: string; autoSend: boolean; n: number };
+  prefill?: { text: string; autoSend: boolean; n: number; mode?: "ask" };
 }) {
   const { config, session } = useSession();
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   useEffect(() => setUseThread(true), [context?.accountId, context?.threadId]);
   useEffect(() => {
     if (!open || !prefill?.text) return;
-    if (prefill.autoSend) send(prefill.text);
+    if (prefill.autoSend) send(prefill.text, false, prefill.mode === "ask");
     else setInput(prefill.text);
     // Only when a new prefill arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,27 +70,35 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   const push = (m: NewMsg) => setMessages((xs) => [...xs, { ...m, id: nextId++ } as Msg]);
 
   const ask = useMutation({
-    mutationFn: (p: { message: string; explain?: boolean }) =>
-      p.explain && context
+    mutationFn: (p: { message: string; explain?: boolean; ask?: boolean }) =>
+      p.ask
+        ? api.post<Omit<Extract<CopilotReply, { kind: "answer" }>, "kind">>("/ai/ask", { question: p.message }).then((r): CopilotReply => ({ ...r, kind: "answer" }))
+        : p.explain && context
         ? api.post<{ answer: string; citations: ThreadSummary[] }>("/ai/copilot", { message: p.message, action: "explain", context }).then((r): CopilotReply => ({ kind: "answer", answer: r.answer, citations: r.citations }))
         : api.post<CopilotReply>("/copilot/plan", { instruction: p.message, ...(scoped && context ? { context } : {}) }),
     onSuccess: (r) => {
       if (r.kind === "plan") push({ role: "plan", plan: r.plan });
       else if (r.kind === "clarify") push({ role: "assistant", text: r.message });
       else {
-        const meta = r.searched !== undefined ? `Searched ${r.searched} conversation${r.searched === 1 ? "" : "s"}${r.excluded ? ` · ${r.excluded} excluded by your privacy settings` : ""}` : undefined;
+        const meta = r.searched !== undefined
+          ? [
+            r.gmailQuery ? `Gmail search: ${r.gmailQuery}` : "No matching emails",
+            r.searched ? `read ${r.searched} conversation${r.searched === 1 ? "" : "s"}` : "",
+            r.excluded ? `${r.excluded} excluded by your privacy settings` : "",
+          ].filter(Boolean).join(" · ")
+          : undefined;
         push({ role: "assistant", text: r.answer, citations: r.citations, meta });
       }
     },
     onError: (e) => push({ role: "error", text: errorMessage(e) }),
   });
 
-  const send = (text: string, explain = false) => {
+  const send = (text: string, explain = false, askInbox = false) => {
     const t = text.trim();
     if (!t || ask.isPending) return;
     push({ role: "user", text: t });
     setInput("");
-    ask.mutate({ message: t, explain });
+    ask.mutate({ message: t, explain, ask: askInbox });
   };
 
   return (

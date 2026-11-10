@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv } from "../lib/context.js";
 import { requireUser } from "../auth/session.js";
 import { rateLimit } from "../lib/rateLimit.js";
+import { getDailyBrief, LANG_RE } from "../ai/brief.js";
 import { aiConfigured } from "../env.js";
 import { answerAboutThread, askInbox, buildOverview, draftEmail, explainThread, interpretSearch, loadPolicy, replySuggestions, rewriteText, securityReview, threadInsights } from "../ai/features.js";
 
@@ -14,7 +15,9 @@ aiRoutes.use("*", async (c, next) => {
   requireUser(c);
   await next();
 });
-aiRoutes.use("*", rateLimit("ai", 30));
+const aiLimit = rateLimit("ai", 30);
+// The daily brief is read on every inbox load and usually served from cache, so it has its own buckets.
+aiRoutes.use("*", (c, next) => (c.req.method === "GET" && c.req.path.endsWith("/ai/brief") ? next() : aiLimit(c, next)));
 
 aiRoutes.post("/insights", async (c) => {
   const user = requireUser(c);
@@ -57,13 +60,13 @@ aiRoutes.post("/search", async (c) => {
   return c.json(await interpretSearch(user.id, b.query));
 });
 
-aiRoutes.post("/ask", async (c) => {
+aiRoutes.post("/ask", rateLimit("ask", 10), async (c) => {
   const user = requireUser(c);
   const b = z.object({ question: z.string().trim().min(2).max(1000), account: z.union([z.literal("all"), uuid]).optional() }).strict().parse(await c.req.json());
   return c.json(await askInbox(user.id, { question: b.question, account: b.account }));
 });
 
-aiRoutes.post("/copilot", async (c) => {
+aiRoutes.post("/copilot", rateLimit("ask", 10), async (c) => {
   const user = requireUser(c);
   const b = z.object({
     message: z.string().trim().min(1).max(1000),
@@ -79,6 +82,18 @@ aiRoutes.post("/copilot", async (c) => {
   }
   const r = await askInbox(user.id, { question: b.message, account: b.account });
   return c.json(r);
+});
+
+const briefRefreshLimit = rateLimit("brief_refresh", 5);
+aiRoutes.get("/brief", rateLimit("brief", 60), (c, next) => (c.req.query("refresh") ? briefRefreshLimit(c, next) : next()), async (c) => {
+  const user = requireUser(c);
+  const q = z.object({
+    account: uuid.optional(),
+    tz: z.string().max(64).regex(/^[A-Za-z0-9_+\-/]+$/).optional(),
+    lang: z.string().max(24).regex(LANG_RE).optional(),
+    refresh: z.enum(["1"]).optional(),
+  }).strict().parse(c.req.query());
+  return c.json(await getDailyBrief(user.id, { account: q.account, tz: q.tz, lang: q.lang, refresh: q.refresh === "1" }));
 });
 
 aiRoutes.get("/overview", async (c) => {

@@ -143,3 +143,13 @@ export const threadNotes = pgTable("thread_notes", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("thread_notes_thread_uq").on(t.accountId, t.threadId), index("thread_notes_user_idx").on(t.userId, t.updatedAt)]);
+/** Daily brief cache: one encrypted brief per user, local day and account scope. */
+export const dailyBriefs = pgTable("daily_briefs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  day: text("day").notNull(),
+  scope: text("scope").notNull(),
+  policyKey: text("policy_key").notNull(),
+  payloadEnc: text("payload_enc").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("daily_briefs_uq").on(t.userId, t.day, t.scope)]);

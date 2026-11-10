@@ -172,18 +172,108 @@ export async function interpretSearch(userId: string, query: string) {
 }
 
 // ---------------- Ask your inbox (retrieval-grounded Q&A) ----------------
-export const askSchema = z.object({ answer: z.string().max(2000), citations: z.array(z.string().max(100)).max(12) });
+export const askPlanSchema = z.object({
+  queries: z.array(z.string().max(300)).min(1).max(3),
+  notFound: z.string().max(300),
+});
+export const askSchema = z.object({ found: z.boolean().default(true), answer: z.string().max(2000), citations: z.array(z.string().max(100)).max(12) });
 
-export async function askInbox(userId: string, p: { question: string; account?: string }) {
-  const policy = await loadPolicy(userId);
-  const search = await interpretSearch(userId, p.question);
-  let page = await listThreads(userId, { account: p.account, folder: "all", q: search.gmailQuery, limit: 10, filter: search.postFilter === "unanswered" ? "unanswered" : undefined });
-  if (page.threads.length === 0) {
-    // Fall back to recent mail so general questions ("what's new?") still have grounding.
-    page = await listThreads(userId, { account: p.account, folder: "inbox", limit: 10 });
+const QUERY_OPS = new Set(["from", "to", "cc", "bcc", "subject", "label", "category", "has", "filename", "is", "in", "after", "before", "newer_than", "older_than", "list", "larger", "smaller"]);
+const OP_VALUES: Record<string, RegExp> = {
+  after: /^\d{4}\/\d{1,2}\/\d{1,2}$/,
+  before: /^\d{4}\/\d{1,2}\/\d{1,2}$/,
+  newer_than: /^\d{1,4}[dmy]$/,
+  older_than: /^\d{1,4}[dmy]$/,
+  in: /^(inbox|sent|anywhere|trash|spam|drafts|snoozed|starred|important)$/i,
+  is: /^(unread|read|starred|important|snoozed)$/i,
+  has: /^(attachment|drive|document|spreadsheet|presentation|pdf|image)$/i,
+  category: /^(primary|social|promotions|updates|forums|personal)$/i,
+};
+
+/**
+ * Validates an AI-written Gmail query before it is sent to Gmail: single line, balanced quotes and
+ * parentheses, and only known search operators with well-formed values. Returns the cleaned query or null.
+ */
+export function validateGmailQuery(q: string): string | null {
+  const s = q.trim().replace(/\s+/g, " ");
+  // eslint-disable-next-line no-control-regex -- rejecting control characters is the point
+  if (!s || s.length > 300 || /[\u0000-\u001f\u007f]/.test(q.trim())) return null;
+  if ((s.match(/"/g) ?? []).length % 2) return null;
+  let depth = 0;
+  for (const ch of s.replace(/"[^"]*"/g, "")) {
+    if (ch === "(") depth++;
+    if (ch === ")" && --depth < 0) return null;
   }
-  const allowed = page.threads.filter((t) => !isExcluded(policy, t.accountId, t));
-  const excluded = page.threads.length - allowed.length;
+  if (depth !== 0) return null;
+  const bare = s.replace(/"[^"]*"/g, '""');
+  for (const m of bare.matchAll(/(?:^|[\s(-])([A-Za-z][A-Za-z0-9_]*):([^\s()]*)/g)) {
+    const op = m[1]!.toLowerCase();
+    if (!QUERY_OPS.has(op)) return null;
+    const val = m[2]!;
+    if (!val) continue; // operator followed by a quoted phrase or group
+    const rule = OP_VALUES[op];
+    if (rule && !rule.test(val)) return null;
+  }
+  return s;
+}
+
+/** Last-resort query from the question's own words when every AI query was rejected. */
+export function keywordQuery(question: string): string | null {
+  const STOP = /^(what|when|who|where|which|why|how|did|does|do|is|are|was|were|the|a|an|and|or|of|in|on|at|to|for|about|from|say|said|tell|me|my|i|you|any|there|with|this|that|it|om|hva|sa|det|en|et|og|i|på|til|fra)$/i;
+  const words = question.toLowerCase().replace(/[^\p{L}\p{N}@.\s-]/gu, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP.test(w)).slice(0, 4);
+  return words.length ? words.join(" ") : null;
+}
+
+export interface AskResult {
+  found: boolean;
+  answer: string;
+  citations: ThreadSummary[];
+  gmailQuery: string | null;
+  queries: string[];
+  searched: number;
+  excluded: number;
+}
+
+export async function askInbox(userId: string, p: { question: string; account?: string }): Promise<AskResult> {
+  const policy = await loadPolicy(userId);
+  const plan = await aiCall({
+    task: "ask_plan",
+    system: [
+      "Turn the user's question about their own email into up to 3 Gmail search queries, most specific first, then broader fallbacks (fewer terms, wider dates).",
+      "Allowed operators only: from:, to:, cc:, subject:, label:, category:, has:attachment, filename:, is:unread, is:starred, is:important, in:inbox, in:sent, in:anywhere, after:YYYY/MM/DD, before:YYYY/MM/DD, newer_than:Nd, older_than:Nd, OR, -, quotes, parentheses.",
+      todayContext(),
+      "Prefer keywords over guessed addresses (from:ola, not from:ola@example.com). Resolve relative dates (\"in October\" = the most recent October) to after:/before:.",
+      "notFound: one short sentence, in the language of the question, telling the user no emails matched.",
+    ].join("\n"),
+    prompt: `User question (from the user, trusted): ${sanitizeForPrompt(p.question, 1000)}`,
+    schema: askPlanSchema,
+    maxOutputTokens: 300,
+  });
+  const queries = [...new Set(plan.queries.map(validateGmailQuery).filter((q): q is string => Boolean(q)))];
+  if (queries.length === 0) {
+    const kw = keywordQuery(p.question);
+    if (kw) queries.push(kw);
+  }
+
+  // Try each validated query until one returns mail. No fallback to unrelated recent mail: no match means no answer.
+  let used: string | null = null;
+  let threads: ThreadSummary[] = [];
+  for (const q of queries) {
+    const page = await listThreads(userId, { account: p.account, folder: "all", q, limit: 10 });
+    if (page.threads.length) {
+      used = q;
+      threads = page.threads;
+      break;
+    }
+  }
+  const allowed = threads.filter((t) => !isExcluded(policy, t.accountId, t));
+  const excluded = threads.length - allowed.length;
+  const notFound = (plan.notFound || "").trim() || "I couldn't find any emails about that.";
+  if (allowed.length === 0) {
+    await recordAudit(userId, policy, "ask_inbox", [], excluded);
+    return { found: false, answer: excluded ? `${notFound} (${excluded} matching conversation${excluded === 1 ? " is" : "s are"} excluded by your privacy settings.)` : notFound, citations: [], gmailQuery: used, queries, searched: 0, excluded };
+  }
+
   const top = allowed.slice(0, 6);
   const details = await Promise.all(top.map((t) => getThread(userId, t.accountId, t.id).catch(() => null)));
   const refs = new Map<string, ThreadSummary>();
@@ -191,19 +281,25 @@ export async function askInbox(userId: string, p: { question: string; account?: 
     const ref = `t${i + 1}`;
     refs.set(ref, t);
     const d = details[i];
-    const body = d ? d.messages.filter((m) => !m.isDraft).slice(-4).map((m) => `From ${fmt(m.from)} on ${m.date}:\n${m.bodyText ?? ""}`).join("\n---\n") : t.snippet;
+    const body = d ? d.messages.filter((m) => !m.isDraft).slice(-4).map((m) => `From ${fmt(m.from)}${m.isFromMe ? " (the user)" : ""} on ${m.date}:\n${m.bodyText ?? ""}`).join("\n---\n") : t.snippet;
     return emailBlock({ ref, from: fmt(t.from), date: t.lastDate, subject: t.subject, body });
   });
   const out = await aiCall({
     task: "ask",
-    system: `Answer the user's question about their email using ONLY the emails provided. ${todayContext()} Cite the refs (e.g. t1) of the emails you used in "citations". If the emails don't contain the answer, say so plainly. Keep it under 180 words.`,
-    prompt: `${blocks.join("\n") || "(no matching emails)"}\nQUESTION: ${sanitizeForPrompt(p.question, 1000)}`,
+    system: [
+      "Answer the user's question about their email using ONLY the emails provided. Never guess or add facts that aren't in them.",
+      todayContext(),
+      "Answer in the language of the question. Cite the refs (e.g. t1) of every email you used in \"citations\".",
+      "If the emails don't answer the question, set found=false and say plainly that you couldn't find it (you may mention what the closest emails are about). Keep it under 180 words.",
+    ].join(" "),
+    prompt: `${blocks.join("\n")}\nQUESTION: ${sanitizeForPrompt(p.question, 1000)}`,
     schema: askSchema,
   });
   await recordAudit(userId, policy, "ask_inbox", top.map((t) => ({ accountId: t.accountId, threadId: t.id, subject: t.subject })), excluded);
   // Grounding: only citations that map to emails we actually supplied are returned.
   const citations = [...new Set(out.citations)].map((r) => refs.get(r)).filter((t): t is ThreadSummary => Boolean(t));
-  return { answer: out.answer, citations, gmailQuery: search.gmailQuery, searched: top.length, excluded };
+  const found = out.found && citations.length > 0;
+  return { found, answer: out.answer, citations, gmailQuery: used, queries, searched: top.length, excluded };
 }
 
 // ---------------- AI Overview ----------------

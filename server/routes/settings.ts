@@ -1,10 +1,11 @@
 import { Hono } from "hono";
+import { clearBriefs } from "../ai/brief.js";
 import { z } from "zod";
 import { and, desc, eq, ne } from "drizzle-orm";
 import type { AppEnv } from "../lib/context.js";
 import { destroySession, requireUser } from "../auth/session.js";
 import { getDb } from "../db/client.js";
-import { accounts, aiAudit, securityEvents, sessions, userSettings, users } from "../db/schema.js";
+import { accounts, aiAudit, securityEvents, sessions, userSettings, users, dailyBriefs } from "../db/schema.js";
 import { parseSettings, settingsPatchSchema } from "../../shared/settings.js";
 import { getOwnedAccount, listAccounts, logSecurityEvent, toPublicAccount } from "../services/accounts.js";
 import { decrypt } from "../crypto.js";
@@ -111,6 +112,7 @@ settingsRoutes.get("/privacy/audit", async (c) => {
 settingsRoutes.delete("/privacy/audit", async (c) => {
   const user = requireUser(c);
   const n = await clearAudit(user.id);
+  await clearBriefs(user.id);
   await logSecurityEvent(user.id, "ai_history_cleared", String(n));
   return c.json({ deleted: n });
 });
@@ -118,7 +120,7 @@ settingsRoutes.delete("/privacy/audit", async (c) => {
 settingsRoutes.get("/privacy/data", async (c) => {
   const user = requireUser(c);
   const db = getDb();
-  const [accs, sess, events, audit, settingsRow, templateCount, later, noteCount] = await Promise.all([
+  const [accs, sess, events, audit, settingsRow, templateCount, later, noteCount, briefs] = await Promise.all([
     listAccounts(user.id),
     db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, user.id)),
     db.select({ id: securityEvents.id }).from(securityEvents).where(eq(securityEvents.userId, user.id)),
@@ -127,6 +129,7 @@ settingsRoutes.get("/privacy/data", async (c) => {
     countTemplates(user.id),
     listReadLater(user.id),
     countNotes(user.id),
+    db.select({ id: dailyBriefs.id }).from(dailyBriefs).where(eq(dailyBriefs.userId, user.id)),
   ]);
   return c.json({
     profile: { email: user.email, name: user.name },
@@ -137,6 +140,7 @@ settingsRoutes.get("/privacy/data", async (c) => {
       { key: "settings", label: "Preferences", detail: "Appearance, notifications, AI and privacy settings", count: settingsRow.length },
       { key: "ai_audit", label: "AI access log", detail: "Feature, timestamp, Gmail thread ids and encrypted subjects (never bodies)", count: audit.length },
       { key: "security_events", label: "Security log", detail: "Sign-ins, disconnections and setting changes (no email content)", count: events.length },
+      { key: "daily_briefs", label: "Daily brief cache", detail: "Today's Copilot brief (subjects, senders, AI reasons), encrypted with AES-256-GCM; replaced daily and cleared with your AI history", count: briefs.length },
       { key: "read_later", label: "Read later list", detail: "Gmail thread ids you saved for later and when (no content)", count: later.length },
       { key: "templates", label: "Templates", detail: "Saved replies you wrote (name, subject, text), encrypted with AES-256-GCM", count: templateCount },
       { key: "notes", label: "Private notes", detail: "Notes you pinned to conversations (thread id + your text), encrypted with AES-256-GCM", count: noteCount },

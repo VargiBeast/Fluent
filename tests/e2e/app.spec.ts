@@ -298,6 +298,46 @@ test("phishing guard warns with plain reasons and Copilot gives a second opinion
   await expect(page.getByRole("alert", { name: "Security warning" })).toHaveCount(0);
 });
 
+test("daily brief: generated on first open of the day, archives bulk mail with confirm + undo", async () => {
+  await page.goto("/app/inbox");
+  const brief = page.getByTestId("daily-brief");
+  await expect(brief.getByText(/Good morning/)).toBeVisible();
+  await expect(brief.getByText(/safe to archive/)).toBeVisible();
+  await brief.getByRole("button", { name: "Expand brief" }).click();
+  await expect(brief.getByText("Awaiting your reply", { exact: true })).toBeVisible();
+  await shot(page, "30-daily-brief");
+  await brief.getByRole("button", { name: /^Archive \d+$/ }).click();
+  const dlg = page.getByRole("alertdialog", { name: /Archive \d+ conversations?\?/ }).or(page.getByRole("dialog", { name: /Archive \d+ conversations?\?/ }));
+  await expect(dlg).toContainText("10 interface patterns worth stealing");
+  await dlg.getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page.getByText(/Archived \d+ conversations?/)).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-forum"]')).toBeHidden();
+  await expect(brief.getByRole("button", { name: /^Archive \d+$/ })).toBeHidden();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByText("Undone")).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-forum"]')).toBeVisible();
+  await expect(brief.getByRole("button", { name: /^Archive \d+$/ })).toBeVisible();
+});
+
+test("ask your inbox from ⌘K: validated Gmail search, cited sources and an honest 'not found'", async () => {
+  await page.goto("/app/inbox");
+  await expect(page.locator('[data-thread-id="t-canary"]')).toBeVisible();
+  await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  await palette.getByRole("combobox", { name: "Command" }).fill("What did Brightline say about the invoice?");
+  await palette.getByRole("option", { name: /Ask your inbox: “What did Brightline/ }).click();
+  const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
+  await expect(panel.getByText("Sources")).toBeVisible();
+  await expect(panel.getByText(/Gmail search: invoice newer_than:60d/)).toBeVisible();
+  await shot(page, "31-ask-inbox");
+  await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("What did they say about the zebra unicorn?");
+  await panel.getByRole("button", { name: "Send to Copilot" }).click();
+  await expect(panel.getByText("I couldn't find any emails about that.")).toBeVisible();
+  await expect(panel.getByText("No matching emails")).toBeVisible();
+  await panel.getByRole("button", { name: /invoice|Receipt/i }).first().click();
+  await expect(page).toHaveURL(/\/app\/all\//);
+});
+
 test("privacy dashboard lists AI access by subject and enforces exclusions", async () => {
   await page.goto("/app/settings/privacy");
   const log = page.getByRole("list", { name: "AI access log" });
@@ -311,8 +351,10 @@ test("privacy dashboard lists AI access by subject and enforces exclusions", asy
   await expect(page.getByRole("list", { name: "Excluded senders" })).toContainText("@northwind.example");
   await shot(page, "08-privacy-dashboard");
 
-  const ai = (await e2eState(page)).aiRequests;
   await page.goto("/app/inbox");
+  // New exclusions invalidate today's brief, which is rebuilt without the excluded mail.
+  await expect(page.getByTestId("daily-brief").getByText(/Good morning/)).toBeVisible();
+  const ai = (await e2eState(page)).aiRequests;
   await page.locator('[data-thread-id="t-canary"]').click();
   await expect(page.getByText(/excluded from AI/i)).toBeVisible();
   expect((await e2eState(page)).aiRequests).toBe(ai);

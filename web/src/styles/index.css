@@ -136,3 +136,16 @@ body {
 
 /* The mobile bulk-action bar takes the bottom edge while selecting. */
 body[data-selecting] [data-copilot-fab] { display: none; }
+
+/* Toasts never cover the open composer's bottom bar (Send, attach, AI tools): lift them above it, and on wide
+   screens move them beside the docked composer instead. */
+body:has([data-composer]:not([hidden])) [data-sonner-toaster][data-y-position="bottom"] {
+  --offset-bottom: 96px !important;
+  --mobile-offset-bottom: 84px !important;
+}
+@media (min-width: 1100px) {
+  body:has([data-composer]:not([hidden]):not([data-maximized])) [data-sonner-toaster][data-x-position="right"] {
+    --offset-right: 656px !important;
+    --offset-bottom: 24px !important;
+  }
+}

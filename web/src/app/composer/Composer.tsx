@@ -334,6 +334,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
     <div
       role="dialog"
       data-composer=""
+      data-maximized={maximized ? "" : undefined}
       aria-label={title}
       aria-modal="false"
       hidden={hidden}

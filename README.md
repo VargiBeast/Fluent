@@ -39,7 +39,8 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - **Swipe to reply (mobile)**: swipe a conversation left to open it with the reply box focused and three short AI-suggested replies. Tapping one fills an editable draft. Nothing is sent until you press Send and confirm.
 - "Explain this email simply" and questions about a specific thread
 - Draft new emails or replies from an instruction, then make them shorter or longer, fix grammar, or change the tone
-- **Ask your inbox / Copilot**: answers grounded in your emails, with links to the sources
+- **Ask your inbox** ("what did Ola say about the invoice in October?"): the AI turns the question into up to three Gmail searches, and each one is validated against an allowlist of operators before it runs. FLUENT reads the top matches and answers in your language with clickable sources. If nothing matches, it says so instead of guessing. The Gmail query is shown, and every ask is audit-logged and rate-limited. Open it from Copilot or from ⌘K → "Ask your inbox".
+- **Daily brief**: the first time you open FLUENT each day, Copilot writes a morning summary in your language. It covers the most important new mail, what's waiting on your reply, and what's safe to archive, with one-click Archive (confirm, then undo). The brief sits at the top of the inbox and in the AI Overview. It is generated on demand (no cron) and cached encrypted per user per day. Your privacy exclusions apply, and starred or important mail is never suggested for archiving.
 - **Copilot, front and centre**: an "Ask Copilot" bar at the top of every mail list, ⌘J anywhere, "Ask Copilot about this email" in the reader, a floating Copilot button on mobile that opens a full-screen sheet, and a wide panel you can expand to a large centered view
 - **Copilot actions**: tell it what to do ("archive newsletters from this week", "star everything from Sofia", "draft follow-ups"). It shows a plan with every affected conversation and the full draft text. Nothing runs until you confirm, Trash and send need an extra confirmation, and archive, star, read and label changes can be undone.
 - **AI Overview**: a daily briefing of what needs a reply, what you're waiting on, deadlines and important mail. A Gmail-only triage still works without AI.
@@ -84,6 +85,10 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 <td><img src="docs/screenshots/21-snooze-menu.png" alt="Snooze menu" /></td>
 <td><img src="docs/screenshots/23-command-palette.png" alt="Command palette" /></td>
 </tr>
+<tr>
+<td><img src="docs/screenshots/30-daily-brief.png" alt="Daily brief at the top of the inbox" /></td>
+<td><img src="docs/screenshots/31-ask-inbox.png" alt="Ask your inbox with cited sources" /></td>
+</tr>
 </table>
 <p align="center"><img src="docs/screenshots/18-mobile-copilot-plan.png" alt="Mobile Copilot sheet" width="260" /> <img src="docs/screenshots/27-mobile-bulk-bar.png" alt="Mobile bulk action bar" width="260" /> <img src="docs/screenshots/29-mobile-swipe-reply.png" alt="Swipe-to-reply suggestions" width="260" /></p>
 
@@ -102,7 +107,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 ## Architecture
 
 ```
-React SPA ──/api──► Hono (Vercel Function) ──► Postgres  (users, accounts*, sessions#, settings, ai_audit*, security_events, rate_limits)
+React SPA ──/api──► Hono (Vercel Function) ──► Postgres  (users, accounts*, sessions#, settings, ai_audit*, security_events, rate_limits, daily_briefs*)
                                       ├──► Google OAuth + Gmail API   (* = AES-256-GCM encrypted fields, # = hashed ids)
                                       └──► AI provider (Gemini)       — email bodies are never stored
 ```
