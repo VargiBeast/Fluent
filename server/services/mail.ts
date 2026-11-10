@@ -157,6 +157,60 @@ export async function threadAction(userId: string, accountId: string, threadId: 
   await gm.request("POST", `/threads/${id}/modify`, { body: { addLabelIds: spec.add ?? [], removeLabelIds: spec.remove ?? [] } });
 }
 
+export const BULK_MAX = 100;
+export const BULK_ACTIONS = ["archive", "inbox", "trash", "untrash", "read", "unread", "star", "unstar", "label_add", "label_remove"] as const;
+export type BulkAction = (typeof BULK_ACTIONS)[number];
+const BULK_INVERSE: Record<BulkAction, BulkAction> = {
+  archive: "inbox", inbox: "archive", trash: "untrash", untrash: "trash", read: "unread", unread: "read",
+  star: "unstar", unstar: "star", label_add: "label_remove", label_remove: "label_add",
+};
+
+/**
+ * Bulk thread actions. Label changes use one users.messages.batchModify per account (all message ids of the
+ * selected threads); Trash uses threads.trash (Gmail has no batch trash). Every account is ownership-checked.
+ */
+export async function bulkAction(userId: string, p: { items: Array<{ accountId: string; threadId: string }>; action: BulkAction; labelId?: string }): Promise<{ ok: number; failed: number; undo: { action: BulkAction; labelId?: string } }> {
+  if (!p.items.length || p.items.length > BULK_MAX) throw badRequest(`Select between 1 and ${BULK_MAX} conversations.`);
+  const byAcc = new Map<string, string[]>();
+  for (const it of p.items) {
+    const ids = byAcc.get(it.accountId) ?? [];
+    ids.push(assertGmailId(it.threadId, "thread"));
+    byAcc.set(it.accountId, [...new Set(ids)]);
+  }
+  if ((p.action === "label_add" || p.action === "label_remove") && !p.labelId) throw badRequest("Pick a label.");
+  const labelId = p.labelId ? assertGmailId(p.labelId, "label") : undefined;
+  let ok = 0;
+  let failed = 0;
+  for (const [accountId, threadIds] of byAcc) {
+    const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+    if (p.action === "trash" || p.action === "untrash") {
+      await mapLimit(threadIds, 5, async (id) => {
+        try { await gm.request("POST", `/threads/${id}/${p.action}`); ok++; } catch { failed++; }
+      });
+      continue;
+    }
+    if (labelId) {
+      const { labels } = await gm.request<{ labels?: Array<{ id: string; type: string }> }>("GET", "/labels");
+      if (!(labels ?? []).some((l) => l.id === labelId && l.type === "user")) throw badRequest("Unknown label");
+    }
+    const spec = p.action === "label_add" ? { add: [labelId!] } : p.action === "label_remove" ? { remove: [labelId!] } : ACTIONS[p.action];
+    const msgIds: string[] = [];
+    const okThreads: string[] = [];
+    await mapLimit(threadIds, 5, async (id) => {
+      try {
+        const t = await gm.request<{ messages?: Array<{ id: string }> }>("GET", `/threads/${id}`, { query: { format: "minimal" } });
+        msgIds.push(...(t.messages ?? []).map((m) => m.id));
+        okThreads.push(id);
+      } catch { failed++; }
+    });
+    for (let i = 0; i < msgIds.length; i += 1000) {
+      await gm.request("POST", "/messages/batchModify", { body: { ids: msgIds.slice(i, i + 1000), addLabelIds: spec.add ?? [], removeLabelIds: spec.remove ?? [] } });
+    }
+    ok += okThreads.length;
+  }
+  return { ok, failed, undo: { action: BULK_INVERSE[p.action], ...(labelId ? { labelId } : {}) } };
+}
+
 const SYSTEM_MUTABLE = new Set(["STARRED", "UNREAD", "IMPORTANT", "INBOX"]);
 
 export async function modifyLabels(userId: string, accountId: string, threadId: string, add: string[], remove: string[]): Promise<void> {

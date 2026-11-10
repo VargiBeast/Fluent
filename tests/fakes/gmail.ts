@@ -277,6 +277,21 @@ export class FakeGmail {
     }
 
     if (seg[0] === "messages") {
+      if (method === "POST" && seg[1] === "batchModify") {
+        const ids = (body.ids as string[] | undefined) ?? [];
+        if (ids.length > 1000) return err(400, "Too many ids");
+        const add = (body.addLabelIds as string[] | undefined) ?? [];
+        const remove = (body.removeLabelIds as string[] | undefined) ?? [];
+        for (const l of [...add, ...remove]) if (!b.labels.has(l)) return err(400, `Invalid label: ${l}`);
+        for (const mid of ids) {
+          const m = b.messages.get(mid);
+          if (!m) continue;
+          for (const l of add) m.labelIds.add(l);
+          for (const l of remove) m.labelIds.delete(l);
+          this.bump(b, m, "labels");
+        }
+        return { status: 204 };
+      }
       if (method === "POST" && seg[1] === "send") {
         const raw = String(body.raw ?? "");
         if (!raw) return err(400, "Missing raw");
