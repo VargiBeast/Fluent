@@ -28,6 +28,8 @@ export const accounts = pgTable("accounts", {
   accessTokenEnc: text("access_token_enc"),
   accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
   historyId: text("history_id"),
+  /** Last successful Gmail change check. */
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   status: text("status").notNull().default("active"), // active | needs_reauth | insufficient_scopes
   color: text("color"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

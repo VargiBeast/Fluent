@@ -12,6 +12,7 @@ export interface Account {
   scopes: string[];
   color: string | null;
   createdAt: string;
+  lastSyncedAt: string | null;
 }
 
 export interface SessionData {

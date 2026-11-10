@@ -14,6 +14,12 @@ export interface AiPolicy {
   excludedSenders: string[]; // emails or "@domain" / "domain"
 }
 
+/** The user's full settings record (defaults filled in). */
+export async function loadSettings(userId: string): Promise<Settings> {
+  const rows = await getDb().select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1);
+  return parseSettings(rows[0]?.data);
+}
+
 export async function loadPolicy(userId: string): Promise<AiPolicy> {
   if (!aiConfigured()) throw notConfigured("AI");
   const rows = await getDb().select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1);

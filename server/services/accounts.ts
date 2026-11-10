@@ -16,6 +16,7 @@ export interface PublicAccount {
   status: string;
   scopes: string[];
   color: string | null;
+  lastSyncedAt: string | null;
   createdAt: string;
 }
 
@@ -28,6 +29,7 @@ export function toPublicAccount(a: AccountRow): PublicAccount {
     status: a.status,
     scopes: a.scopes.split(" ").filter(Boolean),
     color: a.color,
+    lastSyncedAt: a.lastSyncedAt?.toISOString() ?? null,
     createdAt: a.createdAt.toISOString(),
   };
 }

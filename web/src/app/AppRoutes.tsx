@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { FOLDERS } from "@shared/mail";
+import { useSession } from "@/lib/session";
 import { NotFoundPage } from "@/pages/Legal";
 import { AppLayout } from "./AppLayout";
 import { MailView } from "./MailView";
@@ -12,6 +13,7 @@ const OnboardingPage = lazy(() => import("./Onboarding").then((m) => ({ default:
 const StatsPage = lazy(() => import("./Stats").then((m) => ({ default: m.StatsPage })));
 const NewslettersPage = lazy(() => import("./Newsletters").then((m) => ({ default: m.NewslettersPage })));
 const SettingsPage = lazy(() => import("./settings/Settings").then((m) => ({ default: m.SettingsPage })));
+const AccountPage = lazy(() => import("./settings/Account").then((m) => ({ default: m.AccountPage })));
 
 const Page = ({ children }: { children: ReactNode }) => <Suspense fallback={<div className="p-6"><Skeleton className="h-6 w-48" /></div>}>{children}</Suspense>;
 
@@ -27,11 +29,12 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/app/inbox" replace />} />
+        <Route index element={<DefaultView />} />
         <Route path="onboarding" element={<Page><OnboardingPage /></Page>} />
         <Route path="overview" element={<Page><OverviewPage /></Page>} />
         <Route path="stats" element={<Page><StatsPage /></Page>} />
         <Route path="newsletters" element={<Page><NewslettersPage /></Page>} />
+        <Route path="account" element={<Page><AccountPage /></Page>} />
         <Route path="settings" element={<Page><SettingsPage /></Page>} />
         <Route path="settings/:section" element={<Page><SettingsPage /></Page>} />
         <Route path=":folder" element={<FolderRoute />} />
@@ -39,4 +42,10 @@ export default function AppRoutes() {
       </Route>
     </Routes>
   );
+}
+
+/** /app opens the view chosen in Settings > General. */
+function DefaultView() {
+  const { session } = useSession();
+  return <Navigate to={`/app/${session?.settings?.general.defaultView ?? "inbox"}`} replace />;
 }

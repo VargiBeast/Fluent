@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { singleKeysOff } from "@/lib/prefs";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { ThreadSummary } from "@shared/mail";
 import { cn } from "@/lib/cn";
@@ -27,6 +28,7 @@ export function MailView() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (singleKeysOff(e)) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
       if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector("[role=dialog]")) return;

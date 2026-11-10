@@ -1,7 +1,7 @@
 import { FocusMenu } from "./FocusMode";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
-import { BarChart3, ChevronDown, MailMinus, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { BarChart3, ChevronDown, MailMinus, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/ui/Avatar";
@@ -83,7 +83,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </button>
           </MenuTrigger>
           <MenuContent align="start">
-            <MenuItem icon={<Settings />} onSelect={() => { navigate("/app/settings/profile"); onNavigate?.(); }}>Settings</MenuItem>
+            <MenuItem icon={<UserRound />} onSelect={() => { navigate("/app/account"); onNavigate?.(); }}>Account</MenuItem>
+            <MenuItem icon={<Settings />} onSelect={() => { navigate("/app/settings"); onNavigate?.(); }}>Settings</MenuItem>
             <MenuItem icon={<ShieldCheck />} onSelect={() => { navigate("/app/settings/privacy"); onNavigate?.(); }}>Privacy dashboard</MenuItem>
             <MenuItem icon={<Keyboard />} onSelect={() => shortcuts.open()}>Keyboard shortcuts</MenuItem>
             <MenuSeparator />
@@ -97,7 +98,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </Button>
       <button
         type="button"
-        onClick={() => { navigate(withAccount(`/app/${["overview", "settings", "stats", "newsletters"].includes(currentFolder) ? "inbox" : currentFolder}`, { focus: "search" })); onNavigate?.(); }}
+        onClick={() => { navigate(withAccount(`/app/${["overview", "settings", "account", "stats", "newsletters"].includes(currentFolder) ? "inbox" : currentFolder}`, { focus: "search" })); onNavigate?.(); }}
         className="mb-2 flex h-9 w-full items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] text-fg-3 hover:bg-surface-2 hover:text-fg"
       >
         <Search className="size-4" aria-hidden />
@@ -177,7 +178,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         );
       })}
-      <NavLink to="/app/settings/accounts" onClick={onNavigate} className={() => item(false)}>
+      <NavLink to="/app/account#accounts" onClick={onNavigate} className={() => item(false)}>
         <Plus className="size-4" aria-hidden />
         <span className="flex-1">Add account</span>
       </NavLink>
@@ -208,7 +209,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       <div className="mt-auto pt-4">
-        <NavLink to="/app/settings/profile" onClick={onNavigate} className={() => item(currentFolder === "settings")}>
+        <NavLink to="/app/settings" onClick={onNavigate} className={() => item(currentFolder === "settings")}>
           <Settings className="size-4" aria-hidden />
           <span className="flex-1">Settings</span>
         </NavLink>
