@@ -99,11 +99,11 @@ export function PrivacyPage() {
 
       <H>5. AI features</H>
       <p>
-        FLUENT's AI features (summaries, explanations, drafting, rewriting, natural-language search, “Ask your inbox”, Copilot and the AI Overview) send the content needed for that request to an AI provider. By default this is xAI (Grok) through its API; the operator may configure a different provider. AI runs when you use an AI feature, and also automatically when you open a conversation if “Summarize emails automatically” is on, or when you open the AI Overview.
+        FLUENT's AI features (summaries, explanations, drafting, rewriting, natural-language search, “Ask your inbox”, Copilot and the AI Overview) send the content needed for that request to an AI provider. By default this is Google's Gemini API (Google AI Studio). The operator may configure xAI (Grok) or OpenAI instead. AI runs when you use an AI feature, and also automatically when you open a conversation if “Summarize emails automatically” is on, or when you open the AI Overview.
       </p>
       <UL>
         <li>Only the emails relevant to your request are sent. For the AI Overview, only subjects and short snippets are sent.</li>
-        <li>FLUENT asks the provider not to store requests (the API's storage option is turned off). The provider's own processing is governed by its API terms.</li>
+        <li>The provider processes requests under its own API terms. With xAI and OpenAI, FLUENT turns the API's request-storage option off. With Gemini, Google keeps prompts and responses for a limited time to detect abuse. If the operator uses Gemini's free (unpaid) tier, Google may also use them to improve its products, and human reviewers may read them. On the paid tier Google does not use them for that.</li>
         <li>You can turn AI off entirely, and you can exclude senders, domains and labels. Exclusions are enforced on FLUENT's server before any request reaches the AI.</li>
         <li>Email content is treated as untrusted data. The AI has no ability to send, delete, forward or change email; AI-written text is only sent after you review and confirm it.</li>
         <li>FLUENT does not store AI prompts or responses. The AI access log in Settings → Privacy shows which emails were read, and you can clear it at any time.</li>
@@ -114,7 +114,7 @@ export function PrivacyPage() {
       <UL>
         <li>Google (authentication and the Gmail API).</li>
         <li>Our hosting provider (Vercel) and database provider (managed PostgreSQL, e.g. Supabase), which store the data listed in section 2.</li>
-        <li>The AI provider (xAI by default), only for AI requests you make.</li>
+        <li>The AI provider (Google, through the Gemini API, by default; or xAI or OpenAI if the operator configures them), only for AI requests you make.</li>
       </UL>
       <p>We may disclose information if required by law or to protect the security of FLUENT and its users.</p>
 

@@ -27,6 +27,7 @@ export interface ServerConfig {
   ai: boolean;
   database: boolean;
   aiProvider: string;
+  aiModel?: string;
 }
 
 const Ctx = createContext<{ session: SessionData | undefined; config: ServerConfig | undefined; loading: boolean; refresh: () => Promise<void> } | null>(null);

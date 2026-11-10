@@ -16,7 +16,7 @@ export interface Harness {
 }
 
 /** Boot the real API against a real Postgres and the HTTP-level Google/xAI fake. */
-export async function startHarness(opts: { ai?: boolean } = {}): Promise<Harness> {
+export async function startHarness(opts: { ai?: boolean; provider?: "google" | "xai" } = {}): Promise<Harness> {
   const google = await startFakeGoogle();
   Object.assign(process.env, {
     NODE_ENV: "test",
@@ -27,8 +27,12 @@ export async function startHarness(opts: { ai?: boolean } = {}): Promise<Harness
     GOOGLE_CLIENT_SECRET: google.state.clientSecret,
     FLUENT_TEST_GOOGLE_BASE: google.url,
     FLUENT_TEST_AI_BASE: `${google.url}/v1`,
-    AI_PROVIDER: "xai",
-    XAI_API_KEY: opts.ai === false ? "" : "fake-xai-key",
+    // Provider is auto-selected from whichever key is set (Gemini by default).
+    AI_PROVIDER: "",
+    AI_MODEL: "",
+    GOOGLE_GENERATIVE_AI_API_KEY: opts.ai === false || opts.provider === "xai" ? "" : "fake-gemini-key",
+    XAI_API_KEY: opts.ai === false || opts.provider !== "xai" ? "" : "fake-xai-key",
+    OPENAI_API_KEY: "",
   });
   resetEnv();
   await closeDb();

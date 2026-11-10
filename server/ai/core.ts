@@ -1,21 +1,27 @@
 import { generateText, Output, type LanguageModel } from "ai";
 import { createXai } from "@ai-sdk/xai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { z } from "zod";
-import { aiBaseUrl, aiConfigured, getEnv } from "../env.js";
+import { aiApiKey, aiBaseUrl, aiConfigured, aiProvider, getEnv } from "../env.js";
 import { HttpError, notConfigured } from "../lib/errors.js";
 import { logger } from "../logger.js";
 
-export const DEFAULT_MODELS = { xai: "grok-4.7", openai: "gpt-4.1-mini" } as const;
+export const DEFAULT_MODELS = { google: "gemini-2.5-flash", xai: "grok-4.7", openai: "gpt-4.1-mini" } as const;
+
+export function aiModelId(): string {
+  return getEnv().AI_MODEL || DEFAULT_MODELS[aiProvider()];
+}
 
 export function getModel(): LanguageModel {
   if (!aiConfigured()) throw notConfigured("AI");
-  const e = getEnv();
+  const provider = aiProvider();
+  const apiKey = aiApiKey(provider);
   const baseURL = aiBaseUrl();
-  if (e.AI_PROVIDER === "openai") {
-    return createOpenAI({ apiKey: e.OPENAI_API_KEY, baseURL })(e.AI_MODEL || DEFAULT_MODELS.openai);
-  }
-  return createXai({ apiKey: e.XAI_API_KEY, baseURL }).responses(e.AI_MODEL || DEFAULT_MODELS.xai);
+  const model = aiModelId();
+  if (provider === "google") return createGoogleGenerativeAI({ apiKey, baseURL })(model);
+  if (provider === "openai") return createOpenAI({ apiKey, baseURL })(model);
+  return createXai({ apiKey, baseURL }).responses(model);
 }
 
 /**
@@ -83,7 +89,13 @@ export async function aiCall<T = string>(o: AiCallOptions<T>): Promise<T> {
       maxRetries: 1,
       abortSignal: AbortSignal.timeout(45_000),
       maxOutputTokens: o.maxOutputTokens ?? 1500,
-      providerOptions: { xai: { reasoningEffort: "low", store: false }, openai: { store: false } },
+      providerOptions: {
+        xai: { reasoningEffort: "low", store: false },
+        openai: { store: false },
+        // Gemini 2.5 Flash: skip "thinking" for these short, latency-sensitive tasks (thinking tokens
+        // would also eat into maxOutputTokens). Other Gemini models keep their defaults.
+        google: /gemini-2\.5-flash/.test(aiModelId()) ? { thinkingConfig: { thinkingBudget: 0 } } : {},
+      },
     };
     if (o.schema) {
       const r = await generateText({ ...common, output: Output.object({ schema: o.schema }) });

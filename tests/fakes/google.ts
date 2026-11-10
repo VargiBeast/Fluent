@@ -8,7 +8,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { createHash, randomBytes } from "node:crypto";
 import { exportJWK, generateKeyPair, SignJWT, type JWK } from "jose";
 import { FakeGmail, type Mailbox } from "./gmail.js";
-import { fakeAiRespond } from "./ai.js";
+import { fakeAiRespond, fakeGeminiRespond } from "./ai.js";
 
 export interface FakeIdentity {
   sub: string;
@@ -29,7 +29,7 @@ export interface FakeGoogleState {
   refreshTokens: Map<string, string>; // refresh -> email
   revoked: string[];
   gmail: FakeGmail;
-  aiRequests: Array<{ task: string; input: string }>;
+  aiRequests: Array<{ task: string; input: string; provider: "xai" | "google"; model: string; body: Record<string, unknown> }>;
   aiFail: boolean;
   requestLog: Array<{ method: string; path: string }>;
 }
@@ -191,7 +191,19 @@ export async function startFakeGoogle(opts: { port?: number; clientId?: string; 
         if (state.aiFail) return send(res, 500, { error: { message: "upstream failure" } });
         const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
         const { task, payload } = fakeAiRespond(body);
-        state.aiRequests.push({ task, input: JSON.stringify(body.input ?? "") });
+        state.aiRequests.push({ task, input: JSON.stringify(body.input ?? ""), provider: "xai", model: String(body.model ?? ""), body });
+        return send(res, 200, payload);
+      }
+
+      // --- Gemini generateContent ---
+      const gem = /^\/v1\/models\/([^/:]+):generateContent$/.exec(path);
+      if (gem && req.method === "POST") {
+        if (req.headers["x-goog-api-key"] !== "fake-gemini-key") return send(res, 403, { error: { code: 403, message: "API key not valid", status: "PERMISSION_DENIED" } });
+        if (state.aiFail) return send(res, 500, { error: { code: 500, message: "upstream failure", status: "INTERNAL" } });
+        const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
+        const model = decodeURIComponent(gem[1]!);
+        const { task, payload } = fakeGeminiRespond(body, model);
+        state.aiRequests.push({ task, input: JSON.stringify(body.contents ?? ""), provider: "google", model, body });
         return send(res, 200, payload);
       }
 

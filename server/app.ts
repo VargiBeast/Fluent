@@ -3,7 +3,8 @@ import { secureHeaders } from "hono/secure-headers";
 import { ZodError } from "zod";
 import { HttpError } from "./lib/errors.js";
 import { logger } from "./logger.js";
-import { aiConfigured, getEnv, googleConfigured } from "./env.js";
+import { aiConfigured, aiProvider, getEnv, googleConfigured } from "./env.js";
+import { aiModelId } from "./ai/core.js";
 import type { AppEnv } from "./lib/context.js";
 import { sessionMiddleware } from "./auth/session.js";
 import { csrfMiddleware } from "./lib/csrf.js";
@@ -55,7 +56,8 @@ export function createApp() {
       google: googleConfigured(),
       ai: aiConfigured(),
       database: hasDatabase(),
-      aiProvider: getEnv().AI_PROVIDER,
+      aiProvider: aiProvider(),
+      aiModel: aiModelId(),
     }),
   );
 

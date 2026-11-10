@@ -20,7 +20,7 @@ Set these per environment (Preview and/or Production) in **Project → Settings 
 | `DATABASE_SSL` | `require` for hosted databases. |
 | `TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32`. Use different keys for preview and production. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | From Google Cloud (see [SETUP.md](SETUP.md#4-google-cloud-real-gmail)). |
-| `AI_PROVIDER`, `XAI_API_KEY` (and optional `AI_MODEL`) | AI configuration. |
+| `GOOGLE_GENERATIVE_AI_API_KEY` (or `XAI_API_KEY` / `OPENAI_API_KEY`), optional `AI_PROVIDER` and `AI_MODEL` | AI configuration. Gemini is used by default when its key is set. Use a paid Gemini key for production (see SETUP §5). |
 | `NODE_ENV` | Set automatically to `production` by Vercel, which disables the test-only endpoint overrides. |
 
 Do **not** set `FLUENT_TEST_GOOGLE_BASE` / `FLUENT_TEST_AI_BASE` in Vercel.
