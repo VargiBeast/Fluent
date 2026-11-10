@@ -29,6 +29,8 @@ export interface SessionData {
 
 export interface ServerConfig {
   google: boolean;
+  /** Outlook / Microsoft 365 sign-in is configured (MS_CLIENT_ID/MS_CLIENT_SECRET). */
+  microsoft?: boolean;
   ai: boolean;
   database: boolean;
   aiProvider: string;

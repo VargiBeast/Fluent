@@ -95,3 +95,31 @@ export async function getOwnedAccount(userId: string, accountId: string): Promis
 export async function logSecurityEvent(userId: string, type: string, detail = ""): Promise<void> {
   await getDb().insert(securityEvents).values({ userId, type, detail: detail.slice(0, 300) });
 }
+
+/** Graph permissions an Outlook account needs; Microsoft may return them bare or as full resource URLs. */
+export const REQUIRED_MS_SCOPES = ["mail.readwrite", "mail.send"];
+
+export function hasMicrosoftMailScopes(scope: string | undefined): boolean {
+  const got = (scope ?? "").toLowerCase().split(/\s+/).map((s) => s.replace(/^https:\/\/graph\.microsoft\.com\//, ""));
+  return REQUIRED_MS_SCOPES.every((r) => got.includes(r));
+}
+
+/** Store (or refresh) an Outlook / Microsoft 365 mailbox for a signed-in user. Tokens are AES-GCM encrypted. */
+export async function upsertMicrosoftAccount(userId: string, profile: { id: string; email: string; name: string }, tokens: { access_token: string; expires_in: number; refresh_token?: string; scope?: string }): Promise<AccountRow> {
+  const sub = `ms:${profile.id}`;
+  const aad = `${userId}:${sub}`;
+  const values = {
+    provider: "outlook",
+    email: profile.email,
+    name: profile.name,
+    scopes: tokens.scope ?? "",
+    accessTokenEnc: encrypt(tokens.access_token, "token", aad),
+    accessTokenExpiresAt: new Date(Date.now() + (tokens.expires_in - 60) * 1000),
+    status: !tokens.refresh_token ? "needs_reauth" : hasMicrosoftMailScopes(tokens.scope) ? "active" : "insufficient_scopes",
+    updatedAt: new Date(),
+    ...(tokens.refresh_token ? { refreshTokenEnc: encrypt(tokens.refresh_token, "token", aad) } : {}),
+  };
+  const [row] = await getDb().insert(accounts).values({ userId, googleSub: sub, ...values })
+    .onConflictDoUpdate({ target: [accounts.userId, accounts.googleSub], set: values }).returning();
+  return row!;
+}
