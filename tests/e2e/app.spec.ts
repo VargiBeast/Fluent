@@ -64,6 +64,24 @@ test("archives with a keyboard shortcut and syncs to Gmail", async () => {
   await expect(page.locator('[data-thread-id="t-school"]')).toBeVisible();
 });
 
+test("snoozes a conversation into the Snoozed folder and unsnoozes it", async () => {
+  await page.goto("/app/inbox");
+  await page.locator('[data-thread-id="t-flight"]').click();
+  await page.getByRole("button", { name: "Snooze or remind (z)" }).click();
+  await expect(page.getByRole("menuitem", { name: /Tomorrow/ })).toBeVisible();
+  await shot(page, "21-snooze-menu");
+  await page.getByRole("menuitem", { name: /Tomorrow/ }).click();
+  await expect(page.getByText(/Snoozed until/).first()).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-flight"]')).toHaveCount(0);
+  await page.goto("/app/snoozed");
+  await page.locator('[data-thread-id="t-flight"]').click();
+  await expect(page.getByRole("status").filter({ hasText: "Snoozed until" })).toBeVisible();
+  await page.getByRole("button", { name: "Unsnooze" }).click();
+  await expect(page.getByText("Back in your Inbox")).toBeVisible();
+  await page.goto("/app/inbox");
+  await expect(page.locator('[data-thread-id="t-flight"]')).toBeVisible();
+});
+
 test("composes a new email with AI help, formatting and confirmation", async () => {
   await page.goto("/app/inbox");
   await page.getByRole("button", { name: "Compose" }).first().click();
@@ -103,15 +121,73 @@ test("AI Overview shows a briefing grounded in real threads", async () => {
   await shot(page, "06-overview");
 });
 
+test("follow-up radar drafts a nudge through the confirm flow", async () => {
+  await page.goto("/app/overview");
+  const radar = page.getByRole("region", { name: "Follow-up radar" });
+  await expect(radar).toBeVisible();
+  await radar.getByRole("button", { name: "Draft nudge: Contract draft for the Fjord Labs pilot" }).click();
+  const dialog = page.getByRole("dialog", { name: "Review the draft" });
+  await expect(dialog.getByText("To: jonas@fjordlabs.example")).toBeVisible();
+  await shot(page, "20-radar-nudge");
+  await dialog.getByRole("button", { name: /Confirm/ }).click();
+  await expect(dialog.getByTestId("plan-result")).toContainText("saved 1 draft");
+  await page.keyboard.press("Escape");
+});
+
 test("Copilot answers with sources and opens the cited email", async () => {
   await page.getByRole("button", { name: "Ask Copilot" }).click();
   const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
-  await panel.getByRole("textbox", { name: "Ask Copilot" }).fill("What does the invoice say?");
-  await panel.getByRole("button", { name: "Send question" }).click();
+  await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("What does the invoice say?");
+  await panel.getByRole("button", { name: "Send to Copilot" }).click();
   await expect(panel.getByText("Sources")).toBeVisible();
   await shot(page, "07-copilot");
   await panel.getByRole("button", { name: /invoice|Receipt/i }).first().click();
   await expect(page).toHaveURL(/\/app\/all\//);
+});
+
+test("Copilot turns an instruction into a plan, runs it only after Confirm, and can undo (⌘K)", async () => {
+  await page.goto("/app/inbox");
+  await expect(page.locator('[data-thread-id="t-news"]')).toBeVisible();
+  await page.keyboard.press("Control+k");
+  const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
+  await expect(panel).toBeVisible();
+  await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("Archive the newsletters");
+  await panel.getByRole("button", { name: "Send to Copilot" }).click();
+  const card = panel.getByTestId("plan-card");
+  await expect(card.getByText("Archive 2 conversations")).toBeVisible();
+  await expect(card.getByText("10 interface patterns worth stealing")).toBeVisible();
+  // Untick one conversation; nothing has changed yet.
+  await card.getByRole("checkbox", { name: "Include Account notice" }).uncheck();
+  await expect(page.locator('[data-thread-id="t-news"]')).toBeVisible();
+  await shot(page, "15-copilot-plan-preview");
+  await card.getByRole("button", { name: /Confirm/ }).click();
+  await expect(card.getByTestId("plan-result")).toContainText("archived 1 conversation");
+  await expect(page.locator('[data-thread-id="t-news"]')).toHaveCount(0);
+  await expect(page.locator('[data-thread-id="t-injection"]')).toBeVisible();
+  await shot(page, "16-copilot-result");
+  await card.getByRole("button", { name: "Undo" }).click();
+  await expect(card.getByText("Undone.")).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-news"]')).toBeVisible();
+
+  // Sending: full email shown, extra confirmation, nothing sent until then.
+  const before = (await e2eState(page)).sent;
+  await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("Send a reply to sofia saying Thursday works");
+  await panel.getByRole("button", { name: "Send to Copilot" }).click();
+  const sendCard = panel.getByTestId("plan-card").last();
+  await expect(sendCard.getByText("To: sofia@northwind.example")).toBeVisible();
+  await expect(sendCard.getByTestId("draft-body")).toContainText("Thursday");
+  await sendCard.getByRole("button", { name: /Confirm/ }).click();
+  const risk = sendCard.getByRole("alertdialog", { name: "Confirm risky actions" });
+  await expect(risk).toContainText("Send 1 email");
+  await expect(risk.getByRole("button", { name: "Send 1" })).toBeDisabled();
+  await shot(page, "17-copilot-send-confirm");
+  expect((await e2eState(page)).sent).toBe(before);
+  await risk.getByRole("checkbox").check();
+  await risk.getByRole("button", { name: "Send 1" }).click();
+  await expect(sendCard.getByTestId("plan-result")).toContainText("sent 1 email");
+  expect((await e2eState(page)).sent).toBe(before + 1);
+  await page.keyboard.press("Escape");
+  expect(errors).toEqual([]);
 });
 
 test("privacy dashboard lists AI access by subject and enforces exclusions", async () => {

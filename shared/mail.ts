@@ -85,7 +85,7 @@ export interface LabelsResponse {
   accounts: Array<{ accountId: string; labels: GmailLabel[]; counts: Record<string, number> }>;
 }
 
-export const FOLDERS = ["inbox", "starred", "important", "sent", "drafts", "archive", "spam", "trash", "all"] as const;
+export const FOLDERS = ["inbox", "starred", "snoozed", "important", "sent", "drafts", "archive", "spam", "trash", "all"] as const;
 export type Folder = (typeof FOLDERS)[number];
 
 export const CATEGORIES = ["primary", "promotions", "social", "updates", "forums"] as const;

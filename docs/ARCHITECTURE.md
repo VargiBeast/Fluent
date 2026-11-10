@@ -10,8 +10,9 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /mail      threads, thread actions, labels, filters, attachments, sync, drafts list
    │                                   ├─ /compose   send, drafts CRUD
    │                                   ├─ /ai        insights, draft, rewrite, search, ask, copilot, overview
+   │                                   ├─ /copilot   plan (AI → typed plan + preview), plans/:id/execute|cancel, undo/:id
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
-   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits
+   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
    └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
@@ -24,7 +25,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
 | `web/src/components/ui` | The small in-repo component system: Button, IconButton, Field/Input/Switch, Dialog/ConfirmDialog, Menu, Avatar, Chip, Badge, Skeleton, EmptyState, Card and Logo. It is built on Radix primitives and Tailwind v4 design tokens (`web/src/styles/index.css`). |
 | `web/src/lib` | API client (CSRF header), session/theme provider, TanStack Query hooks with optimistic thread actions, sanitizer, compose helpers and settings mutation. |
 | `server/` | Hono API: `routes/`, `services/` (Gmail-backed mail operations), `gmail/` (client with token refresh, parsers, MIME builder), `ai/` (core guardrails, policy/audit, features), `auth/`, `db/`, `lib/` (errors, CSRF, rate limit). |
-| `shared/` | Types and zod schemas shared by web and server (`mail.ts`, `settings.ts`). |
+| `shared/` | Types and zod schemas shared by web and server (`mail.ts`, `settings.ts`, `copilot.ts`). |
 | `api/index.ts` | Vercel entry: `hono/vercel` handlers for all methods. |
 | `drizzle/` | SQL migrations and the Drizzle journal. |
 | `tests/` | `unit/`, `web/` (jsdom), `integration/` (real Postgres + HTTP fakes), `e2e/` (Playwright), `fakes/` (fake Google OAuth/OIDC, Gmail, Gemini and xAI servers plus seed mailbox). |
@@ -55,3 +56,15 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
 - **Web (jsdom):** sanitizer (XSS vectors, link rewriting, tracker blocking, cid images) and the iframe CSP.
 - **Integration:** the real Hono app against a real Postgres, with HTTP-level fakes for Google OAuth/OIDC (PKCE verification, JWKS-signed ID tokens, refresh/revoke), Gmail REST, the Gemini generateContent API and the xAI Responses API. Covers auth/CSRF/sessions, mail, compose, AI features, exclusions, audit/retention, export/delete and cross-user isolation.
 - **E2E (Playwright):** the built SPA plus API against the same fakes, at 1440×900 and 390×844, with screenshots.
+
+## Copilot actions
+
+1. `POST /api/copilot/plan {instruction, context?}`. The planner model (task `plan`, `server/copilot/plan.ts`) sees only the instruction, label names and account addresses. It returns `intent` (actions, question or unclear) plus up to 5 typed actions. Questions are routed to "Ask your inbox" (or the open-thread Q&A), and unclear requests get a clarifying reply.
+2. `validatePlan` enforces the allowlist and caps, downgrades send to draft unless the user said "send", and requires typed recipients for new emails.
+3. `server/copilot/service.ts` resolves each action with `listThreads` (≤ 50, excluded threads removed, already-applied threads skipped) or the open thread. It drafts reply bodies with `draftEmail`; recipients and headers come from Gmail metadata. It then stores the plan encrypted in `copilot_plans` (10-minute TTL, bound to user and session) and returns a `PlanPreview`.
+4. The UI (`web/src/app/copilot/Copilot.tsx`, `PlanCard`) shows the plan with per-action and per-conversation checkboxes. Trash and send get an extra confirmation. Copilot opens from the sidebar, the reader, the Overview or ⌘K / Ctrl+K (`copilot/context.tsx`).
+5. `POST /api/copilot/plans/:id/execute {selections, confirmTrash?, confirmSend?}` validates that the selections are a subset of the plan, claims it atomically, runs the Gmail calls (labels, `threads.modify`, `threads.trash`, `drafts.create`, `messages.send`), returns per-action results and stores an inverse undo plan (`POST /api/copilot/undo/:id`).
+
+## Snooze and reminders
+
+`POST /api/mail/snoozes {accountId, threadId, until, kind}` stores a row in `snoozes`. For `snooze`, it also moves the thread out of the Inbox and adds the user label "Snoozed" (the Snoozed folder is `label:snoozed`). `remind` changes nothing in Gmail until it is due. There is no cron: every `/api/mail/sync` poll (about every 45 s while FLUENT is open) runs `processDueSnoozes`. That claims due rows with `DELETE … RETURNING`, so it is idempotent across tabs. A snooze returns to the Inbox unread. A reminder fires only if the user's message is still the last one: it is brought back to the Inbox, unread and starred. Anything due while FLUENT was closed comes back on the next load.

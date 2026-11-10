@@ -63,4 +63,9 @@ The preview uses a Supabase Postgres database:
 - The app connects through the Supabase transaction pooler (port 6543) as a dedicated login role, `fluent_app`. It is not a superuser, has no `BYPASSRLS`, and has only `SELECT/INSERT/UPDATE/DELETE` on the app tables, which migration `0002_app_role.sql` grants together with a `fluent_app_all` RLS policy. The role and its password are created outside the repo; migrations run as `postgres`.
 - Preview-only variables, scoped to the `rebuild` branch: `DATABASE_URL` (sensitive), `DATABASE_SSL=require`, `TOKEN_ENCRYPTION_KEY` (sensitive), `APP_URL`. No Google or xAI variables are set yet, so sign-in and AI stay disabled on the preview.
 
-`GET /api/health` is a liveness check with no dependencies. `GET /api/ready` runs a trivial query against `users` and returns `{"ok":true,"database":"ok"}`, or a 503 with `"not_configured"` or `"error"` (details are logged, never returned).
+`GET /api/health` is a liveness check with no dependencies. `GET /api/ready` runs a trivial query against `users` and returns `{"ok":true,"database":"ok"}`, or a 503 with `"not_configured"` or `"error"` (details are logged, never returned). `GET /api/ready?deep=1` also checks the external credentials:
+
+- **`ai`:** sends a tiny synthetic prompt to the AI provider and discards the output.
+- **`googleClient`:** exchanges a bogus OAuth code. Google answers `invalid_grant` when the client ID and secret are valid, and `invalid_client` when they are not.
+
+Each check returns `ok`, `error`, `not_configured` or `invalid_client`. Deep checks are rate limited (5 per IP per 10 minutes, 30 per hour in total) and cached for 60 seconds.

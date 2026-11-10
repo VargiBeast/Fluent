@@ -28,6 +28,7 @@ export function folderQuery(folder: Folder, category?: Category, labelId?: strin
   switch (folder) {
     case "inbox": return { labelIds: ["INBOX", ...(category ? [CATEGORY_LABEL[category]] : [])], q: "", includeSpamTrash: false };
     case "starred": return { labelIds: ["STARRED"], q: "", includeSpamTrash: false };
+    case "snoozed": return { labelIds: [], q: "label:snoozed", includeSpamTrash: false };
     case "important": return { labelIds: ["IMPORTANT"], q: "", includeSpamTrash: false };
     case "sent": return { labelIds: ["SENT"], q: "", includeSpamTrash: false };
     case "drafts": return { labelIds: ["DRAFT"], q: "", includeSpamTrash: false };

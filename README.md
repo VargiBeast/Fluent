@@ -25,13 +25,16 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - Search with Gmail syntax, plus **natural-language search** ("invoice I got last month") that shows the generated Gmail query
 - Gmail filters: create and delete
 - Polling-based sync with in-app and desktop notifications
-- Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `g i`, `g o`, `?`) and dark (default), light or system theme
+- **Snooze** (later today, tomorrow, weekend, next week) into a Snoozed folder, and **remind me if no reply** for sent mail. Both return automatically on the next sync after they are due, so no cron is needed.
+- **Follow-up radar** in the AI Overview: sent mail still waiting on a reply, and questions you haven't answered, with one-click drafted nudges (confirm first)
+- Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `g i`, `g o`, `?`, `⌘K` for Copilot) and dark (default), light or system theme
 
 **AI** (Google Gemini by default, with xAI Grok or OpenAI as options, through the Vercel AI SDK)
 - A thread summary with key points, action items, deadlines and quick replies
 - "Explain this email simply" and questions about a specific thread
 - Draft new emails or replies from an instruction, then make them shorter or longer, fix grammar, or change the tone
 - **Ask your inbox / Copilot**: answers grounded in your emails, with links to the sources
+- **Copilot actions** (⌘K): tell it what to do ("archive newsletters from this week", "star everything from Sofia", "draft follow-ups"). It shows a plan with every affected conversation and the full draft text. Nothing runs until you confirm, Trash and send need an extra confirmation, and archive, star, read and label changes can be undone.
 - **AI Overview**: a daily briefing of what needs a reply, what you're waiting on, deadlines and important mail. A Gmail-only triage still works without AI.
 - A mandatory confirmation step before any AI-written text is sent
 

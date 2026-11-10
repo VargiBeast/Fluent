@@ -11,6 +11,8 @@ import { ComposerProvider, useComposer } from "./composer/context";
 import { ComposerHost } from "./composer/Composer";
 import { ShortcutsProvider } from "./Shortcuts";
 import { Splash } from "@/components/Splash";
+import { CopilotProvider } from "./copilot/context";
+import { CopilotHost } from "./copilot/Copilot";
 
 export const SidebarContext = { open: () => {} };
 
@@ -23,7 +25,9 @@ export function AppLayout() {
   return (
     <ComposerProvider>
       <ShortcutsProvider>
-        <Shell />
+        <CopilotProvider>
+          <Shell />
+        </CopilotProvider>
       </ShortcutsProvider>
     </ComposerProvider>
   );
@@ -59,6 +63,7 @@ function Shell() {
         <Outlet />
       </main>
       <ComposerHost />
+      <CopilotHost />
     </div>
   );
 }
@@ -107,10 +112,15 @@ function useMailSync() {
     const tick = async () => {
       if (document.visibilityState !== "visible" || stopped) return;
       try {
-        const r = await api.get<{ changed: boolean; newInbox: number }>("/mail/sync");
+        const r = await api.get<{ changed: boolean; newInbox: number; snoozeReturned?: number; remindersDue?: number }>("/mail/sync");
         if (r.changed) {
           void qc.invalidateQueries({ queryKey: ["threads"] });
           void qc.invalidateQueries({ queryKey: ["labels"] });
+        }
+        const back = (r.snoozeReturned ?? 0) + (r.remindersDue ?? 0);
+        if (back > 0) {
+          void qc.invalidateQueries({ queryKey: ["snoozes"] });
+          if (notif?.inApp !== false) toast(back === 1 ? "1 conversation is back in your Inbox" : `${back} conversations are back in your Inbox`, { description: r.remindersDue ? "Including a reminder: nobody replied yet." : "Your snooze ended." });
         }
         if (r.newInbox > 0) {
           const msg = r.newInbox === 1 ? "1 new email" : `${r.newInbox} new emails`;
