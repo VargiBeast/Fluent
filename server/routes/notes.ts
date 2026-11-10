@@ -7,7 +7,7 @@ import { noteInputSchema } from "../../shared/notes.js";
 import { deleteNote, getNote, saveNote } from "../services/notes.js";
 
 const uuid = z.string().uuid();
-const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
+const gid = z.string().regex(/^[A-Za-z0-9_=.~-]{1,256}$/);
 
 /** Private notes on conversations: /api/notes/:accountId/:threadId (GET, PUT, DELETE). */
 export const noteRoutes = new Hono<AppEnv>();

@@ -10,7 +10,7 @@ import { HttpError } from "../lib/errors.js";
 import { answerAboutThread, askInbox, buildOverview, draftEmail, explainThread, interpretSearch, loadPolicy, replySuggestions, rewriteText, securityReview, threadInsights } from "../ai/features.js";
 
 const uuid = z.string().uuid();
-const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
+const gid = z.string().regex(/^[A-Za-z0-9_=.~-]{1,256}$/);
 
 export const aiRoutes = new Hono<AppEnv>();
 aiRoutes.use("*", async (c, next) => {

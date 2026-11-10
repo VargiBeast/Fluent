@@ -10,7 +10,7 @@ import { HttpError } from "../lib/errors.js";
 import { providerFor, type MailProvider } from "../providers/index.js";
 
 const MAX_ATTACH_BYTES = 3_500_000; // Vercel Functions cap request bodies at 4.5 MB
-const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
+const gid = z.string().regex(/^[A-Za-z0-9_=.~-]{1,256}$/);
 const addressField = z.string().trim().min(3).max(320).refine((s) => !/[\r\n]/.test(s)).refine((s) => {
   const a = parseAddress(s);
   return z.string().email().safeParse(a.email).success;
@@ -21,7 +21,7 @@ const attachment = z.object({
   mimeType: z.string().max(127).default("application/octet-stream"),
   size: z.number().int().nonnegative().optional(),
   data: z.string().max(5_000_000).optional(),
-  source: z.object({ messageId: gid, attachmentId: z.string().regex(/^[A-Za-z0-9_-]{1,1024}$/) }).optional(),
+  source: z.object({ messageId: gid, attachmentId: z.string().regex(/^[A-Za-z0-9_=.~-]{1,1024}$/) }).optional(),
 }).refine((a) => Boolean(a.data) !== Boolean(a.source), "Attachment needs data or a Gmail source");
 
 const messageSchema = z.object({
@@ -36,7 +36,7 @@ const messageSchema = z.object({
   inReplyTo: z.string().max(998).optional(),
   references: z.string().max(4000).optional(),
   attachments: z.array(attachment).max(20).default([]),
-  draftId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).optional(),
+  draftId: z.string().regex(/^[A-Za-z0-9_=.~-]{1,256}$/).optional(),
 });
 
 const sendSchema = messageSchema.extend({

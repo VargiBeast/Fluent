@@ -132,5 +132,13 @@ Every mailbox sits behind `MailProvider` (`server/providers/types.ts`). It cover
   - Search maps a small, safe subset of Gmail syntax to IMAP SEARCH; `is:important` maps to flagged.
   - Sending goes over SMTP (Bcc only in the envelope). A copy is appended to Sent, and drafts are kept in the Drafts folder.
   - Sync compares INBOX UIDNEXT.
+- **Outlook / Microsoft 365** (`providers/graph.ts`, Microsoft Graph REST over `fetch`):
+  - Tokens come from the encrypted account row and are refreshed on expiry or on a 401. Microsoft rotates refresh tokens, so the newest one is always stored. `invalid_grant` marks the account `needs_reauth`.
+  - Requests ask for immutable ids (`Prefer: IdType="ImmutableId"`). Graph ids are base64, so FLUENT writes `+` as `.` and `/` as `~`. Ids are validated against `[A-Za-z0-9_=.~-]{1,256}` (Gmail keeps its stricter check) and percent-encoded before every call.
+  - A thread is one message, as with IMAP. Folders are Graph well-known folders. Flags map to `isRead`, `flag.flagStatus` and `importance` (so focus mode and the Important folder work).
+  - `is:` operators become OData `$filter`s, and other text becomes a quoted KQL `$search` (quotes stripped). Graph can't combine `$search` with `$filter` or paging, so a search returns one ranked page and is filtered locally.
+  - Bodies and attachments come from the message's MIME (`/$value`) through the same mailparser code as IMAP.
+  - Sending posts the MIME to `/me/sendMail`, and Outlook files it in Sent Items. Drafts are created from MIME in Drafts. Replacing or deleting a draft first checks `isDraft`, so the drafts API can never delete a real email.
+  - Sync runs a delta query on the Inbox. The delta link is stored in `history_id` as `delta:<link>`, and it is followed only if it stays on the Graph base URL. The first run is limited to the last day.
 - **Capabilities** (`categories`, `labels`, `filters`, `sendAs`, `importance`) come with each account in the session. The UI hides Gmail categories when no account in view has them. Gmail-only endpoints (filters, labels CRUD, send-as, unsubscribe, stats) return 400 `not_supported_for_provider`. The All inboxes list leaves categories and Gmail labels empty for other providers rather than failing.
 - `pnpm check:serverless-mail` bundles `api/index.ts` and an IMAP/SMTP probe for node20 with every dependency inlined, then runs them from a folder without node_modules against local fakes. That shows the stack works as a Vercel Function and closes its connections after each invocation.

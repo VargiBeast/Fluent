@@ -13,7 +13,7 @@ import { cancelSnooze, listSnoozes, processDueSnoozes, setSnooze } from "../serv
 import { addReadLater, listReadLater, listReadLaterThreads, removeReadLater } from "../services/readLater.js";
 
 const uuid = z.string().uuid();
-const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
+const gid = z.string().regex(/^[A-Za-z0-9_=.~-]{1,256}$/);
 
 const listQuery = z.object({
   account: z.union([z.literal("all"), uuid]).optional(),
@@ -62,7 +62,7 @@ mailRoutes.post("/threads/:accountId/:threadId/labels", async (c) => {
 mailRoutes.get("/attachments/:accountId/:messageId/:attachmentId", async (c) => {
   const user = requireUser(c);
   const q = z.object({ name: z.string().max(255).default("attachment"), inline: z.enum(["1"]).optional() }).parse(c.req.query());
-  const data = await getAttachment(user.id, uuid.parse(c.req.param("accountId")), gid.parse(c.req.param("messageId")), z.string().min(1).max(1024).regex(/^[A-Za-z0-9_-]+$/).parse(c.req.param("attachmentId")));
+  const data = await getAttachment(user.id, uuid.parse(c.req.param("accountId")), gid.parse(c.req.param("messageId")), z.string().min(1).max(1024).regex(/^[A-Za-z0-9_=.~-]+$/).parse(c.req.param("attachmentId")));
   const safeName = q.name.replace(/[^\w.\- ()[\]]+/g, "_").slice(0, 120) || "attachment";
   // Always served as an opaque download; never rendered by the browser as HTML/JS.
   return new Response(new Uint8Array(data), {
