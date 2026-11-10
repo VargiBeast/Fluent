@@ -12,6 +12,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /ai        insights, draft, rewrite, search, ask, copilot, overview
    │                                   ├─ /copilot   plan (AI → typed plan + preview), plans/:id/execute|cancel, undo/:id
    │                                   ├─ /templates saved replies CRUD (per user, encrypted)
+   │                                   ├─ /send-as   Gmail send-as display name + signature (gmail.settings.basic)
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
    ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
@@ -81,3 +82,7 @@ The thread list keeps a selection set (checkbox, shift-click range, `x`/`Esc`, l
 ## Templates
 
 Saved replies live in `templates` (name, subject and text, each AES-GCM encrypted with purpose `template` and AAD `userId:rowId`). `GET/POST /api/templates` and `PUT/DELETE /api/templates/:id` are scoped to the session user (another user's id returns 404) and validated by `shared/templates.ts` (single-line name and subject, at most 10,000 characters of text, 100 templates per user). In the composer, the Templates button or `⌘/Ctrl + ;` opens a searchable picker (`web/src/app/composer/TemplatePicker.tsx`) that inserts the text at the cursor as escaped paragraphs, and fills the subject only when it's empty. Templates are managed in Settings → Templates and included in the data summary and JSON export.
+
+## Signatures and sender name
+
+`GET /api/send-as` lists each connected account's Gmail send-as identities (`users.settings.sendAs.list`). `PATCH /api/send-as/:accountId/:email {displayName?, signature?}` updates one of them (`sendAs.patch`, scope `gmail.settings.basic`). The address must be one Gmail lists for that owned account, the name is single-line without `<>"`, and the signature (≤ 10,000 characters) is stripped of scripts, event handlers and `javascript:` links before it goes to Gmail. Nothing is stored in FLUENT's database; the change is logged as a security event (`gmail_sendas_updated`, no content). Mail sent from the composer uses the Gmail display name of the account's own address in `From:`, falling back to the Google profile name. Settings → Signatures & name previews the signature sanitised in a sandboxed iframe and edits it with TipTap; signatures with images or inline styling show a warning first, since the editor keeps only basic formatting. "Use this one in FLUENT too" copies a plain-text version into the composer signature (AI preferences).
