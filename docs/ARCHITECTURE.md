@@ -13,6 +13,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /copilot   plan (AI → typed plan + preview), plans/:id/execute|cancel, undo/:id
    │                                   ├─ /templates saved replies CRUD (per user, encrypted)
    │                                   ├─ /send-as   Gmail send-as display name + signature (gmail.settings.basic)
+   │                                   ├─ /stats     inbox stats from live Gmail metadata
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
    ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
@@ -86,3 +87,7 @@ Saved replies live in `templates` (name, subject and text, each AES-GCM encrypte
 ## Signatures and sender name
 
 `GET /api/send-as` lists each connected account's Gmail send-as identities (`users.settings.sendAs.list`). `PATCH /api/send-as/:accountId/:email {displayName?, signature?}` updates one of them (`sendAs.patch`, scope `gmail.settings.basic`). The address must be one Gmail lists for that owned account, the name is single-line without `<>"`, and the signature (≤ 10,000 characters) is stripped of scripts, event handlers and `javascript:` links before it goes to Gmail. Nothing is stored in FLUENT's database; the change is logged as a security event (`gmail_sendas_updated`, no content). Mail sent from the composer uses the Gmail display name of the account's own address in `From:`, falling back to the Google profile name. Settings → Signatures & name previews the signature sanitised in a sandboxed iframe and edits it with TipTap; signatures with images or inline styling show a warning first, since the editor keeps only basic formatting. "Use this one in FLUENT too" copies a plain-text version into the composer signature (AI preferences).
+
+## Inbox stats
+
+`GET /api/stats?days=7|30|90&account=&tz=` (`server/services/stats.ts`) lists the conversations active in the window (`threads.list q=newer_than:Nd -in:chats -in:drafts`, up to 400 across accounts, most recent first) and reads them with `threads.get?format=metadata&metadataHeaders=From` (bounded concurrency). Only sender, date and labels are used and nothing is stored. `computeStats` (pure, unit-tested) buckets received and sent mail per calendar day (per week from Monday for 90 days) in the user's time zone, ranks the top 10 senders, builds an hour-of-day histogram, and measures response time from the first message you hadn't answered to your next reply in the same conversation (average, median and a distribution). Spam, Trash, drafts and chats are ignored. If the conversation cap is reached the response says so (`sample.truncated`) and the page shows it. Rate limited to 10/min per user. The page is `/app/stats` (`web/src/app/Stats.tsx`), with CSS bar charts and screen-reader tables.
