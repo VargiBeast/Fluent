@@ -116,3 +116,7 @@ Voice commands (`web/src/lib/voiceCommand.ts`, English and Norwegian) only work 
 - **Reply:** finds the latest conversation from that person with an ordinary quoted `from:"Name"` search and opens the normal reply composer with "Hi Ola,\n\nI'll come at 3.".
 - **New email:** looks up the address from recent mail.
 - The composer saves the result to Gmail Drafts right away (`voice: true`) and says it won't be sent unless the user presses Send. There is no code path from a voice command to sending, even if the user says "send".
+
+## Themes and accent colours
+`appearance.theme` (dark, light, system) and `appearance.accent` (purple, blue, teal, rose, orange) live in the per-user settings JSON, so no migration is needed. The session provider sets `.dark` and `data-accent` on `<html>`. `index.css` overrides only the accent tokens for each accent, in a light block and a `.dark` block. `tests/unit/contrast.test.ts` checks every theme × accent pair against WCAG AA (4.5:1), including text on translucent accent backgrounds. An accent added to `ACCENTS` without CSS blocks fails that test.
+

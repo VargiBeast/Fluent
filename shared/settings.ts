@@ -1,10 +1,15 @@
 import { z } from "zod";
 
+/** Accent colours. Purple is FLUENT's brand default; each one has light and dark tokens in index.css. */
+export const ACCENTS = ["purple", "blue", "teal", "rose", "orange"] as const;
+export type Accent = (typeof ACCENTS)[number];
+
 export const settingsSchema = z.object({
   appearance: z.object({
     theme: z.enum(["dark", "light", "system"]).default("dark"),
     density: z.enum(["comfortable", "compact"]).default("comfortable"),
     readingPane: z.enum(["right", "full"]).default("right"),
+    accent: z.enum(ACCENTS).catch("purple").default("purple"),
   }).prefault({}),
   notifications: z.object({
     desktop: z.boolean().default(false),
@@ -41,6 +46,7 @@ export const settingsPatchSchema = z.object({
     theme: z.enum(["dark", "light", "system"]),
     density: z.enum(["comfortable", "compact"]),
     readingPane: z.enum(["right", "full"]),
+    accent: z.enum(ACCENTS),
   }).partial().strict().optional(),
   notifications: z.object({ desktop: z.boolean(), inApp: z.boolean(), importantOnly: z.boolean() }).partial().strict().optional(),
   ai: z.object({

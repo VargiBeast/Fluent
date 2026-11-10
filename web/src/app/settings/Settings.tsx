@@ -9,6 +9,7 @@ import { aiProviderName } from "@/lib/ai";
 import { useUpdateSettings } from "@/lib/settings";
 import { useLabels } from "@/lib/mail";
 import { cn } from "@/lib/cn";
+import { ACCENTS, type Accent } from "@shared/settings";
 import { fullDate, relative } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
@@ -130,6 +131,27 @@ function Segmented<T extends string>({ value, options, onChange, label }: { valu
   );
 }
 
+const ACCENT_SWATCH: Record<Accent, { label: string; color: string }> = {
+  purple: { label: "Purple", color: "#7c3aed" },
+  blue: { label: "Blue", color: "#2563eb" },
+  teal: { label: "Teal", color: "#0f766e" },
+  rose: { label: "Rose", color: "#e11d48" },
+  orange: { label: "Orange", color: "#c2410c" },
+};
+
+function AccentPicker({ value, onChange }: { value: Accent; onChange: (v: Accent) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Accent colour" className="flex gap-2">
+      {ACCENTS.map((a) => (
+        <button key={a} type="button" role="radio" aria-checked={value === a} aria-label={ACCENT_SWATCH[a].label} title={ACCENT_SWATCH[a].label} onClick={() => onChange(a)}
+          className={cn("flex size-8 items-center justify-center rounded-full border-2", value === a ? "border-fg" : "border-transparent hover:border-line-strong")}>
+          <span className="size-5 rounded-full" style={{ background: ACCENT_SWATCH[a].color }} aria-hidden />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Row({ label, description, children }: { label: string; description?: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
@@ -243,6 +265,9 @@ function AppearanceSection() {
     <Panel title="Appearance">
       <Row label="Theme" description="Dark is FLUENT's default.">
         <Segmented label="Theme" value={s.appearance.theme} onChange={(theme) => update.mutate({ appearance: { theme } })} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} />
+      </Row>
+      <Row label="Accent colour" description="Used for buttons, links and highlights, in both themes.">
+        <AccentPicker value={s.appearance.accent} onChange={(accent) => update.mutate({ appearance: { accent } })} />
       </Row>
       <Row label="Density" description="Compact fits more conversations on screen.">
         <Segmented label="Density" value={s.appearance.density} onChange={(density) => update.mutate({ appearance: { density } })} options={[{ value: "comfortable", label: "Comfortable" }, { value: "compact", label: "Compact" }]} />
