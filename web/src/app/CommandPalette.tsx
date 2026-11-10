@@ -1,8 +1,11 @@
 import * as RD from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMatch, useNavigate } from "react-router-dom";
+import { ACCENTS } from "@shared/settings";
+import { FOCUS_CHOICES } from "@shared/focus";
+import { FOCUS_LABELS, useFocusMode } from "@/lib/focus";
 import {
-  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, MailMinus, Search, SearchCheck, Send, StickyNote, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
+  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, MailMinus, Palette, Focus, Search, SearchCheck, Send, StickyNote, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useSession } from "@/lib/session";
@@ -34,6 +37,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const shortcuts = useShortcutsDialog();
   const { session } = useSession();
   const update = useUpdateSettings();
+  const focus = useFocusMode();
   const inThread = useMatch("/app/:folder/:accountId/:threadId");
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
@@ -49,6 +53,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const commands = useMemo<Runnable[]>(() => {
     const go = (path: string) => () => navigate(path);
     const theme = session?.settings?.appearance.theme ?? "dark";
+    const accent = session?.settings?.appearance.accent ?? "purple";
     const list: Runnable[] = [
       { id: "copilot", group: "Copilot", title: "Open Copilot", keywords: "ai ask assistant", icon: <Sparkles />, run: () => copilot.open() },
       { id: "compose", group: "Actions", title: "Compose new email", keywords: "write new message", shortcut: "c", icon: <PenSquare />, run: () => composer.open({ mode: "new" }) },
@@ -73,6 +78,13 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         id: "theme", group: "Settings", title: theme === "light" ? "Switch to dark theme" : "Switch to light theme", keywords: "appearance mode dark light",
         icon: theme === "light" ? <Moon /> : <Sun />, run: () => update.mutate({ appearance: { theme: theme === "light" ? "dark" : "light" } }),
       },
+      ...ACCENTS.filter((a) => a !== accent).map((a): Runnable => ({
+        id: `accent-${a}`, group: "Settings", title: `Accent colour: ${a[0]!.toUpperCase()}${a.slice(1)}`, keywords: "theme colour color appearance accent",
+        icon: <Palette />, run: () => update.mutate({ appearance: { accent: a } }),
+      })),
+      ...(focus.active
+        ? [{ id: "focus-stop", group: "Actions", title: "Exit focus mode", keywords: "focus important only distraction", icon: <Focus />, run: () => focus.stop() } as Runnable]
+        : FOCUS_CHOICES.map((c): Runnable => ({ id: `focus-${c}`, group: "Actions", title: `Focus mode: ${FOCUS_LABELS[c].toLowerCase()}`, keywords: "focus important only distraction do not disturb", icon: <Focus />, run: () => focus.start(c) }))),
       { id: "shortcuts", group: "Settings", title: "Keyboard shortcuts", shortcut: "?", icon: <Keyboard />, run: () => shortcuts.open() },
     ];
     if (inThread) {
@@ -88,7 +100,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       );
     }
     return list;
-  }, [navigate, composer, copilot, shortcuts, update, session?.settings?.appearance.theme, inThread]);
+  }, [navigate, composer, copilot, shortcuts, update, session?.settings?.appearance.theme, session?.settings?.appearance.accent, focus, inThread]);
 
   const results = useMemo(() => {
     const r = filterCommands(commands, q);

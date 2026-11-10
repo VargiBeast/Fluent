@@ -7,7 +7,7 @@ import { Analytics } from "@vercel/analytics/react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import "./styles/index.css";
 import { ApiError } from "@/lib/api";
-import { SessionProvider } from "@/lib/session";
+import { SessionProvider, useSession } from "@/lib/session";
 import { Splash } from "@/components/Splash";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LandingPage } from "@/pages/Landing";
@@ -25,6 +25,13 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Toasts follow the user's theme (light, dark or system), not a fixed dark style. */
+function ThemedToaster() {
+  const { session } = useSession();
+  const theme = session?.settings?.appearance.theme ?? "dark";
+  return <Toaster theme={theme} position="bottom-right" richColors closeButton />;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
@@ -40,7 +47,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </BrowserRouter>
-          <Toaster theme="dark" position="bottom-right" richColors closeButton />
+          <ThemedToaster />
           {/* Only on Vercel builds: loads the same-origin /_vercel/insights script; URLs are sanitised. */}
           {__VERCEL_ANALYTICS__ && <Analytics mode="production" beforeSend={analyticsBeforeSend} />}
         </SessionProvider>

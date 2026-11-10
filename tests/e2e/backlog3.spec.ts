@@ -54,3 +54,41 @@ test("focus mode: only important mail for 30 minutes, with a banner to exit earl
   await expect(banner).toBeHidden();
   await expect.poll(() => rows.count()).toBeGreaterThan(n);
 });
+
+test("⌘K: accent colours and focus mode; toasts follow the light theme", async () => {
+  const html = page.locator("html");
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  const run = async (text: string, option: RegExp) => {
+    await page.keyboard.press("Control+k");
+    await palette.getByRole("combobox", { name: "Command" }).fill(text);
+    await palette.getByRole("option", { name: option }).first().click();
+    await expect(palette).toBeHidden();
+  };
+  await page.goto("/app/inbox");
+  await expect(page.locator('[data-thread-id="t-landlord"]')).toBeVisible();
+
+  await run("light theme", /Switch to light theme/);
+  await expect(html).not.toHaveClass(/dark/);
+  await run("accent blue", /Accent colour: Blue/);
+  await expect(html).toHaveAttribute("data-accent", "blue");
+
+  await page.locator('[data-thread-id="t-landlord"]').click();
+  await page.getByRole("article", { name: /Heating maintenance/ }).waitFor();
+  await page.getByRole("button", { name: "Archive (e)" }).click();
+  await expect(page.getByText("Conversation archived")).toBeVisible();
+  await expect(page.locator("[data-sonner-toaster]")).toHaveAttribute("data-sonner-theme", "light");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await page.goto("/app/inbox");
+  await expect(page.locator('[data-thread-id="t-landlord"]')).toBeVisible();
+
+  await run("focus", /Focus mode: for 1 hour/);
+  const banner = page.getByRole("region", { name: "Focus mode" });
+  await expect(banner).toBeVisible();
+  await run("exit focus", /Exit focus mode/);
+  await expect(banner).toBeHidden();
+
+  await run("dark theme", /Switch to dark theme/);
+  await run("accent purple", /Accent colour: Purple/);
+  await expect(html).toHaveClass(/dark/);
+  await expect(html).not.toHaveAttribute("data-accent", /.+/);
+});
