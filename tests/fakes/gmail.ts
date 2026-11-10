@@ -31,6 +31,8 @@ export interface Mailbox {
   historyId: number;
   history: Array<{ id: number; messageId: string; threadId: string; type: "added" | "labels" | "deleted" }>;
   sent: string[]; // raw messages sent (for assertions)
+  /** Gmail send-as identities; the primary one is created from the mailbox's address and name on first use. */
+  sendAs?: Map<string, { sendAsEmail: string; displayName: string; signature: string; isPrimary: boolean; isDefault: boolean; verificationStatus?: string }>;
 }
 
 const SYSTEM_LABELS = ["INBOX", "SENT", "DRAFT", "TRASH", "SPAM", "STARRED", "IMPORTANT", "UNREAD", "CHAT",
@@ -384,6 +386,19 @@ export class FakeGmail {
         b.labels.delete(l.id);
         for (const m of b.messages.values()) m.labelIds.delete(l.id);
         return { status: 204 };
+      }
+    }
+
+    if (seg[0] === "settings" && seg[1] === "sendAs") {
+      if (!b.sendAs) b.sendAs = new Map([[b.email, { sendAsEmail: b.email, displayName: b.name, signature: "", isPrimary: true, isDefault: true }]]);
+      if (method === "GET" && seg.length === 2) return { status: 200, body: { sendAs: [...b.sendAs.values()] } };
+      const s = b.sendAs.get(decodeURIComponent(seg[2] ?? ""));
+      if (!s) return err(404, "Requested entity was not found.");
+      if (method === "GET") return { status: 200, body: s };
+      if (method === "PATCH" || method === "PUT") {
+        if (typeof body.displayName === "string") s.displayName = body.displayName;
+        if (typeof body.signature === "string") s.signature = body.signature;
+        return { status: 200, body: s };
       }
     }
 

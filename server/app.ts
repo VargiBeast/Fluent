@@ -14,6 +14,9 @@ import { composeRoutes } from "./routes/compose.js";
 import { aiRoutes } from "./routes/ai.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { copilotRoutes } from "./routes/copilot.js";
+import { templateRoutes } from "./routes/templates.js";
+import { sendAsRoutes } from "./routes/sendas.js";
+import { statsRoutes } from "./routes/stats.js";
 import { sql } from "drizzle-orm";
 import { getDb, hasDatabase } from "./db/client.js";
 import { clientIp, hit } from "./lib/rateLimit.js";
@@ -86,6 +89,9 @@ export function createApp() {
   app.route("/compose", composeRoutes);
   app.route("/ai", aiRoutes);
   app.route("/copilot", copilotRoutes);
+  app.route("/templates", templateRoutes);
+  app.route("/send-as", sendAsRoutes);
+  app.route("/stats", statsRoutes);
   app.route("/", settingsRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404));

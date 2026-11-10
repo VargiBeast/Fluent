@@ -106,3 +106,26 @@ export const snoozes = pgTable("snoozes", {
   dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("snoozes_thread_uq").on(t.accountId, t.threadId), index("snoozes_due_idx").on(t.userId, t.dueAt)]);
+
+/**
+ * Saved replies (templates). User-written text, not email content, but still AES-GCM encrypted
+ * (purpose `template`, bound to user id + row id).
+ */
+export const templates = pgTable("templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  nameEnc: text("name_enc").notNull(),
+  subjectEnc: text("subject_enc").notNull(),
+  bodyEnc: text("body_enc").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("templates_user_idx").on(t.userId, t.createdAt)]);
+
+/** Read later list: only ids and when it was added, no content. Threads are fetched live from Gmail. */
+export const readLater = pgTable("read_later", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  threadId: text("thread_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("read_later_thread_uq").on(t.accountId, t.threadId), index("read_later_user_idx").on(t.userId, t.createdAt)]);

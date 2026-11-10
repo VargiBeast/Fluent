@@ -7,12 +7,15 @@ Browser (React SPA, /  /privacy  /terms  /app/*)
 Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api)
    │                                   ├─ middleware: secure headers, metadata-only request logging, session, CSRF, rate limits, error mapper
    │                                   ├─ /auth      Google OAuth (PKCE), sessions, logout
-   │                                   ├─ /mail      threads, thread actions, labels, filters, attachments, sync, drafts list
+   │                                   ├─ /mail      threads, thread actions, labels, filters, attachments, sync, drafts list, read-later
    │                                   ├─ /compose   send, drafts CRUD
    │                                   ├─ /ai        insights, draft, rewrite, search, ask, copilot, overview
    │                                   ├─ /copilot   plan (AI → typed plan + preview), plans/:id/execute|cancel, undo/:id
+   │                                   ├─ /templates saved replies CRUD (per user, encrypted)
+   │                                   ├─ /send-as   Gmail send-as display name + signature (gmail.settings.basic)
+   │                                   ├─ /stats     inbox stats from live Gmail metadata
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
-   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes
+   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates · read_later
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
    └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
@@ -76,3 +79,19 @@ The thread list keeps a selection set (checkbox, shift-click range, `x`/`Esc`, l
 ## PWA
 
 `public/manifest.webmanifest`, icons in `public/icons/`, and `public/sw.js` (registered from `web/src/main.tsx` in production only). See SECURITY.md for exactly what the worker caches.
+
+## Templates
+
+Saved replies live in `templates` (name, subject and text, each AES-GCM encrypted with purpose `template` and AAD `userId:rowId`). `GET/POST /api/templates` and `PUT/DELETE /api/templates/:id` are scoped to the session user (another user's id returns 404) and validated by `shared/templates.ts` (single-line name and subject, at most 10,000 characters of text, 100 templates per user). In the composer, the Templates button or `⌘/Ctrl + ;` opens a searchable picker (`web/src/app/composer/TemplatePicker.tsx`) that inserts the text at the cursor as escaped paragraphs, and fills the subject only when it's empty. Templates are managed in Settings → Templates and included in the data summary and JSON export.
+
+## Signatures and sender name
+
+`GET /api/send-as` lists each connected account's Gmail send-as identities (`users.settings.sendAs.list`). `PATCH /api/send-as/:accountId/:email {displayName?, signature?}` updates one of them (`sendAs.patch`, scope `gmail.settings.basic`). The address must be one Gmail lists for that owned account, the name is single-line without `<>"`, and the signature (≤ 10,000 characters) is stripped of scripts, event handlers and `javascript:` links before it goes to Gmail. Nothing is stored in FLUENT's database; the change is logged as a security event (`gmail_sendas_updated`, no content). Mail sent from the composer uses the Gmail display name of the account's own address in `From:`, falling back to the Google profile name. Settings → Signatures & name previews the signature sanitised in a sandboxed iframe and edits it with TipTap; signatures with images or inline styling show a warning first, since the editor keeps only basic formatting. "Use this one in FLUENT too" copies a plain-text version into the composer signature (AI preferences).
+
+## Inbox stats
+
+`GET /api/stats?days=7|30|90&account=&tz=` (`server/services/stats.ts`) lists the conversations active in the window (`threads.list q=newer_than:Nd -in:chats -in:drafts`, up to 400 across accounts, most recent first) and reads them with `threads.get?format=metadata&metadataHeaders=From` (bounded concurrency). Only sender, date and labels are used and nothing is stored. `computeStats` (pure, unit-tested) buckets received and sent mail per calendar day (per week from Monday for 90 days) in the user's time zone, ranks the top 10 senders, builds an hour-of-day histogram, and measures response time from the first message you hadn't answered to your next reply in the same conversation (average, median and a distribution). Spam, Trash, drafts and chats are ignored. If the conversation cap is reached the response says so (`sample.truncated`) and the page shows it. Rate limited to 10/min per user. The page is `/app/stats` (`web/src/app/Stats.tsx`), with CSS bar charts and screen-reader tables.
+
+## Read later
+
+`POST /api/mail/read-later {accountId, threadId}` saves a conversation (the thread must exist in the user's own account; idempotent; up to 500), `DELETE /api/mail/read-later/:accountId/:threadId` removes it and `GET /api/mail/read-later` lists the saved keys. Rows in `read_later` hold only the account, thread id and time. Nothing changes in Gmail. `later` is a FLUENT folder: `GET /api/mail/threads?folder=later` is answered by `services/readLater.ts` with the same `ThreadPage` shape as Gmail folders (newest saved first, offset cursor, summaries fetched live with `threads.get?format=metadata`), so the normal list, reader and keyboard navigation work. Conversations deleted in Gmail are dropped from the list; trashed or spam ones are hidden until restored. The reader has a bookmark toggle (shortcut `b`) and the sidebar a Read later entry. The list is included in the data summary and export.

@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
-import { ChevronDown, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { BarChart3, ChevronDown, Keyboard, LogOut, PenSquare, Plus, Search, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/ui/Avatar";
@@ -96,7 +96,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </Button>
       <button
         type="button"
-        onClick={() => { navigate(withAccount(`/app/${currentFolder === "overview" || currentFolder === "settings" ? "inbox" : currentFolder}`, { focus: "search" })); onNavigate?.(); }}
+        onClick={() => { navigate(withAccount(`/app/${["overview", "settings", "stats"].includes(currentFolder) ? "inbox" : currentFolder}`, { focus: "search" })); onNavigate?.(); }}
         className="mb-2 flex h-9 w-full items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] text-fg-3 hover:bg-surface-2 hover:text-fg"
       >
         <Search className="size-4" aria-hidden />
@@ -116,6 +116,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <NavLink to={withAccount("/app/overview")} onClick={onNavigate} className={({ isActive }) => item(isActive)}>
         <OverviewIcon className="size-4 text-accent-ink" aria-hidden />
         <span className="flex-1">AI Overview</span>
+      </NavLink>
+      <NavLink to={withAccount("/app/stats")} onClick={onNavigate} className={({ isActive }) => item(isActive)}>
+        <BarChart3 className="size-4" aria-hidden />
+        <span className="flex-1">Inbox stats</span>
       </NavLink>
 
       {SIDEBAR_FOLDERS.map((f) => {
