@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle, Archive, ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, CornerUpLeft, Download, FileText, Forward, Image as ImageIcon,
   Inbox, Mail, MailOpen, Maximize2, MoreHorizontal, Paperclip, Reply, ReplyAll, Send, ShieldAlert, Sparkles, Star, Tag, Trash2, Undo2, Wand2,
@@ -64,7 +63,6 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
   const { session, config } = useSession();
   const action = useThreadAction();
   const composer = useComposer();
-  const navigate = useNavigate();
   const [confirmTrash, setConfirmTrash] = useState(false);
   const aiOn = Boolean(config?.ai) && session?.settings?.ai.enabled !== false;
   const [summaryRequested, setSummaryRequested] = useState(false);

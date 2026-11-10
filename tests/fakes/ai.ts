@@ -23,6 +23,7 @@ export function fakeAiRespond(body: Body): { task: string; payload: unknown } {
   const refs = [...all.matchAll(/<email ref="([^"]+)"/g)].map((m) => m[1]!);
   const subjects = [...all.matchAll(/<email ref="[^"]+"[^>]*subject="([^"]*)"/g)].map((m) => m[1]!);
   const question = /QUESTION:\s*(.+)/.exec(all)?.[1]?.trim() ?? "";
+  const request = /User request:\s*(.+)/.exec(all)?.[1]?.trim() ?? "";
   let out: unknown;
   switch (task) {
     case "overview":
@@ -55,11 +56,11 @@ export function fakeAiRespond(body: Body): { task: string; payload: unknown } {
       out = { text: "Thanks for reaching out. Thursday at 14:00 works well for me." };
       break;
     case "search":
-      out = /haven.?t answered|unanswered/i.test(all)
+      out = /haven.?t answered|unanswered/i.test(request)
         ? { gmailQuery: "in:inbox -from:me newer_than:30d", explanation: "Inbox conversations from others in the last 30 days where the last message isn't yours.", postFilter: "unanswered" }
-        : /invoice/i.test(all)
+        : /invoice/i.test(request)
           ? { gmailQuery: "invoice newer_than:60d", explanation: "Messages mentioning “invoice” from the last two months.", postFilter: "none" }
-          : /school/i.test(all)
+          : /school/i.test(request)
             ? { gmailQuery: "school OR from:school", explanation: "Messages from or mentioning a school.", postFilter: "none" }
             : { gmailQuery: "deadline", explanation: "Messages mentioning a deadline.", postFilter: "none" };
       break;

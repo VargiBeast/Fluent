@@ -79,6 +79,7 @@ mailRoutes.get("/labels", async (c) => {
   return c.json(await getLabels(user.id, account));
 });
 
+// eslint-disable-next-line no-control-regex
 const labelName = z.string().trim().min(1).max(225).refine((s) => !/[\u0000-\u001f]/.test(s), "Invalid characters");
 
 mailRoutes.post("/labels", async (c) => {

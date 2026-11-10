@@ -27,7 +27,7 @@ export function assertHeaderSafe(v: string, what: string): string {
 }
 
 export function encodeWord(v: string): string {
-  // eslint-disable-next-line no-control-regex
+   
   if (/^[\x20-\x7e]*$/.test(v)) return v;
   return `=?UTF-8?B?${Buffer.from(v, "utf8").toString("base64")}?=`;
 }
@@ -37,7 +37,7 @@ export function formatAddress(name: string | undefined, email: string): string {
   assertHeaderSafe(email, "address");
   if (!name || name === email) return email;
   assertHeaderSafe(name, "name");
-  // eslint-disable-next-line no-control-regex
+   
   const safe = /^[\x20-\x7e]*$/.test(name) ? `"${name.replace(/["\\]/g, "\\$&")}"` : encodeWord(name);
   return `${safe} <${email}>`;
 }
@@ -48,7 +48,7 @@ function wrap76(b64: string): string {
 
 function filenameParam(name: string): string {
   const clean = name.replace(/[\r\n"\\/]/g, "_").slice(0, 200) || "attachment";
-  // eslint-disable-next-line no-control-regex
+   
   if (/^[\x20-\x7e]*$/.test(clean)) return `filename="${clean}"`;
   return `filename="${encodeWord(clean)}"; filename*=UTF-8''${encodeURIComponent(clean)}`;
 }
