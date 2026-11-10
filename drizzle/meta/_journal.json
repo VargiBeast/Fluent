@@ -29,6 +29,13 @@
       "when": 1794333181784,
       "tag": "0003_copilot_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794334317907,
+      "tag": "0004_snoozes",
+      "breakpoints": true
     }
   ]
 }

@@ -95,3 +95,14 @@ export const copilotPlans = pgTable("copilot_plans", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
 }, (t) => [index("copilot_plans_user_idx").on(t.userId, t.createdAt)]);
+
+/** Snoozes and reminders. Only ids and times: no content. Returned on the next sync after due_at. */
+export const snoozes = pgTable("snoozes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  threadId: text("thread_id").notNull(),
+  kind: text("kind").notNull(), // "snooze" | "remind"
+  dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("snoozes_thread_uq").on(t.accountId, t.threadId), index("snoozes_due_idx").on(t.userId, t.dueAt)]);

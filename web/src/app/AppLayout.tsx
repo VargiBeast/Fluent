@@ -112,10 +112,15 @@ function useMailSync() {
     const tick = async () => {
       if (document.visibilityState !== "visible" || stopped) return;
       try {
-        const r = await api.get<{ changed: boolean; newInbox: number }>("/mail/sync");
+        const r = await api.get<{ changed: boolean; newInbox: number; snoozeReturned?: number; remindersDue?: number }>("/mail/sync");
         if (r.changed) {
           void qc.invalidateQueries({ queryKey: ["threads"] });
           void qc.invalidateQueries({ queryKey: ["labels"] });
+        }
+        const back = (r.snoozeReturned ?? 0) + (r.remindersDue ?? 0);
+        if (back > 0) {
+          void qc.invalidateQueries({ queryKey: ["snoozes"] });
+          if (notif?.inApp !== false) toast(back === 1 ? "1 conversation is back in your Inbox" : `${back} conversations are back in your Inbox`, { description: r.remindersDue ? "Including a reminder: nobody replied yet." : "Your snooze ended." });
         }
         if (r.newInbox > 0) {
           const msg = r.newInbox === 1 ? "1 new email" : `${r.newInbox} new emails`;

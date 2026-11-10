@@ -5,7 +5,7 @@ This document describes FLUENT's security model and what is still required befor
 ## Data minimisation
 
 - **No email content at rest.** Messages, bodies, snippets and attachments are fetched live from the Gmail API for each request and never written to the database. Drafts live in Gmail. The one exception is a pending Copilot plan (subjects, sender names and AI-written draft text, never email bodies). It is encrypted, usable for 10 minutes, and wiped on confirm or cancel.
-- **Stored per user:** Google profile (id, email, name, picture URL), connected accounts (email, granted scopes, status, encrypted tokens), settings, sessions (hashed id, user-agent, timestamps), an AI access log (feature, thread ids, encrypted subjects, counts), a security log (event type, small non-content detail), rate-limit counters, and pending Copilot plans (see below). See `server/db/schema.ts`.
+- **Stored per user:** Google profile (id, email, name, picture URL), connected accounts (email, granted scopes, status, encrypted tokens), settings, sessions (hashed id, user-agent, timestamps), an AI access log (feature, thread ids, encrypted subjects, counts), a security log (event type, small non-content detail), rate-limit counters, pending Copilot plans (see below), and snoozes/reminders (account, thread id, kind and due time only). See `server/db/schema.ts`.
 - **Logs** (pino, JSON) record request metadata and error codes. Bodies, subjects, snippets, prompts, cookies and tokens are never passed to the logger, and pino redaction removes those keys as a second safeguard.
 
 ## Authentication

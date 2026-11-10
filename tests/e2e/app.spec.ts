@@ -64,6 +64,24 @@ test("archives with a keyboard shortcut and syncs to Gmail", async () => {
   await expect(page.locator('[data-thread-id="t-school"]')).toBeVisible();
 });
 
+test("snoozes a conversation into the Snoozed folder and unsnoozes it", async () => {
+  await page.goto("/app/inbox");
+  await page.locator('[data-thread-id="t-flight"]').click();
+  await page.getByRole("button", { name: "Snooze or remind (z)" }).click();
+  await expect(page.getByRole("menuitem", { name: /Tomorrow/ })).toBeVisible();
+  await shot(page, "21-snooze-menu");
+  await page.getByRole("menuitem", { name: /Tomorrow/ }).click();
+  await expect(page.getByText(/Snoozed until/).first()).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-flight"]')).toHaveCount(0);
+  await page.goto("/app/snoozed");
+  await page.locator('[data-thread-id="t-flight"]').click();
+  await expect(page.getByRole("status").filter({ hasText: "Snoozed until" })).toBeVisible();
+  await page.getByRole("button", { name: "Unsnooze" }).click();
+  await expect(page.getByText("Back in your Inbox")).toBeVisible();
+  await page.goto("/app/inbox");
+  await expect(page.locator('[data-thread-id="t-flight"]')).toBeVisible();
+});
+
 test("composes a new email with AI help, formatting and confirmation", async () => {
   await page.goto("/app/inbox");
   await page.getByRole("button", { name: "Compose" }).first().click();

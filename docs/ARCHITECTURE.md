@@ -12,7 +12,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /ai        insights, draft, rewrite, search, ask, copilot, overview
    │                                   ├─ /copilot   plan (AI → typed plan + preview), plans/:id/execute|cancel, undo/:id
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
-   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans
+   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
    └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
@@ -64,3 +64,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
 3. `server/copilot/service.ts` resolves each action with `listThreads` (≤ 50, excluded threads removed, already-applied threads skipped) or the open thread. It drafts reply bodies with `draftEmail`; recipients and headers come from Gmail metadata. It then stores the plan encrypted in `copilot_plans` (10-minute TTL, bound to user and session) and returns a `PlanPreview`.
 4. The UI (`web/src/app/copilot/Copilot.tsx`, `PlanCard`) shows the plan with per-action and per-conversation checkboxes. Trash and send get an extra confirmation. Copilot opens from the sidebar, the reader, the Overview or ⌘K / Ctrl+K (`copilot/context.tsx`).
 5. `POST /api/copilot/plans/:id/execute {selections, confirmTrash?, confirmSend?}` validates that the selections are a subset of the plan, claims it atomically, runs the Gmail calls (labels, `threads.modify`, `threads.trash`, `drafts.create`, `messages.send`), returns per-action results and stores an inverse undo plan (`POST /api/copilot/undo/:id`).
+
+## Snooze and reminders
+
+`POST /api/mail/snoozes {accountId, threadId, until, kind}` stores a row in `snoozes`. For `snooze`, it also moves the thread out of the Inbox and adds the user label "Snoozed" (the Snoozed folder is `label:snoozed`). `remind` changes nothing in Gmail until it is due. There is no cron: every `/api/mail/sync` poll (about every 45 s while FLUENT is open) runs `processDueSnoozes`. That claims due rows with `DELETE … RETURNING`, so it is idempotent across tabs. A snooze returns to the Inbox unread. A reminder fires only if the user's message is still the last one: it is brought back to the Inbox, unread and starred. Anything due while FLUENT was closed comes back on the next load.

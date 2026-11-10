@@ -8,7 +8,7 @@ import type { BeforeSendEvent } from "@vercel/analytics/react";
  */
 const PUBLIC = new Set(["/", "/privacy", "/terms"]);
 const APP_SECTIONS = new Set([
-  "inbox", "starred", "important", "sent", "drafts", "archive", "spam", "trash", "all",
+  "inbox", "starred", "snoozed", "important", "sent", "drafts", "archive", "spam", "trash", "all",
   "search", "label", "overview", "settings", "onboarding",
 ]);
 

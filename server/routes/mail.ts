@@ -9,6 +9,7 @@ import {
   listFilters, listThreads, modifyLabels, renameLabel, syncChanges, threadAction,
 } from "../services/mail.js";
 import { logSecurityEvent } from "../services/accounts.js";
+import { cancelSnooze, listSnoozes, processDueSnoozes, setSnooze } from "../services/snooze.js";
 
 const uuid = z.string().uuid();
 const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
@@ -137,7 +138,27 @@ mailRoutes.delete("/filters/:accountId/:filterId", async (c) => {
 
 mailRoutes.get("/sync", async (c) => {
   const user = requireUser(c);
-  return c.json(await syncChanges(user.id));
+  // Due snoozes/reminders come back first, so the history sync below picks up the change.
+  const due = await processDueSnoozes(user.id).catch(() => ({ returned: 0, reminders: 0 }));
+  const r = await syncChanges(user.id);
+  return c.json({ ...r, changed: r.changed || due.returned + due.reminders > 0, snoozeReturned: due.returned, remindersDue: due.reminders });
+});
+
+mailRoutes.get("/snoozes", async (c) => {
+  const user = requireUser(c);
+  return c.json({ snoozes: await listSnoozes(user.id) });
+});
+
+mailRoutes.post("/snoozes", rateLimit("snooze", 60), async (c) => {
+  const user = requireUser(c);
+  const b = z.object({ accountId: z.string().uuid(), threadId: z.string(), until: z.string().datetime({ offset: true }), kind: z.enum(["snooze", "remind"]) }).strict().parse(await c.req.json());
+  return c.json(await setSnooze(user.id, b));
+});
+
+mailRoutes.delete("/snoozes/:accountId/:threadId", async (c) => {
+  const user = requireUser(c);
+  await cancelSnooze(user.id, z.string().uuid().parse(c.req.param("accountId")), c.req.param("threadId"));
+  return c.json({ ok: true });
 });
 
 mailRoutes.get("/drafts", async (c) => {
