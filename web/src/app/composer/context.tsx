@@ -2,8 +2,8 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import type { MessageDetail, ThreadDetail } from "@shared/mail";
 
 export type ComposeRequest =
-  | { mode: "new"; accountId?: string; to?: string; subject?: string; bodyText?: string; aiGenerated?: boolean }
-  | { mode: "reply" | "replyAll" | "forward"; thread: ThreadDetail; message: MessageDetail; bodyText?: string; aiGenerated?: boolean }
+  | { mode: "new"; accountId?: string; to?: string; subject?: string; bodyText?: string; aiGenerated?: boolean; voice?: boolean }
+  | { mode: "reply" | "replyAll" | "forward"; thread: ThreadDetail; message: MessageDetail; bodyText?: string; aiGenerated?: boolean; voice?: boolean }
   | { mode: "draft"; accountId: string; draftId: string };
 
 interface ComposerState {

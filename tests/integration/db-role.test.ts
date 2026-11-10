@@ -58,6 +58,9 @@ describe("Readiness and least-privilege DB role", () => {
     const accountId = (await c.json<{ accounts: Array<{ id: string }> }>("/api/auth/session")).body.accounts[0]!.id;
     expect((await c.json("/api/mail/read-later", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-canary" }) })).status).toBe(200);
     expect((await c.json<{ threads: unknown[] }>("/api/mail/threads?folder=later")).body.threads).toHaveLength(1);
+    expect((await c.json(`/api/notes/${accountId}/t-canary`, { method: "PUT", body: JSON.stringify({ body: "Role check" }) })).status).toBe(200);
+    expect((await c.json<{ note: { body: string } }>(`/api/notes/${accountId}/t-canary`)).body.note.body).toBe("Role check");
+    expect((await c.json(`/api/notes/${accountId}/t-canary`, { method: "DELETE" })).status).toBe(200);
   });
 
   it("keeps other roles out and reports not-ready without leaking details", async () => {

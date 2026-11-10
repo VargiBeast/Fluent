@@ -5,7 +5,7 @@ This document describes FLUENT's security model and what is still required befor
 ## Data minimisation
 
 - **No email content at rest.** Messages, bodies, snippets and attachments are fetched live from the Gmail API for each request and never written to the database. Drafts live in Gmail. The one exception is a pending Copilot plan (subjects, sender names and AI-written draft text, never email bodies). It is encrypted, usable for 10 minutes, and wiped on confirm or cancel.
-- **Stored per user:** Google profile (id, email, name, picture URL), connected accounts (email, granted scopes, status, encrypted tokens), settings, sessions (hashed id, user-agent, timestamps), an AI access log (feature, thread ids, encrypted subjects, counts), a security log (event type, small non-content detail), rate-limit counters, pending Copilot plans (see below), snoozes/reminders (account, thread id, kind and due time only), the Read later list (account, thread id and when it was added only), and templates (saved replies the user wrote: name, subject and text, AES-GCM encrypted with purpose `template` and bound to the user and row). See `server/db/schema.ts`.
+- **Stored per user:** Google profile (id, email, name, picture URL), connected accounts (email, granted scopes, status, encrypted tokens), settings, sessions (hashed id, user-agent, timestamps), an AI access log (feature, thread ids, encrypted subjects, counts), a security log (event type, small non-content detail), rate-limit counters, pending Copilot plans (see below), snoozes/reminders (account, thread id, kind and due time only), the Read later list (account, thread id and when it was added only), and templates (saved replies the user wrote: name, subject and text, AES-GCM encrypted with purpose `template` and bound to the user and row), and private notes on conversations (account, thread id and the user's text, AES-GCM encrypted with purpose `note` and bound to the user, account and thread; never sent to Gmail or the AI). See `server/db/schema.ts`.
 - **Logs** (pino, JSON) record request metadata and error codes. Bodies, subjects, snippets, prompts, cookies and tokens are never passed to the logger, and pino redaction removes those keys as a second safeguard.
 
 ## Authentication
@@ -32,6 +32,17 @@ Every query is scoped by the session's `user_id`. Account ids from the client ar
 All request bodies and queries are validated with zod (`.strict()` objects, length limits). Outgoing headers are checked for CR/LF injection, and recipients are normalised. Fixed-window rate limits, stored in Postgres so they hold across serverless instances, protect auth (30/min), mail (240/min), send (20/min), drafts (60/min), AI (30/min), settings (120/min) and privacy (60/min).
 
 Bulk actions (`POST /api/mail/bulk`) accept at most 100 conversations and one allowlisted action per request, check that every account belongs to the signed-in user, are limited to 30 requests per minute, and never delete permanently: "Delete" moves conversations to Trash.
+
+## Unsubscribe assistant (outbound requests)
+
+- **Nothing automatic.** Scanning only reads message metadata (From, Date, `List-Unsubscribe`, `List-Unsubscribe-Post`, labels) and stores nothing. Unsubscribing and archiving happen only on a user click, and the API requires `confirm: true`. The mailto method and archiving also go through a confirm dialog that shows exactly what will happen. The AI has no access to these routes.
+- **Headers are untrusted.** For an action the client sends only the account and message id. The server re-reads the header from Gmail, so a client can't supply its own URL or address. Mailto targets must be a single valid address, and subject/body values have CR/LF and control characters removed. The sent message is built with the normal header-safe MIME builder and has no Cc/Bcc. Sender filters for archiving are zod-validated plain addresses, so they can't change the Gmail query.
+- **SSRF protection for one-click (RFC 8058).** `server/lib/oneClick.ts` sends a single `POST List-Unsubscribe=One-Click` with no cookies or credentials, a 10 s timeout, no redirects, and discards the response body. It only allows `https` on port 443, with no userinfo and no IP-literal private hosts or local names. Every resolved address is checked against private, loopback, link-local, CGNAT, multicast, documentation, ULA, IPv4-mapped/compatible, 6to4 and Teredo ranges in the socket's `lookup` hook, so DNS rebinding can't reach an internal address. The local HTTP fake is allowed only outside production.
+- Unsubscribes are logged in the security log as `newsletter_unsubscribed` with the method and sender domain only.
+
+## Voice dictation
+
+Dictation uses the browser's Web Speech API. FLUENT doesn't capture, upload or store audio, and the server never sees it. The browser may use its own speech service unless on-device recognition is available. FLUENT uses on-device recognition when Chrome reports it available. Recognised text is handled like typed text. Spoken commands can only create a draft in the composer, which is saved to Gmail Drafts; sending always needs the user's own click on Send.
 
 ## Installable app and service worker
 

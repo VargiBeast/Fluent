@@ -32,6 +32,8 @@ export interface FakeGoogleState {
   aiRequests: Array<{ task: string; input: string; provider: "xai" | "google"; model: string; body: Record<string, unknown> }>;
   aiFail: boolean;
   requestLog: Array<{ method: string; path: string }>;
+  /** One-click unsubscribe POSTs received at /__unsub/:list (RFC 8058). */
+  unsubscribes: Array<{ list: string; body: string; contentType: string }>;
 }
 
 export interface FakeGoogle {
@@ -72,8 +74,8 @@ export async function startFakeGoogle(opts: { port?: number; clientId?: string; 
     aiRequests: [],
     aiFail: false,
     requestLog: [],
+    unsubscribes: [],
   };
-  if (opts.seed !== false) state.gmail.seedDefault(DEFAULT_IDENTITY.email, DEFAULT_IDENTITY.name);
 
   let baseUrl = "";
 
@@ -105,6 +107,13 @@ export async function startFakeGoogle(opts: { port?: number; clientId?: string; 
       const url = new URL(req.url ?? "/", baseUrl);
       const path = url.pathname;
       state.requestLog.push({ method: req.method ?? "GET", path });
+
+      // --- Newsletter one-click unsubscribe endpoint (RFC 8058) ---
+      const unsub = /^\/__unsub\/([a-z0-9-]{1,40})$/.exec(path);
+      if (unsub && req.method === "POST") {
+        state.unsubscribes.push({ list: unsub[1]!, body: await readBody(req), contentType: String(req.headers["content-type"] ?? "") });
+        return send(res, unsub[1] === "broken" ? 500 : 200, { ok: true });
+      }
 
       // --- Test control ---
       if (path === "/__control/identity" && req.method === "POST") {
@@ -229,6 +238,8 @@ export async function startFakeGoogle(opts: { port?: number; clientId?: string; 
   await new Promise<void>((resolve) => server.listen(opts.port ?? 0, "127.0.0.1", resolve));
   const addr = server.address();
   baseUrl = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
+  state.gmail.unsubBase = baseUrl;
+  if (opts.seed !== false) state.gmail.seedDefault(DEFAULT_IDENTITY.email, DEFAULT_IDENTITY.name);
   return {
     url: baseUrl,
     state,

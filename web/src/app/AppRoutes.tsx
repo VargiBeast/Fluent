@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/misc";
 const OverviewPage = lazy(() => import("./Overview").then((m) => ({ default: m.OverviewPage })));
 const OnboardingPage = lazy(() => import("./Onboarding").then((m) => ({ default: m.OnboardingPage })));
 const StatsPage = lazy(() => import("./Stats").then((m) => ({ default: m.StatsPage })));
+const NewslettersPage = lazy(() => import("./Newsletters").then((m) => ({ default: m.NewslettersPage })));
 const SettingsPage = lazy(() => import("./settings/Settings").then((m) => ({ default: m.SettingsPage })));
 
 const Page = ({ children }: { children: ReactNode }) => <Suspense fallback={<div className="p-6"><Skeleton className="h-6 w-48" /></div>}>{children}</Suspense>;
@@ -30,6 +31,7 @@ export default function AppRoutes() {
         <Route path="onboarding" element={<Page><OnboardingPage /></Page>} />
         <Route path="overview" element={<Page><OverviewPage /></Page>} />
         <Route path="stats" element={<Page><StatsPage /></Page>} />
+        <Route path="newsletters" element={<Page><NewslettersPage /></Page>} />
         <Route path="settings" element={<Page><SettingsPage /></Page>} />
         <Route path="settings/:section" element={<Page><SettingsPage /></Page>} />
         <Route path=":folder" element={<FolderRoute />} />

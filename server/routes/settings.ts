@@ -14,6 +14,7 @@ import { rateLimit } from "../lib/rateLimit.js";
 import { badRequest } from "../lib/errors.js";
 import { countTemplates, listTemplates } from "../services/templates.js";
 import { listReadLater } from "../services/readLater.js";
+import { countNotes, listNotes } from "../services/notes.js";
 
 export const settingsRoutes = new Hono<AppEnv>();
 
@@ -117,7 +118,7 @@ settingsRoutes.delete("/privacy/audit", async (c) => {
 settingsRoutes.get("/privacy/data", async (c) => {
   const user = requireUser(c);
   const db = getDb();
-  const [accs, sess, events, audit, settingsRow, templateCount, later] = await Promise.all([
+  const [accs, sess, events, audit, settingsRow, templateCount, later, noteCount] = await Promise.all([
     listAccounts(user.id),
     db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, user.id)),
     db.select({ id: securityEvents.id }).from(securityEvents).where(eq(securityEvents.userId, user.id)),
@@ -125,6 +126,7 @@ settingsRoutes.get("/privacy/data", async (c) => {
     db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1),
     countTemplates(user.id),
     listReadLater(user.id),
+    countNotes(user.id),
   ]);
   return c.json({
     profile: { email: user.email, name: user.name },
@@ -137,6 +139,7 @@ settingsRoutes.get("/privacy/data", async (c) => {
       { key: "security_events", label: "Security log", detail: "Sign-ins, disconnections and setting changes (no email content)", count: events.length },
       { key: "read_later", label: "Read later list", detail: "Gmail thread ids you saved for later and when (no content)", count: later.length },
       { key: "templates", label: "Templates", detail: "Saved replies you wrote (name, subject, text), encrypted with AES-256-GCM", count: templateCount },
+      { key: "notes", label: "Private notes", detail: "Notes you pinned to conversations (thread id + your text), encrypted with AES-256-GCM", count: noteCount },
     ],
     notStored: ["Email bodies, attachments or snippets (fetched live from Gmail and never written to the database)", "AI prompts or responses", "Contacts or address books"],
   });
@@ -145,7 +148,7 @@ settingsRoutes.get("/privacy/data", async (c) => {
 settingsRoutes.get("/privacy/export", async (c) => {
   const user = requireUser(c);
   const db = getDb();
-  const [u, accs, sess, events, audit, settingsRow, tpls, later] = await Promise.all([
+  const [u, accs, sess, events, audit, settingsRow, tpls, later, notes] = await Promise.all([
     db.select().from(users).where(eq(users.id, user.id)).limit(1),
     listAccounts(user.id),
     db.select().from(sessions).where(eq(sessions.userId, user.id)),
@@ -154,6 +157,7 @@ settingsRoutes.get("/privacy/export", async (c) => {
     db.select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1),
     listTemplates(user.id),
     listReadLater(user.id),
+    listNotes(user.id),
   ]);
   const data = {
     exportedAt: new Date().toISOString(),
@@ -165,6 +169,7 @@ settingsRoutes.get("/privacy/export", async (c) => {
     securityEvents: events.map((e) => ({ type: e.type, detail: e.detail, createdAt: e.createdAt })),
     aiAccessLog: audit,
     readLater: later,
+    notes,
     templates: tpls.map((t) => ({ name: t.name, subject: t.subject, body: t.body, createdAt: t.createdAt, updatedAt: t.updatedAt })),
   };
   await logSecurityEvent(user.id, "data_exported");

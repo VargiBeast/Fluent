@@ -129,3 +129,17 @@ export const readLater = pgTable("read_later", {
   threadId: text("thread_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("read_later_thread_uq").on(t.accountId, t.threadId), index("read_later_user_idx").on(t.userId, t.createdAt)]);
+
+/**
+ * Private notes on a conversation: one per thread, written by the user and AES-GCM encrypted
+ * (purpose `note`, bound to user id + account id + thread id). Never sent to Gmail or the AI.
+ */
+export const threadNotes = pgTable("thread_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  threadId: text("thread_id").notNull(),
+  bodyEnc: text("body_enc").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("thread_notes_thread_uq").on(t.accountId, t.threadId), index("thread_notes_user_idx").on(t.userId, t.updatedAt)]);
