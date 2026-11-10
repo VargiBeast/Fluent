@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Bell, Download, Eye, KeyRound, LogOut, Mail, Menu, Palette, Plus, RefreshCw, Shield, Tags, ShieldCheck, Sparkles, Trash2, User, X } from "lucide-react";
+import { ArrowLeft, Bell, Download, FileStack, Eye, KeyRound, LogOut, Mail, Menu, Palette, Plus, RefreshCw, Shield, Tags, ShieldCheck, Sparkles, Trash2, User, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useSession, type Account } from "@/lib/session";
 import { aiProviderName } from "@/lib/ai";
@@ -17,11 +17,13 @@ import { ConfirmDialog, Dialog } from "@/components/ui/Dialog";
 import { Badge, Skeleton } from "@/components/ui/misc";
 import { SidebarContext } from "../AppLayout";
 import { LabelsFiltersSection } from "./LabelsFilters";
+import { TemplatesSection } from "./Templates";
 
 const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "accounts", label: "Accounts", icon: Mail },
   { id: "labels", label: "Labels & filters", icon: Tags },
+  { id: "templates", label: "Templates", icon: FileStack },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "ai", label: "AI preferences", icon: Sparkles },
@@ -88,6 +90,7 @@ function Section({ id }: { id: SectionId }) {
     case "profile": return <ProfileSection />;
     case "accounts": return <AccountsSection />;
     case "labels": return <LabelsFiltersSection />;
+    case "templates": return <TemplatesSection />;
     case "appearance": return <AppearanceSection />;
     case "notifications": return <NotificationsSection />;
     case "ai": return <AiSection />;

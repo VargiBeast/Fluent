@@ -51,6 +51,10 @@ describe("Readiness and least-privilege DB role", () => {
     const s = await c.json<{ user: { email: string } | null }>("/api/auth/session");
     expect(s.status).toBe(200);
     expect(s.body.user).toBeTruthy();
+    // Tables added after 0002 carry their own grants + policy for fluent_app.
+    const tpl = await c.json<{ id: string }>("/api/templates", { method: "POST", body: JSON.stringify({ name: "Role check", body: "ok" }) });
+    expect(tpl.status).toBe(201);
+    expect((await c.json(`/api/templates/${tpl.body.id}`, { method: "DELETE" })).status).toBe(200);
   });
 
   it("keeps other roles out and reports not-ready without leaking details", async () => {

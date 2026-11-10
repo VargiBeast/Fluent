@@ -11,8 +11,9 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /compose   send, drafts CRUD
    │                                   ├─ /ai        insights, draft, rewrite, search, ask, copilot, overview
    │                                   ├─ /copilot   plan (AI → typed plan + preview), plans/:id/execute|cancel, undo/:id
+   │                                   ├─ /templates saved replies CRUD (per user, encrypted)
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
-   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes
+   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
    └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
@@ -76,3 +77,7 @@ The thread list keeps a selection set (checkbox, shift-click range, `x`/`Esc`, l
 ## PWA
 
 `public/manifest.webmanifest`, icons in `public/icons/`, and `public/sw.js` (registered from `web/src/main.tsx` in production only). See SECURITY.md for exactly what the worker caches.
+
+## Templates
+
+Saved replies live in `templates` (name, subject and text, each AES-GCM encrypted with purpose `template` and AAD `userId:rowId`). `GET/POST /api/templates` and `PUT/DELETE /api/templates/:id` are scoped to the session user (another user's id returns 404) and validated by `shared/templates.ts` (single-line name and subject, at most 10,000 characters of text, 100 templates per user). In the composer, the Templates button or `⌘/Ctrl + ;` opens a searchable picker (`web/src/app/composer/TemplatePicker.tsx`) that inserts the text at the cursor as escaped paragraphs, and fills the subject only when it's empty. Templates are managed in Settings → Templates and included in the data summary and JSON export.

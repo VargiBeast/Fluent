@@ -106,3 +106,17 @@ export const snoozes = pgTable("snoozes", {
   dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("snoozes_thread_uq").on(t.accountId, t.threadId), index("snoozes_due_idx").on(t.userId, t.dueAt)]);
+
+/**
+ * Saved replies (templates). User-written text, not email content, but still AES-GCM encrypted
+ * (purpose `template`, bound to user id + row id).
+ */
+export const templates = pgTable("templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  nameEnc: text("name_enc").notNull(),
+  subjectEnc: text("subject_enc").notNull(),
+  bodyEnc: text("body_enc").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("templates_user_idx").on(t.userId, t.createdAt)]);
