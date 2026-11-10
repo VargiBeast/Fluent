@@ -56,3 +56,5 @@ When `APP_URL` starts with `https://`, the session cookie is `__Host-fluent_sess
 ## Preview deployments of the `rebuild` branch
 
 At the time of writing, preview deployments for `rebuild` exist in the Vercel project but are in state **BLOCKED** with Vercel's "team configuration" reason, meaning that the commit author (`grok-bot@users.noreply.github.com`) is not a member of the Vercel team. The project owner must either allow these commits (see the [Vercel docs](https://vercel.com/docs/deployments/troubleshoot-project-collaboration#team-configuration)) or redeploy the commit from the Vercel dashboard. A Vercel build of this branch has therefore not been verified yet.
+
+<!-- Preview build trigger: commits on this branch are authored by the repository owner. -->
