@@ -2,7 +2,7 @@ import * as RD from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMatch, useNavigate } from "react-router-dom";
 import {
-  Archive, Clock, CornerDownLeft, File, Inbox, Keyboard, Mail, MailOpen, Moon, PenSquare, Search, Send, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
+  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, Search, Send, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useSession } from "@/lib/session";
@@ -57,6 +57,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       { id: "go-inbox", group: "Go to", title: "Inbox", shortcut: "g i", icon: <Inbox />, run: go("/app/inbox") },
       { id: "go-starred", group: "Go to", title: "Starred", shortcut: "g s", icon: <Star />, run: go("/app/starred") },
       { id: "go-snoozed", group: "Go to", title: "Snoozed", icon: <Clock />, run: go("/app/snoozed") },
+      { id: "go-later", group: "Go to", title: "Read later", keywords: "saved bookmarks weekend newsletters", icon: <Bookmark />, run: go("/app/later") },
+      { id: "go-stats", group: "Go to", title: "Inbox stats", keywords: "statistics volume top senders response time analytics", icon: <BarChart3 />, run: go("/app/stats") },
       { id: "go-sent", group: "Go to", title: "Sent", shortcut: "g t", icon: <Send />, run: go("/app/sent") },
       { id: "go-drafts", group: "Go to", title: "Drafts", shortcut: "g d", icon: <File />, run: go("/app/drafts") },
       { id: "go-archive", group: "Go to", title: "Archive", icon: <Archive />, run: go("/app/archive") },
@@ -64,6 +66,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       { id: "settings", group: "Settings", title: "Open settings", keywords: "preferences", icon: <Settings />, run: go("/app/settings/profile") },
       { id: "privacy", group: "Settings", title: "Privacy dashboard", keywords: "ai log exclusions export", icon: <ShieldCheck />, run: go("/app/settings/privacy") },
       { id: "labels", group: "Settings", title: "Labels & filters", icon: <Tag />, run: go("/app/settings/labels") },
+      { id: "templates", group: "Settings", title: "Templates (saved replies)", keywords: "snippets canned responses", icon: <FileStack />, run: go("/app/settings/templates") },
+      { id: "signatures", group: "Settings", title: "Signatures & sender name", keywords: "signature display name from send-as", icon: <PenLine />, run: go("/app/settings/signatures") },
       {
         id: "theme", group: "Settings", title: theme === "light" ? "Switch to dark theme" : "Switch to light theme", keywords: "appearance mode dark light",
         icon: theme === "light" ? <Moon /> : <Sun />, run: () => update.mutate({ appearance: { theme: theme === "light" ? "dark" : "light" } }),
@@ -76,6 +80,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         { id: "t-archive", group: "Conversation", title: "Archive conversation", shortcut: "e", icon: <Archive />, run: () => pressAfterClose("e") },
         { id: "t-star", group: "Conversation", title: "Star / unstar", shortcut: "s", icon: <Star />, run: () => pressAfterClose("s") },
         { id: "t-unread", group: "Conversation", title: "Mark as unread", shortcut: "u", icon: <MailOpen />, run: () => pressAfterClose("u") },
+        { id: "t-later", group: "Conversation", title: "Save to / remove from Read later", keywords: "bookmark", shortcut: "b", icon: <Bookmark />, run: () => pressAfterClose("b") },
         { id: "t-snooze", group: "Conversation", title: "Snooze or remind", keywords: "later remind", shortcut: "z", icon: <Clock />, run: () => pressAfterClose("z") },
         { id: "t-trash", group: "Conversation", title: "Move to Trash", keywords: "delete", shortcut: "#", icon: <Trash2 />, run: () => pressAfterClose("#") },
       );

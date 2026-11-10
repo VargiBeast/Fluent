@@ -180,6 +180,18 @@ describe("Copilot actions: plan → confirm → execute", () => {
     expect(box().sent.at(-1)).toMatch(/^In-Reply-To: <t-canary-0@fluent\.test>/m);
   });
 
+  it("Copilot drafts use the Gmail send-as display name, not the stored Google name", async () => {
+    const r = await c.json(`/api/send-as/${accountId}/${encodeURIComponent(ME)}`, { method: "PATCH", body: JSON.stringify({ displayName: "Alex R. (Studio)" }) });
+    expect(r.status).toBe(200);
+    const d = await planOf("Reply to sofia saying Thursday works");
+    expect(d.actions[0]!.drafts[0]!.from).toBe('"Alex R. (Studio)" <alex@fluent.test>');
+    const sent0 = box().sent.length;
+    const s = await planOf("Send a reply to sofia saying Thursday works");
+    expect((await exec(c, s.planId!, { selections: allSelections(s), confirmSend: true })).status).toBe(200);
+    expect(box().sent.length).toBe(sent0 + 1);
+    expect(box().sent.at(-1)).toMatch(/^From: "Alex R\. \(Studio\)" <alex@fluent\.test>/m);
+  });
+
   it("a prompt injection inside an email cannot add actions or change recipients", async () => {
     const sent0 = box().sent.length;
     const p = await planOf("Draft a reply to suspicious");

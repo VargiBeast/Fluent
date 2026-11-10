@@ -8,6 +8,7 @@ import { GmailClient } from "../gmail/client.js";
 import { buildMime, cleanOutgoingHtml, formatAddress, toBase64Url, type MimeAttachment } from "../gmail/mime.js";
 import { decodeB64Url, parseAddress, parseMessage, type GmailMessage } from "../gmail/parse.js";
 import { HttpError } from "../lib/errors.js";
+import { senderDisplayName } from "../services/sendas.js";
 
 const MAX_ATTACH_BYTES = 3_500_000; // Vercel Functions cap request bodies at 4.5 MB
 const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
@@ -64,7 +65,7 @@ async function buildRaw(gm: GmailClient, m: MessageInput): Promise<string> {
   }
   const acc = gm.account;
   return buildMime({
-    from: formatAddress(acc.name || undefined, acc.email),
+    from: formatAddress(await senderDisplayName(gm), acc.email),
     to: m.to.map(normalizeAddr),
     cc: m.cc.map(normalizeAddr),
     bcc: m.bcc.map(normalizeAddr),

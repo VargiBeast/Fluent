@@ -10,6 +10,7 @@ import {
 } from "../services/mail.js";
 import { logSecurityEvent } from "../services/accounts.js";
 import { cancelSnooze, listSnoozes, processDueSnoozes, setSnooze } from "../services/snooze.js";
+import { addReadLater, listReadLater, listReadLaterThreads, removeReadLater } from "../services/readLater.js";
 
 const uuid = z.string().uuid();
 const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
@@ -34,7 +35,9 @@ mailRoutes.use("*", rateLimit("mail", 240));
 
 mailRoutes.get("/threads", async (c) => {
   const user = requireUser(c);
-  return c.json(await listThreads(user.id, listQuery.parse(c.req.query())));
+  const q = listQuery.parse(c.req.query());
+  if (q.folder === "later") return c.json(await listReadLaterThreads(user.id, { account: q.account, cursor: q.cursor, limit: q.limit }));
+  return c.json(await listThreads(user.id, q));
 });
 
 mailRoutes.get("/threads/:accountId/:threadId", async (c) => {
@@ -169,6 +172,23 @@ mailRoutes.delete("/snoozes/:accountId/:threadId", async (c) => {
   const user = requireUser(c);
   await cancelSnooze(user.id, z.string().uuid().parse(c.req.param("accountId")), c.req.param("threadId"));
   return c.json({ ok: true });
+});
+
+mailRoutes.get("/read-later", async (c) => {
+  const user = requireUser(c);
+  return c.json({ items: await listReadLater(user.id) });
+});
+
+mailRoutes.post("/read-later", async (c) => {
+  const user = requireUser(c);
+  const b = z.object({ accountId: uuid, threadId: gid }).strict().parse(await c.req.json());
+  return c.json(await addReadLater(user.id, b.accountId, b.threadId));
+});
+
+mailRoutes.delete("/read-later/:accountId/:threadId", async (c) => {
+  const user = requireUser(c);
+  const removed = await removeReadLater(user.id, uuid.parse(c.req.param("accountId")), gid.parse(c.req.param("threadId")));
+  return c.json({ ok: true, removed });
 });
 
 mailRoutes.get("/drafts", async (c) => {

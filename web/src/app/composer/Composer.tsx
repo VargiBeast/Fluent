@@ -5,7 +5,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Bold, Italic, Underline, List, ListOrdered, Quote, Link2, Paperclip, Sparkles, Maximize2, Minimize2, X, Trash2, Send, Loader2, FileText, Wand2, ChevronDown, Undo2,
+  Bold, Italic, Underline, List, ListOrdered, Quote, Link2, Paperclip, Sparkles, Maximize2, Minimize2, X, Trash2, Send, Loader2, FileText, Wand2, ChevronDown, Undo2, FileStack,
 } from "lucide-react";
 import type { ThreadDetail } from "@shared/mail";
 import { Button, IconButton } from "@/components/ui/Button";
@@ -23,6 +23,9 @@ import {
 } from "@/lib/compose";
 import { useComposer, type ComposeRequest } from "./context";
 import { RecipientInput } from "./RecipientInput";
+import { TemplateEditorDialog, TemplatePicker } from "./TemplatePicker";
+import { isTemplateShortcut, TEMPLATE_SHORTCUT_LABEL, templateToHtml } from "@/lib/templates";
+import type { Template } from "@shared/templates";
 
 const MAX_TOTAL = 3_500_000;
 
@@ -130,6 +133,8 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
   const [aiOpen, setAiOpen] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [undoHtml, setUndoHtml] = useState<string | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [saveTemplate, setSaveTemplate] = useState<Partial<Template> | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const aiOn = Boolean(config?.ai) && session?.settings?.ai.enabled !== false;
   const signature = session?.settings?.ai.signature ?? "";
@@ -291,8 +296,19 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
     }
   };
 
+  const insertTemplate = (t: Template) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent(templateToHtml(t.body)).run();
+    if (t.subject && !subject.trim()) setSubject(t.subject);
+    setDirty(true);
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (templatesOpen || saveTemplate) return; // keys inside the template dialogs bubble through the portal
+    if (isTemplateShortcut(e)) {
+      e.preventDefault();
+      setTemplatesOpen(true);
+    } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       void send(false);
     } else if (e.key === "Escape" && !confirmAi && !confirmDiscard && !aiOpen) {
@@ -394,6 +410,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
         <Button variant="primary" onClick={() => void send(false)} loading={sending} icon={<Send className="size-4" />}>Send</Button>
         <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => { void addFiles(e.target.files); e.target.value = ""; }} aria-label="Attach files" />
         <IconButton label="Attach files" onClick={() => fileRef.current?.click()}><Paperclip className="size-[18px]" /></IconButton>
+        <IconButton label={`Insert template (${TEMPLATE_SHORTCUT_LABEL})`} onClick={() => setTemplatesOpen(true)}><FileStack className="size-[18px]" /></IconButton>
         {aiOn && (
           <>
             <Button variant="ai" size="md" icon={<Sparkles className="size-3.5" />} onClick={() => setAiOpen(true)} disabled={aiBusy}>Write with AI</Button>
@@ -422,6 +439,13 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
         <IconButton label="Discard draft" onClick={() => setConfirmDiscard(true)}><Trash2 className="size-[18px]" /></IconButton>
       </div>
 
+      <TemplatePicker
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        onPick={insertTemplate}
+        onSaveCurrent={() => setSaveTemplate({ subject: init.thread ? "" : subject, body: htmlToPlain(editor?.getHTML() ?? "") })}
+      />
+      <TemplateEditorDialog open={saveTemplate !== null} onOpenChange={(o) => !o && setSaveTemplate(null)} initial={saveTemplate ?? undefined} />
       <AiWriteDialog
         open={aiOpen}
         onOpenChange={setAiOpen}
