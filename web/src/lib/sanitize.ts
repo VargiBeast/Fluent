@@ -114,6 +114,7 @@ export function buildSrcDoc(bodyHtml: string, opts: { dark: boolean; rich: boole
   const fg = opts.rich || !opts.dark ? "#1b1a22" : "#d9d8e0";
   const link = opts.rich || !opts.dark ? "#6d28d9" : "#b9a3fb";
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer"><base target="_blank"><style>
+html{color-scheme:${opts.dark && !opts.rich ? "dark" : "light"};}
 html,body{margin:0;padding:0;background:${opts.rich ? "#ffffff" : "transparent"};}
 body{color:${fg};font:14px/1.6 "Inter Variable",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;word-wrap:break-word;overflow-wrap:anywhere;padding:${opts.rich ? "16px" : "0"};}
 a{color:${link};}

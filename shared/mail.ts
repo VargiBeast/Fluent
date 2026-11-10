@@ -10,6 +10,8 @@ export interface ThreadSummary {
   snippet: string;
   participants: Address[];
   from: Address;
+  /** Recipients of the latest message (used to show who you're waiting on). */
+  to: Address[];
   lastDate: string;
   messageCount: number;
   unread: boolean;

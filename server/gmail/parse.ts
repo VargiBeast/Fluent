@@ -191,6 +191,7 @@ export function summarizeThread(t: GmailThread, accountId: string, accountEmail:
     snippet: decodeEntities(last?.snippet ?? ""),
     participants,
     from: display,
+    to: parseAddresses(header(last?.payload, "To")).slice(0, 10),
     lastDate: new Date(Number(last?.internalDate ?? Date.now())).toISOString(),
     messageCount: msgs.length,
     unread: all.some((m) => (m.labelIds ?? []).includes("UNREAD")),

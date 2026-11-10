@@ -5,5 +5,5 @@
     "types": ["node"],
     "paths": { "@shared/*": ["./shared/*"] }
   },
-  "include": ["server", "api", "shared", "tests/unit", "tests/integration", "tests/fakes", "e2e", "*.config.ts"]
+  "include": ["server", "api", "shared", "tests/unit", "tests/integration", "tests/fakes", "tests/e2e", "*.config.ts"]
 }

@@ -61,7 +61,9 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
 
   const all = useMemo(() => threads.data?.pages.flatMap((p) => p.threads) ?? [], [threads.data]);
   const accountErrors = threads.data?.pages[0]?.errors ?? [];
-  useEffect(() => onThreadsChange?.(all), [all, onThreadsChange]);
+  useEffect(() => {
+    onThreadsChange?.(all);
+  }, [all, onThreadsChange]);
 
   useEffect(() => {
     if (params.get("focus") === "search") {

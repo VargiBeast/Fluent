@@ -19,9 +19,9 @@ function useCidMap(accountId: string, inline: AttachmentMeta[]) {
       const buf = new Uint8Array(await res.arrayBuffer());
       let bin = "";
       for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-      return [a.contentId!, `data:${a.mimeType};base64,${btoa(bin)}`] as const;
+      return [a.contentId!, `data:${a.mimeType};base64,${btoa(bin)}`] as [string, string];
     })).then((entries) => {
-      if (!cancelled) setMap(Object.fromEntries(entries.filter((e): e is readonly [string, string] => e !== null)));
+      if (!cancelled) setMap(Object.fromEntries(entries.filter((e): e is [string, string] => e !== null)));
     });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

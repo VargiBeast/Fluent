@@ -3,7 +3,6 @@ import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import * as RD from "@radix-ui/react-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -11,7 +10,7 @@ import { Sidebar } from "./Sidebar";
 import { ComposerProvider, useComposer } from "./composer/context";
 import { ComposerHost } from "./composer/Composer";
 import { ShortcutsProvider } from "./Shortcuts";
-import { Logo } from "@/components/ui/misc";
+import { Splash } from "@/components/Splash";
 
 export const SidebarContext = { open: () => {} };
 
@@ -27,15 +26,6 @@ export function AppLayout() {
         <Shell />
       </ShortcutsProvider>
     </ComposerProvider>
-  );
-}
-
-export function Splash() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4" aria-busy="true">
-      <Logo />
-      <Loader2 className="size-5 animate-spin text-fg-3" aria-label="Loading" />
-    </div>
   );
 }
 

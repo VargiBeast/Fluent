@@ -312,7 +312,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
 
       {accounts.length > 1 && (
         <div className="flex h-10 items-center gap-2 border-b border-line px-4">
-          <label htmlFor="compose-from" className="w-10 text-[13px] text-fg-3">From</label>
+          <label htmlFor="compose-from" className="w-14 shrink-0 text-[13px] text-fg-3">From</label>
           <select id="compose-from" value={accountId} onChange={(e) => { setAccountId(e.target.value); setDraftId(undefined); setDirty(true); }} disabled={Boolean(init.thread)} className="h-8 flex-1 bg-transparent text-[13.5px] text-fg outline-none">
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name ? `${a.name} <${a.email}>` : a.email}</option>)}
           </select>
@@ -331,7 +331,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
         </>
       )}
       <div className="flex h-10 items-center gap-2 border-b border-line px-4">
-        <label htmlFor="compose-subject" className="w-10 shrink-0 text-[13px] text-fg-3">Subject</label>
+        <label htmlFor="compose-subject" className="w-14 shrink-0 text-[13px] text-fg-3">Subject</label>
         <input id="compose-subject" value={subject} onChange={(e) => { setSubject(e.target.value); setDirty(true); }} className="h-8 flex-1 bg-transparent text-[13.5px] text-fg outline-none" maxLength={900} />
       </div>
 

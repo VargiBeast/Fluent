@@ -23,7 +23,7 @@ export function RecipientInput({ label, values, onChange, autoFocus, id }: { lab
   };
   return (
     <div className="flex min-h-10 items-center gap-2 border-b border-line px-4 py-1">
-      <label htmlFor={id} className="w-10 shrink-0 text-[13px] text-fg-3">{label}</label>
+      <label htmlFor={id} className="w-14 shrink-0 text-[13px] text-fg-3">{label}</label>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
         {values.map((v) => {
           const ok = EMAIL_RE.test(v);
