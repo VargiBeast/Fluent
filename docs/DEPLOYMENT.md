@@ -1,0 +1,66 @@
+# Deployment (Vercel)
+
+FLUENT deploys as one Vercel project: the Vite SPA (static, `dist/`) plus one Node.js function (`api/index.ts`, a Hono app) that serves everything under `/api`.
+
+`vercel.json` already defines:
+
+- `installCommand` `pnpm install --frozen-lockfile`, `buildCommand` `pnpm build`, `outputDirectory` `dist`, framework `vite`
+- the function `api/index.ts` (60 s max duration, 1024 MB)
+- rewrites: `/api/*` → the function, everything else → `index.html` (client-side routing)
+- security headers on every response: CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS; immutable caching for `/assets/*`
+
+## Environment variables
+
+Set these per environment (Preview and/or Production) in **Project → Settings → Environment Variables**:
+
+| Variable | Value |
+| --- | --- |
+| `APP_URL` | The exact origin users open, e.g. `https://fluent.example.com`. For previews use a stable alias such as the branch URL `https://fluent-git-<branch>-<team>.vercel.app`, because OAuth redirect URIs and the CSRF origin check must match it exactly. |
+| `DATABASE_URL` | Hosted Postgres. For Supabase use the **Supavisor session pooler** (`postgres://postgres.<ref>:<password>@aws-…pooler.supabase.com:5432/postgres`) or the transaction pooler on port 6543; FLUENT uses `prepare: false`, so both work. URL-encode the password. |
+| `DATABASE_SSL` | `require` for hosted databases. |
+| `TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32`. Use different keys for preview and production. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | From Google Cloud (see [SETUP.md](SETUP.md#4-google-cloud-real-gmail)). |
+| `AI_PROVIDER`, `XAI_API_KEY` (and optional `AI_MODEL`) | AI configuration. |
+| `NODE_ENV` | Set automatically to `production` by Vercel, which disables the test-only endpoint overrides. |
+
+Do **not** set `FLUENT_TEST_GOOGLE_BASE` / `FLUENT_TEST_AI_BASE` in Vercel.
+
+## Database migrations
+
+Migrations are not run during the build. Run them from a trusted machine before (or right after) deploying a version that needs them:
+
+```bash
+DATABASE_URL='postgres://…' DATABASE_SSL=require pnpm db:migrate
+```
+
+They are idempotent (Drizzle tracks applied migrations in the `drizzle` schema). Run them with the owner (`postgres`) connection string, not the app's restricted `DATABASE_URL`. If you use a least-privilege app role, create the `fluent_app` login role **before** running migrations so `0002_app_role.sql` can grant it access. Without that role, the migration does nothing.
+
+## Google OAuth redirect URIs
+
+For every origin you deploy to, add to the OAuth client:
+
+- Authorized JavaScript origin: `https://<origin>`
+- Authorized redirect URI: `https://<origin>/api/auth/google/callback`
+
+Google does not accept wildcards, so per-deployment preview URLs (`fluent-abc123-….vercel.app`) cannot sign in; use the branch alias or a custom domain.
+
+## Cookies on HTTPS
+
+When `APP_URL` starts with `https://`, the session cookie is `__Host-fluent_session` (Secure, HttpOnly, SameSite=Lax, Path=/). On plain `http://localhost` it is `fluent_session` without `Secure`.
+
+## Limits to know
+
+- Vercel limits request bodies to 4.5 MB, so FLUENT caps outgoing attachments at 3.5 MB total per message (base64 overhead) and returns `413 attachments_too_large` beyond that.
+- Gmail API quotas apply per user and per project; FLUENT batches thread metadata requests with bounded concurrency.
+
+## Preview deployments of the `rebuild` branch
+
+Commits on `rebuild` are authored by the repository owner so Vercel builds them (earlier commits by a non-member author were **BLOCKED** by Vercel's team configuration). The branch alias is `https://fluent-git-rebuild-vargs-projects-93e3d823.vercel.app`.
+
+The preview uses a Supabase Postgres database:
+
+- Migrations `0000`–`0002` are applied; every table has RLS enabled and `anon`/`authenticated` have no table privileges.
+- The app connects through the Supabase transaction pooler (port 6543) as a dedicated login role, `fluent_app`. It is not a superuser, has no `BYPASSRLS`, and has only `SELECT/INSERT/UPDATE/DELETE` on the app tables, which migration `0002_app_role.sql` grants together with a `fluent_app_all` RLS policy. The role and its password are created outside the repo; migrations run as `postgres`.
+- Preview-only variables, scoped to the `rebuild` branch: `DATABASE_URL` (sensitive), `DATABASE_SSL=require`, `TOKEN_ENCRYPTION_KEY` (sensitive), `APP_URL`. No Google or xAI variables are set yet, so sign-in and AI stay disabled on the preview.
+
+`GET /api/health` is a liveness check with no dependencies. `GET /api/ready` runs a trivial query against `users` and returns `{"ok":true,"database":"ok"}`, or a 503 with `"not_configured"` or `"error"` (details are logged, never returned).

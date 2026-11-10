@@ -1,0 +1,125 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* FLUENT design tokens. Dark charcoal is the default; light mirrors it. */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #7c3aed;
+  --color-accent-700: #6d28d9;
+  --radius-card: 14px;
+}
+
+:root {
+  --bg: #f6f5f8;
+  --surface: #ffffff;
+  --surface-2: #f1f0f4;
+  --surface-3: #e7e5ec;
+  --border: #e2e0e8;
+  --border-strong: #d0cdd8;
+  --text: #17161c;
+  --text-2: #4a4855;
+  --text-3: #7a7786;
+  --accent: #7c3aed;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(124, 58, 237, 0.1);
+  --accent-ring: rgba(124, 58, 237, 0.45);
+  --ai-bg: linear-gradient(180deg, rgba(124, 58, 237, 0.09), rgba(124, 58, 237, 0.04));
+  --ai-border: rgba(124, 58, 237, 0.25);
+  --ai-title: #6d28d9;
+  --danger: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
+  --shadow: 0 1px 2px rgba(20, 16, 40, 0.06), 0 8px 24px rgba(20, 16, 40, 0.06);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0b0b0e;
+  --surface: #131317;
+  --surface-2: #1a1a1f;
+  --surface-3: #232329;
+  --border: #24242b;
+  --border-strong: #303039;
+  --text: #ededf1;
+  --text-2: #b5b4bf;
+  --text-3: #80808b;
+  --accent: #8b5cf6;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(139, 92, 246, 0.14);
+  --accent-ring: rgba(167, 139, 250, 0.55);
+  --ai-bg: linear-gradient(180deg, rgba(139, 92, 246, 0.16), rgba(109, 40, 217, 0.08));
+  --ai-border: rgba(167, 139, 250, 0.22);
+  --ai-title: #c4b5fd;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-fg-2: var(--text-2);
+  --color-fg-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-ai-title: var(--ai-title);
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.density-compact { --row-py: 8px; }
+.density-comfortable { --row-py: 12px; }
+
+:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; border-radius: 8px; }
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+
+.ai-block { background: var(--ai-bg); border: 1px solid var(--ai-border); }
+
+.shimmer {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: fade-in 160ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Rich-text editor */
+.tiptap { outline: none; min-height: 180px; line-height: 1.6; }
+.tiptap p { margin: 0 0 0.6em; }
+.tiptap ul { list-style: disc; padding-left: 1.4em; }
+.tiptap ol { list-style: decimal; padding-left: 1.4em; }
+.tiptap blockquote { border-left: 3px solid var(--border-strong); padding-left: 0.8em; color: var(--text-2); }
+.tiptap a { color: var(--accent); text-decoration: underline; }
+.tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-3); float: left; height: 0; pointer-events: none; }
