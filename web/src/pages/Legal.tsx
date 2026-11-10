@@ -113,6 +113,7 @@ export function PrivacyPage() {
       <p>We do not sell your information. We share it only with service providers that process it on our behalf to run FLUENT:</p>
       <UL>
         <li>Google (authentication and the Gmail API).</li>
+        <li>Vercel Web Analytics, which counts page views without cookies. It only ever receives a generic page path such as “/app/inbox” or “/app/inbox/thread”, never email content, addresses, search terms, label names or thread ids.</li>
         <li>Our hosting provider (Vercel) and database provider (managed PostgreSQL, e.g. Supabase), which store the data listed in section 2.</li>
         <li>The AI provider (Google, through the Gemini API, by default; or xAI or OpenAI if the operator configures them), only for AI requests you make.</li>
       </UL>

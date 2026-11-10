@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import "./styles/index.css";
 import { ApiError } from "@/lib/api";
@@ -11,6 +12,7 @@ import { Splash } from "@/components/Splash";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LandingPage } from "@/pages/Landing";
 import { NotFoundPage, PrivacyPage, TermsPage } from "@/pages/Legal";
+import { analyticsBeforeSend } from "@/lib/analytics";
 
 const AppRoutes = lazy(() => import("@/app/AppRoutes"));
 
@@ -39,6 +41,8 @@ createRoot(document.getElementById("root")!).render(
             </Routes>
           </BrowserRouter>
           <Toaster theme="dark" position="bottom-right" richColors closeButton />
+          {/* Only on Vercel builds: loads the same-origin /_vercel/insights script; URLs are sanitised. */}
+          {__VERCEL_ANALYTICS__ && <Analytics mode="production" beforeSend={analyticsBeforeSend} />}
         </SessionProvider>
       </Tooltip.Provider>
     </QueryClientProvider>

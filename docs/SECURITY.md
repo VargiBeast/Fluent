@@ -65,6 +65,7 @@ Until then, keep the app in **Testing** with named test users.
 - Permanent deletion is not offered; "Delete" moves mail to Gmail's Trash (it needs the broader `mail.google.com` scope).
 - Gmail push notifications (Pub/Sub) are not used. The app polls `history.list` about every 45 s while open.
 - Rate limits are per user and route, not per IP, for authenticated routes. Anonymous auth routes are limited per IP header as forwarded by Vercel.
+- **Web analytics:** Vercel Web Analytics (cookieless) runs only in builds made on Vercel. A `beforeSend` filter (`web/src/lib/analytics.ts`) drops query strings and fragments, collapses thread URLs to `/app/<folder>/thread`, maps unknown paths to a generic value and drops custom events. No email content, addresses, search terms or ids are sent. The script and beacon are same-origin (`/_vercel/insights/*`), so the existing CSP (`script-src 'self'`, `connect-src 'self'`) allows them.
 - The AI provider's own data handling is governed by its API terms. FLUENT only controls what it sends. With the default Gemini provider this depends on the key's tier (see the AI safety section above).
 
 ## Reporting

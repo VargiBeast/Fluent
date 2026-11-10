@@ -9,6 +9,8 @@ export default defineConfig({
   root: "web",
   publicDir: "../public",
   plugins: [react(), tailwindcss()],
+  // Vercel Web Analytics is rendered only in builds made on Vercel (VERCEL=1), never locally or in tests.
+  define: { __VERCEL_ANALYTICS__: JSON.stringify(process.env.VERCEL === "1") },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./web/src", import.meta.url)),
