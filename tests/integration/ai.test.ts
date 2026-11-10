@@ -16,7 +16,7 @@ afterAll(async () => { await h.close(); });
 
 const lastAi = () => h.google.state.aiRequests.at(-1)!;
 
-describe("AI workflows (HTTP-level xAI fake)", () => {
+describe("AI workflows (HTTP-level Gemini fake)", () => {
   it("summarises a thread with real email content wrapped as untrusted data", async () => {
     const r = await c.json<{ summary: string; actionItems: unknown[]; quickReplies: string[] }>("/api/ai/insights", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-canary" }) });
     expect(r.status).toBe(200);
@@ -168,7 +168,7 @@ describe("Privacy dashboard: AI audit log, exclusions, export and deletion", () 
 
 describe("AI not configured", () => {
   it("reports not_configured honestly and overview still works without AI", async () => {
-    process.env.XAI_API_KEY = "";
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "";
     const { resetEnv } = await import("../../server/env.js");
     resetEnv();
     const r = await c.json<{ error: { code: string } }>("/api/ai/insights", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-canary" }) });
@@ -178,7 +178,7 @@ describe("AI not configured", () => {
     expect(ov.body.aiStatus).toBe("not_configured");
     expect(ov.body.needsReply.length).toBeGreaterThan(0);
     expect((await c.json<{ ai: boolean }>("/api/config")).body.ai).toBe(false);
-    process.env.XAI_API_KEY = "fake-xai-key";
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "fake-gemini-key";
     resetEnv();
   });
 });

@@ -1,5 +1,5 @@
 /**
- * Deterministic fake of the xAI Responses API for tests/E2E. It reads the TASK marker and the
+ * Deterministic fake of the xAI Responses API and the Gemini generateContent API for tests/E2E. It reads the TASK marker and the
  * delimited email references FLUENT sends, and answers in the requested JSON shape, so tests can
  * verify grounding (only real refs are cited) without a live model.
  */
@@ -17,8 +17,38 @@ function flatten(input: unknown): string {
   return "";
 }
 
+/** Gemini `models/{model}:generateContent` request → response. */
+export function fakeGeminiRespond(body: { systemInstruction?: unknown; contents?: unknown }, model: string): { task: string; payload: unknown } {
+  const { task, text } = fakeAnswer(`${flatten(body.systemInstruction)}\n${flatten(body.contents)}`);
+  return {
+    task,
+    payload: {
+      candidates: [{ content: { role: "model", parts: [{ text }] }, finishReason: "STOP", index: 0 }],
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 },
+      modelVersion: model,
+      responseId: `gem_${Math.random().toString(36).slice(2)}`,
+    },
+  };
+}
+
+/** xAI Responses API request → response. */
 export function fakeAiRespond(body: Body): { task: string; payload: unknown } {
-  const all = `${body.instructions ?? ""}\n${flatten(body.input)}`;
+  const { task, text } = fakeAnswer(`${body.instructions ?? ""}\n${flatten(body.input)}`);
+  return {
+    task,
+    payload: {
+      id: `resp_${Math.random().toString(36).slice(2)}`,
+      object: "response",
+      created_at: Math.floor(Date.now() / 1000),
+      model: body.model ?? "fake",
+      status: "completed",
+      output: [{ type: "message", id: "msg_1", role: "assistant", status: "completed", content: [{ type: "output_text", text, annotations: [] }] }],
+      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+    },
+  };
+}
+
+function fakeAnswer(all: string): { task: string; text: string } {
   const task = /TASK:\s*([a-z_]+)/.exec(all)?.[1] ?? "unknown";
   const refs = [...all.matchAll(/<email ref="([^"]+)"/g)].map((m) => m[1]!);
   const subjects = [...all.matchAll(/<email ref="[^"]+"[^>]*subject="([^"]*)"/g)].map((m) => m[1]!);
@@ -70,17 +100,5 @@ export function fakeAiRespond(body: Body): { task: string; payload: unknown } {
     default:
       out = "OK";
   }
-  const text = typeof out === "string" ? out : JSON.stringify(out);
-  return {
-    task,
-    payload: {
-      id: `resp_${Math.random().toString(36).slice(2)}`,
-      object: "response",
-      created_at: Math.floor(Date.now() / 1000),
-      model: body.model ?? "fake",
-      status: "completed",
-      output: [{ type: "message", id: "msg_1", role: "assistant", status: "completed", content: [{ type: "output_text", text, annotations: [] }] }],
-      usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
-    },
-  };
+  return { task, text: typeof out === "string" ? out : JSON.stringify(out) };
 }

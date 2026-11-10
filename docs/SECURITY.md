@@ -44,7 +44,7 @@ All request bodies and queries are validated with zod (`.strict()` objects, leng
 - AI-written text is clearly marked. Before sending it, the UI requires an explicit confirmation dialog. The send API also refuses messages flagged `aiGenerated` without `aiConfirmed` (`409 ai_confirmation_required`). That check depends on the client's flag, so the real guarantee is the absence of any AI-to-send path.
 - **Prompt-injection defences.** Email content goes into the prompt only inside `<email …>` blocks. Delimiter-like strings in email content are neutralised, and a non-overridable system preamble tells the model to treat that content as untrusted data and to flag manipulation attempts. Structured outputs are validated with zod. Gmail queries returned by the model are checked for newlines. "Ask your inbox" citations are mapped only onto emails actually supplied, and made-up references are dropped.
 - **Exclusions** (senders, domains, labels) are enforced on the server before any provider call: thread features return `403 ai_excluded`, and list features (overview, ask, search results) drop excluded threads. Turning AI off returns `403 ai_disabled` everywhere.
-- Requests to xAI set `store: false`. The **AI access log** records feature, time, thread ids and encrypted subjects only, honours the user's retention setting (0 = off) and can be cleared.
+- Requests to xAI and OpenAI set `store: false`. The Gemini API has no such flag: Google keeps paid-tier prompts and responses for a limited time only to detect abuse. **On Gemini's free tier, Google may use prompts and responses to improve its products, and human reviewers may read them.** Use a paid (billing-enabled) key before real users' email goes through FLUENT, and keep the free tier for development with test mailboxes. The **AI access log** records feature, time, thread ids and encrypted subjects only, honours the user's retention setting (0 = off) and can be cleared.
 
 ## User controls
 
@@ -65,7 +65,8 @@ Until then, keep the app in **Testing** with named test users.
 - Permanent deletion is not offered; "Delete" moves mail to Gmail's Trash (it needs the broader `mail.google.com` scope).
 - Gmail push notifications (Pub/Sub) are not used. The app polls `history.list` about every 45 s while open.
 - Rate limits are per user and route, not per IP, for authenticated routes. Anonymous auth routes are limited per IP header as forwarded by Vercel.
-- The AI provider's own data handling is governed by its API terms. FLUENT only controls what it sends.
+- **Web analytics:** Vercel Web Analytics (cookieless) runs only in builds made on Vercel. A `beforeSend` filter (`web/src/lib/analytics.ts`) drops query strings and fragments, collapses thread URLs to `/app/<folder>/thread`, maps unknown paths to a generic value and drops custom events. No email content, addresses, search terms or ids are sent. The script and beacon are same-origin (`/_vercel/insights/*`), so the existing CSP (`script-src 'self'`, `connect-src 'self'`) allows them.
+- The AI provider's own data handling is governed by its API terms. FLUENT only controls what it sends. With the default Gemini provider this depends on the key's tier (see the AI safety section above).
 
 ## Reporting
 

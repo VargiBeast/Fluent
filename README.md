@@ -27,7 +27,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - Polling-based sync with in-app and desktop notifications
 - Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `g i`, `g o`, `?`) and dark (default), light or system theme
 
-**AI** (xAI Grok by default, through the Vercel AI SDK)
+**AI** (Google Gemini by default, with xAI Grok or OpenAI as options, through the Vercel AI SDK)
 - A thread summary with key points, action items, deadlines and quick replies
 - "Explain this email simply" and questions about a specific thread
 - Draft new emails or replies from an instruction, then make them shorter or longer, fix grammar, or change the tone
@@ -64,7 +64,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 | Data | PostgreSQL, Drizzle ORM and SQL migrations (Supabase or any Postgres 14+) |
 | Auth | Google OAuth 2.0 server-side code flow with PKCE, state and nonce; httpOnly cookies; CSRF tokens |
 | Mail | Gmail REST API v1 |
-| AI | Vercel AI SDK with `@ai-sdk/xai` (default `grok-4.7`), switchable to OpenAI by env |
+| AI | Vercel AI SDK with `@ai-sdk/google` (default `gemini-3.5-flash-lite`), switchable to `@ai-sdk/xai` (`grok-4.7`) or OpenAI by env. The Gemini free tier is for development only; see [SETUP](docs/SETUP.md#5-ai). |
 | Quality | zod everywhere, pino structured logs (no email content), ESLint, Vitest, Playwright |
 
 ## Architecture
@@ -72,7 +72,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 ```
 React SPA ──/api──► Hono (Vercel Function) ──► Postgres  (users, accounts*, sessions#, settings, ai_audit*, security_events, rate_limits)
                                       ├──► Google OAuth + Gmail API   (* = AES-256-GCM encrypted fields, # = hashed ids)
-                                      └──► AI provider (xAI)          — email bodies are never stored
+                                      └──► AI provider (Gemini)       — email bodies are never stored
 ```
 
 One web app and one API live in a single pnpm package. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -82,7 +82,7 @@ One web app and one API live in a single pnpm package. Details: [docs/ARCHITECTU
 ```bash
 corepack enable
 pnpm install
-cp .env.example .env          # set DATABASE_URL, TOKEN_ENCRYPTION_KEY, Google + xAI keys
+cp .env.example .env          # set DATABASE_URL, TOKEN_ENCRYPTION_KEY, Google OAuth + Gemini keys
 pnpm db:migrate               # apply SQL migrations
 pnpm dev                      # API :8787 + web http://localhost:5173
 ```

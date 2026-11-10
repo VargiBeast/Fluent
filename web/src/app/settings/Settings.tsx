@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Bell, Download, Eye, KeyRound, LogOut, Mail, Menu, Palette, Plus, RefreshCw, Shield, Tags, ShieldCheck, Sparkles, Trash2, User, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useSession, type Account } from "@/lib/session";
+import { aiProviderName } from "@/lib/ai";
 import { useUpdateSettings } from "@/lib/settings";
 import { useLabels } from "@/lib/mail";
 import { cn } from "@/lib/cn";
@@ -282,7 +283,7 @@ function AiSection() {
       {!config?.ai && (
         <div className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-[13px] text-fg-2">AI isn’t configured on this server (no provider key). These preferences are saved and take effect once AI is set up.</div>
       )}
-      <Panel title="AI features" description={`Provider: ${config?.aiProvider ?? "xai"}. AI only drafts and explains — it can never send, delete or forward email on its own.`}>
+      <Panel title="AI features" description={`Provider: ${aiProviderName(config?.aiProvider)}${config?.aiModel ? ` (${config.aiModel})` : ""}. AI only drafts and explains — it can never send, delete or forward email on its own.`}>
         <Switch label="Enable AI" description="Turns off every AI feature and stops all AI requests when disabled." checked={s.ai.enabled} onChange={(enabled) => update.mutate({ ai: { enabled } })} />
         <Switch label="Summarize emails automatically" description="Generate a summary when you open a conversation. When off, click Summarize instead." checked={s.ai.autoSummarize} disabled={!s.ai.enabled} onChange={(autoSummarize) => update.mutate({ ai: { autoSummarize } })} />
       </Panel>
@@ -357,7 +358,7 @@ function PrivacySection() {
     <>
       <div className="ai-block flex gap-3 rounded-[var(--radius-card)] p-4 text-[13px] text-fg-2">
         <ShieldCheck className="mt-0.5 size-5 shrink-0 text-accent-400" />
-        <p>FLUENT never stores your email bodies. Mail is read live from Gmail. When you use an AI feature, only the emails needed are sent to the AI provider ({config?.aiProvider === "xai" || !config?.aiProvider ? "xAI Grok" : config.aiProvider}), with storage disabled. Everything the AI accessed is listed below. Read the <Link to="/privacy" className="text-accent-400 hover:underline">privacy policy</Link>.</p>
+        <p>FLUENT never stores your email bodies. Mail is read live from Gmail. When you use an AI feature, only the emails needed are sent to the AI provider ({aiProviderName(config?.aiProvider)}), which processes them under its API terms. Everything the AI accessed is listed below. Read the <Link to="/privacy" className="text-accent-400 hover:underline">privacy policy</Link>.</p>
       </div>
 
       <Panel title="Exclude from AI" description="Excluded conversations are never sent to AI. This is enforced on the server before any AI request.">

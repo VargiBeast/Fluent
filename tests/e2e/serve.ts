@@ -26,8 +26,9 @@ Object.assign(process.env, {
   GOOGLE_CLIENT_SECRET: GOOGLE ? google.state.clientSecret : "",
   FLUENT_TEST_GOOGLE_BASE: google.url,
   FLUENT_TEST_AI_BASE: `${google.url}/v1`,
-  AI_PROVIDER: "xai",
-  XAI_API_KEY: AI ? "fake-xai-key" : "",
+  AI_PROVIDER: "",
+  GOOGLE_GENERATIVE_AI_API_KEY: AI ? "fake-gemini-key" : "",
+  XAI_API_KEY: "",
   LOG_LEVEL: "warn",
 });
 

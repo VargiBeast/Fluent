@@ -12,8 +12,10 @@ const schema = z.object({
   TOKEN_ENCRYPTION_KEY: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  AI_PROVIDER: z.enum(["xai", "openai"]).default("xai"),
+  // Empty means "pick automatically" (see aiProvider()).
+  AI_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["google", "xai", "openai"]).optional()),
   AI_MODEL: z.string().optional(),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
   XAI_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
@@ -46,9 +48,29 @@ export function googleConfigured(): boolean {
   return Boolean(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET && e.TOKEN_ENCRYPTION_KEY && e.DATABASE_URL);
 }
 
-export function aiConfigured(): boolean {
+export type AiProvider = "google" | "xai" | "openai";
+
+/**
+ * The AI provider in use. An explicit AI_PROVIDER wins; otherwise the first provider with a key,
+ * preferring Google Gemini, then xAI, then OpenAI. With no keys at all it reports "google".
+ */
+export function aiProvider(): AiProvider {
   const e = getEnv();
-  return e.AI_PROVIDER === "xai" ? Boolean(e.XAI_API_KEY) : Boolean(e.OPENAI_API_KEY);
+  if (e.AI_PROVIDER) return e.AI_PROVIDER;
+  if (e.GOOGLE_GENERATIVE_AI_API_KEY) return "google";
+  if (e.XAI_API_KEY) return "xai";
+  if (e.OPENAI_API_KEY) return "openai";
+  return "google";
+}
+
+export function aiApiKey(provider: AiProvider = aiProvider()): string | undefined {
+  const e = getEnv();
+  const key = provider === "google" ? e.GOOGLE_GENERATIVE_AI_API_KEY : provider === "xai" ? e.XAI_API_KEY : e.OPENAI_API_KEY;
+  return key || undefined;
+}
+
+export function aiConfigured(): boolean {
+  return Boolean(aiApiKey());
 }
 
 export function secureCookies(): boolean {

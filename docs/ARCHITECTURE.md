@@ -13,7 +13,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
    ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
-   └──► AI provider via Vercel AI SDK (xAI Responses API by default; OpenAI optional)
+   └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
 
 ## Repository layout
@@ -27,7 +27,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
 | `shared/` | Types and zod schemas shared by web and server (`mail.ts`, `settings.ts`). |
 | `api/index.ts` | Vercel entry: `hono/vercel` handlers for all methods. |
 | `drizzle/` | SQL migrations and the Drizzle journal. |
-| `tests/` | `unit/`, `web/` (jsdom), `integration/` (real Postgres + HTTP fakes), `e2e/` (Playwright), `fakes/` (fake Google OAuth/OIDC, Gmail and xAI servers plus seed mailbox). |
+| `tests/` | `unit/`, `web/` (jsdom), `integration/` (real Postgres + HTTP fakes), `e2e/` (Playwright), `fakes/` (fake Google OAuth/OIDC, Gmail, Gemini and xAI servers plus seed mailbox). |
 
 ## Key flows
 
@@ -53,5 +53,5 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
 
 - **Unit:** crypto (AES-GCM, HKDF purposes, AAD binding), OAuth helpers (safe `next`, PKCE), MIME builder and header-injection guards.
 - **Web (jsdom):** sanitizer (XSS vectors, link rewriting, tracker blocking, cid images) and the iframe CSP.
-- **Integration:** the real Hono app against a real Postgres, with HTTP-level fakes for Google OAuth/OIDC (PKCE verification, JWKS-signed ID tokens, refresh/revoke), Gmail REST and the xAI Responses API. Covers auth/CSRF/sessions, mail, compose, AI features, exclusions, audit/retention, export/delete and cross-user isolation.
+- **Integration:** the real Hono app against a real Postgres, with HTTP-level fakes for Google OAuth/OIDC (PKCE verification, JWKS-signed ID tokens, refresh/revoke), Gmail REST, the Gemini generateContent API and the xAI Responses API. Covers auth/CSRF/sessions, mail, compose, AI features, exclusions, audit/retention, export/delete and cross-user isolation.
 - **E2E (Playwright):** the built SPA plus API against the same fakes, at 1440×900 and 390×844, with screenshots.
