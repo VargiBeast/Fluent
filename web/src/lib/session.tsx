@@ -59,6 +59,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", apply);
   }, [theme]);
 
+  const accent = session.data?.settings?.appearance.accent ?? "purple";
+  useEffect(() => {
+    if (accent === "purple") delete document.documentElement.dataset.accent;
+    else document.documentElement.dataset.accent = accent;
+  }, [accent]);
+
   return (
     <Ctx.Provider
       value={{

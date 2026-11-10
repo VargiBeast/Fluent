@@ -8,6 +8,7 @@ import { Chip, EmptyState, Skeleton } from "@/components/ui/misc";
 import { IconButton, Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { dateGroup, displayName, listDate } from "@/lib/format";
+import { useFocusMode } from "@/lib/focus";
 import { useThreadAction, useThreads, useDrafts, type ListArgs } from "@/lib/mail";
 import { useSession } from "@/lib/session";
 import { api, errorMessage } from "@/lib/api";
@@ -43,13 +44,14 @@ const CATEGORY_CHIPS: Array<{ id: Category | "all"; label: string }> = [
 export function useListArgs(): ListArgs & { nl?: string; explanation?: string } {
   const { folder = "inbox" } = useParams();
   const [p] = useSearchParams();
+  const focusing = useFocusMode().active;
   const f = (folder === "label" || folder === "search" ? "all" : folder) as Folder;
   return {
     folder: folder === "label" ? "all" : f,
     account: p.get("account") ?? undefined,
     category: (p.get("category") as Category | null) ?? undefined,
     label: folder === "label" ? (p.get("label") ?? undefined) : undefined,
-    q: [p.get("q"), p.get("unread") === "1" ? "is:unread" : ""].filter(Boolean).join(" ") || undefined,
+    q: [p.get("q"), p.get("unread") === "1" ? "is:unread" : "", focusing && folder === "inbox" ? "is:important" : ""].filter(Boolean).join(" ") || undefined,
     filter: p.get("filter") === "unanswered" ? "unanswered" : undefined,
     nl: p.get("nl") ?? undefined,
     explanation: p.get("why") ?? undefined,

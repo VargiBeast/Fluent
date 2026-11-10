@@ -1,10 +1,16 @@
 import { z } from "zod";
+import { focusUntilSchema } from "./focus.js";
+
+/** Accent colours. Purple is FLUENT's brand default; each one has light and dark tokens in index.css. */
+export const ACCENTS = ["purple", "blue", "teal", "rose", "orange"] as const;
+export type Accent = (typeof ACCENTS)[number];
 
 export const settingsSchema = z.object({
   appearance: z.object({
     theme: z.enum(["dark", "light", "system"]).default("dark"),
     density: z.enum(["comfortable", "compact"]).default("comfortable"),
     readingPane: z.enum(["right", "full"]).default("right"),
+    accent: z.enum(ACCENTS).catch("purple").default("purple"),
   }).prefault({}),
   notifications: z.object({
     desktop: z.boolean().default(false),
@@ -31,6 +37,10 @@ export const settingsSchema = z.object({
     /** Seconds FLUENT waits before actually sending, so you can undo. */
     undoSendSeconds: z.enum(["0", "5", "10", "20"]).default("5"),
   }).prefault({}),
+  /** Focus mode: while `until` is in the future the inbox shows only important mail. */
+  focus: z.object({
+    until: z.string().datetime({ offset: true }).nullable().catch(null).default(null),
+  }).prefault({}),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -41,6 +51,7 @@ export const settingsPatchSchema = z.object({
     theme: z.enum(["dark", "light", "system"]),
     density: z.enum(["comfortable", "compact"]),
     readingPane: z.enum(["right", "full"]),
+    accent: z.enum(ACCENTS),
   }).partial().strict().optional(),
   notifications: z.object({ desktop: z.boolean(), inApp: z.boolean(), importantOnly: z.boolean() }).partial().strict().optional(),
   ai: z.object({
@@ -58,6 +69,7 @@ export const settingsPatchSchema = z.object({
   }).partial().strict().optional(),
   profile: z.object({ displayName: z.string().max(120) }).partial().strict().optional(),
   compose: z.object({ undoSendSeconds: z.enum(["0", "5", "10", "20"]) }).partial().strict().optional(),
+  focus: z.object({ until: focusUntilSchema }).strict().optional(),
   onboarded: z.boolean().optional(),
 }).strict();
 
