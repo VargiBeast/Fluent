@@ -14,6 +14,7 @@ import { api, errorMessage } from "@/lib/api";
 import { FOLDER_META } from "./nav";
 import { useComposer } from "./composer/context";
 import { useCopilot } from "./copilot/context";
+import { DailyBriefCard } from "./DailyBrief";
 import { BulkBar } from "./BulkBar";
 import { toast } from "sonner";
 
@@ -313,6 +314,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
           />
         ) : (
           <>
+          {folder === "inbox" && !args.q && <DailyBriefCard compact />}
           {picked.size > 0 && !isDrafts && (
             <BulkBar
               selected={pickedThreads}

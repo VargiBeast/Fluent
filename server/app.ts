@@ -15,6 +15,8 @@ import { aiRoutes } from "./routes/ai.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { copilotRoutes } from "./routes/copilot.js";
 import { templateRoutes } from "./routes/templates.js";
+import { noteRoutes } from "./routes/notes.js";
+import { unsubscribeRoutes } from "./routes/unsubscribe.js";
 import { sendAsRoutes } from "./routes/sendas.js";
 import { statsRoutes } from "./routes/stats.js";
 import { sql } from "drizzle-orm";
@@ -90,6 +92,8 @@ export function createApp() {
   app.route("/ai", aiRoutes);
   app.route("/copilot", copilotRoutes);
   app.route("/templates", templateRoutes);
+  app.route("/notes", noteRoutes);
+  app.route("/newsletters", unsubscribeRoutes);
   app.route("/send-as", sendAsRoutes);
   app.route("/stats", statsRoutes);
   app.route("/", settingsRoutes);

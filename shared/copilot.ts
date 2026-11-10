@@ -67,7 +67,7 @@ export interface PlanPreview {
 
 export type CopilotReply =
   | { kind: "plan"; plan: PlanPreview }
-  | { kind: "answer"; answer: string; citations: ThreadSummary[]; searched?: number; excluded?: number }
+  | { kind: "answer"; answer: string; citations: ThreadSummary[]; searched?: number; excluded?: number; found?: boolean; gmailQuery?: string | null }
   | { kind: "clarify"; message: string };
 
 export interface ExecuteRequest {

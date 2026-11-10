@@ -15,7 +15,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /send-as   Gmail send-as display name + signature (gmail.settings.basic)
    │                                   ├─ /stats     inbox stats from live Gmail metadata
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
-   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates · read_later
+   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates · read_later · thread_notes
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
    └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
@@ -95,3 +95,24 @@ Saved replies live in `templates` (name, subject and text, each AES-GCM encrypte
 ## Read later
 
 `POST /api/mail/read-later {accountId, threadId}` saves a conversation (the thread must exist in the user's own account; idempotent; up to 500), `DELETE /api/mail/read-later/:accountId/:threadId` removes it and `GET /api/mail/read-later` lists the saved keys. Rows in `read_later` hold only the account, thread id and time. Nothing changes in Gmail. `later` is a FLUENT folder: `GET /api/mail/threads?folder=later` is answered by `services/readLater.ts` with the same `ThreadPage` shape as Gmail folders (newest saved first, offset cursor, summaries fetched live with `threads.get?format=metadata`), so the normal list, reader and keyboard navigation work. Conversations deleted in Gmail are dropped from the list; trashed or spam ones are hidden until restored. The reader has a bookmark toggle (shortcut `b`) and the sidebar a Read later entry. The list is included in the data summary and export.
+
+## Private notes
+
+`GET/PUT/DELETE /api/notes/:accountId/:threadId` reads, saves (`{body}`, zod-validated, up to 5,000 characters) and deletes the one private note pinned to a conversation. The thread must exist in the user's own account. `thread_notes` holds the account, thread id and the text AES-GCM encrypted (purpose `note`, AAD = user + account + thread). Notes are never written to Gmail, never included in AI prompts, and are removed with the account (cascade). The reader shows the note under the subject (toolbar button or shortcut `n`). Notes are included in the data summary and export.
+
+## Unsubscribe assistant
+
+`GET /api/newsletters/senders?days=30|90|180&account=` lists up to 500 recent messages per account (`messages.list newer_than:Nd -in:sent -in:drafts -in:chats`), reads only their metadata headers, and groups those with a usable `List-Unsubscribe` by account + sender. Results are ranked by open rate (read ÷ total, least-opened first), then by volume. Each sender lists the unsubscribe methods its latest message offers: one-click (RFC 8058, https + `List-Unsubscribe-Post`), mailto, or an https page to open. Nothing is stored. The page (`/app/newsletters`, sidebar "Unsubscribe") also remembers which senders you unsubscribed from in localStorage only.
+
+- `POST /api/newsletters/unsubscribe {accountId, messageId, method, confirm: true}` re-reads the header from Gmail. It then sends the one-click POST (`server/lib/oneClick.ts`, SSRF-guarded) or, after the confirm dialog, one unsubscribe email from the user's account.
+- `POST /api/newsletters/archive {senders[], confirm: true}` archives every Inbox message from those senders (`from:<addr> in:inbox` + `messages.batchModify`) and returns the ids. `POST /api/newsletters/archive/undo` puts them back.
+- See SECURITY.md for the threat model.
+
+## Voice dictation
+
+`web/src/lib/speech.ts` wraps the browser's Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) in `useDictation`. It uses on-device recognition when Chrome reports the language model as available, and maps the API's errors to readable messages. `MicButton` (`web/src/app/voice/`) adds a mic to the composer, which inserts the text at the cursor as plain text, and to the Copilot input (`CopilotMic`, the only change inside Copilot). Where the API is missing, the button explains that dictation isn't available. FLUENT never records, uploads or stores audio; only the recognised text is used, like typed text.
+
+Voice commands (`web/src/lib/voiceCommand.ts`, English and Norwegian) only work from the Copilot mic: "reply to Ola that I'll come at 3", "email Priya saying QA is done", "svar Ola at …". They only ever produce a draft.
+- **Reply:** finds the latest conversation from that person with an ordinary quoted `from:"Name"` search and opens the normal reply composer with "Hi Ola,\n\nI'll come at 3.".
+- **New email:** looks up the address from recent mail.
+- The composer saves the result to Gmail Drafts right away (`voice: true`) and says it won't be sent unless the user presses Send. There is no code path from a voice command to sending, even if the user says "send".

@@ -9,12 +9,10 @@ import { snoozePresets } from "@/lib/snooze";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuTrigger } from "@/components/ui/Menu";
 import { cn } from "@/lib/cn";
+import { plural, runBulk, undoToast, type BulkAction } from "@/lib/bulk";
 
-type BulkAction = "archive" | "inbox" | "trash" | "untrash" | "read" | "unread" | "star" | "unstar" | "label_add" | "label_remove";
-interface BulkResult { ok: number; failed: number; undo: { action: BulkAction; labelId?: string } }
 
 const PAST: Record<string, string> = { archive: "Archived", inbox: "Moved to Inbox", trash: "Moved to Trash", read: "Marked as read", unread: "Marked as unread", label_add: "Labelled", untrash: "Restored" };
-const plural = (n: number) => `${n} conversation${n === 1 ? "" : "s"}`;
 
 /** Bulk actions for selected conversations. Every action can be undone from its toast. */
 export function BulkBar({ selected, allVisible, onSelectAll, onClear, folder }: {
@@ -33,20 +31,6 @@ export function BulkBar({ selected, allVisible, onSelectAll, onClear, folder }: 
     for (const k of ["threads", "thread", "labels", "snoozes"]) void qc.invalidateQueries({ queryKey: [k] });
   };
 
-  // Per-account requests, because label ids are per account.
-  const runBulk = async (action: BulkAction, items: ThreadSummary[], labelFor?: (accountId: string) => string | undefined): Promise<Array<{ accountId: string; items: ThreadSummary[]; r: BulkResult }>> => {
-    const byAcc = new Map<string, ThreadSummary[]>();
-    for (const t of items) byAcc.set(t.accountId, [...(byAcc.get(t.accountId) ?? []), t]);
-    const out = [];
-    for (const [accountId, ts] of byAcc) {
-      const labelId = labelFor?.(accountId);
-      if (labelFor && !labelId) continue;
-      const r = await api.post<BulkResult>("/mail/bulk", { items: ts.map((t) => ({ accountId, threadId: t.id })), action, ...(labelId ? { labelId } : {}) });
-      out.push({ accountId, items: ts, r });
-    }
-    return out;
-  };
-
   const act = async (action: BulkAction, label?: { name: string }) => {
     const items = [...selected];
     setBusy(action);
@@ -57,21 +41,7 @@ export function BulkBar({ selected, allVisible, onSelectAll, onClear, folder }: 
       const failed = res.reduce((s, x) => s + x.r.failed, 0);
       onClear();
       refresh();
-      toast.success(`${PAST[action] ?? "Updated"} ${plural(ok)}${label ? ` with “${label.name}”` : ""}`, {
-        description: failed ? `${failed} couldn't be changed.` : undefined,
-        action: {
-          label: "Undo",
-          onClick: async () => {
-            try {
-              for (const x of res) await api.post("/mail/bulk", { items: x.items.map((t) => ({ accountId: x.accountId, threadId: t.id })), action: x.r.undo.action, ...(x.r.undo.labelId ? { labelId: x.r.undo.labelId } : {}) });
-              refresh();
-              toast("Undone");
-            } catch (err) {
-              toast.error(errorMessage(err));
-            }
-          },
-        },
-      });
+      undoToast(qc, `${PAST[action] ?? "Updated"} ${plural(ok)}${label ? ` with “${label.name}”` : ""}`, res, { description: failed ? `${failed} couldn't be changed.` : undefined });
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {

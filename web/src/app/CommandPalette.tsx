@@ -2,7 +2,7 @@ import * as RD from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMatch, useNavigate } from "react-router-dom";
 import {
-  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, Search, Send, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
+  Archive, BarChart3, Bookmark, Clock, CornerDownLeft, File, FileStack, Inbox, Keyboard, Mail, MailOpen, Moon, PenLine, PenSquare, MailMinus, Search, SearchCheck, Send, StickyNote, Settings, ShieldCheck, Sparkles, Star, Sun, Tag, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useSession } from "@/lib/session";
@@ -59,6 +59,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       { id: "go-snoozed", group: "Go to", title: "Snoozed", icon: <Clock />, run: go("/app/snoozed") },
       { id: "go-later", group: "Go to", title: "Read later", keywords: "saved bookmarks weekend newsletters", icon: <Bookmark />, run: go("/app/later") },
       { id: "go-stats", group: "Go to", title: "Inbox stats", keywords: "statistics volume top senders response time analytics", icon: <BarChart3 />, run: go("/app/stats") },
+      { id: "go-unsubscribe", group: "Go to", title: "Unsubscribe assistant", keywords: "newsletters mailing lists unsubscribe clean up senders", icon: <MailMinus />, run: go("/app/newsletters") },
       { id: "go-sent", group: "Go to", title: "Sent", shortcut: "g t", icon: <Send />, run: go("/app/sent") },
       { id: "go-drafts", group: "Go to", title: "Drafts", shortcut: "g d", icon: <File />, run: go("/app/drafts") },
       { id: "go-archive", group: "Go to", title: "Archive", icon: <Archive />, run: go("/app/archive") },
@@ -78,6 +79,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       list.splice(1, 0,
         { id: "t-reply", group: "Conversation", title: "Reply", shortcut: "r", icon: <Mail />, run: () => pressAfterClose("r") },
         { id: "t-archive", group: "Conversation", title: "Archive conversation", shortcut: "e", icon: <Archive />, run: () => pressAfterClose("e") },
+        { id: "t-note", group: "Conversation", title: "Add or edit private note", keywords: "notes memo annotate", shortcut: "n", icon: <StickyNote />, run: () => pressAfterClose("n") },
         { id: "t-star", group: "Conversation", title: "Star / unstar", shortcut: "s", icon: <Star />, run: () => pressAfterClose("s") },
         { id: "t-unread", group: "Conversation", title: "Mark as unread", shortcut: "u", icon: <MailOpen />, run: () => pressAfterClose("u") },
         { id: "t-later", group: "Conversation", title: "Save to / remove from Read later", keywords: "bookmark", shortcut: "b", icon: <Bookmark />, run: () => pressAfterClose("b") },
@@ -91,7 +93,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const results = useMemo(() => {
     const r = filterCommands(commands, q);
     // Free text always offers to ask Copilot, so ⌘K doubles as the Copilot entry point.
-    if (q.trim().length > 1) r.push({ id: "ask", group: "Copilot", title: `Ask Copilot: “${q.trim()}”`, icon: <Sparkles />, run: () => copilot.open(q.trim(), true) });
+    if (q.trim().length > 1) {
+      r.push({ id: "ask", group: "Copilot", title: `Ask Copilot: “${q.trim()}”`, icon: <Sparkles />, run: () => copilot.open(q.trim(), true) });
+      r.push({ id: "ask-inbox", group: "Copilot", title: `Ask your inbox: “${q.trim()}”`, icon: <SearchCheck />, run: () => copilot.open(q.trim(), true, "ask") });
+    }
     return r;
   }, [commands, q, copilot]);
 

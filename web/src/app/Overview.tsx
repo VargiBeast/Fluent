@@ -15,6 +15,7 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
 import { SidebarContext } from "./AppLayout";
 import { useCopilot } from "./copilot/context";
+import { DailyBriefCard } from "./DailyBrief";
 
 interface OverviewData {
   generatedAt: string;
@@ -68,6 +69,8 @@ export function OverviewPage() {
             <p className="text-[13px] text-fg-3">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight text-fg">{greet}{firstName ? `, ${firstName}` : ""}</h2>
           </section>
+
+          <DailyBriefCard />
 
           {q.isLoading ? (
             <OverviewSkeleton />

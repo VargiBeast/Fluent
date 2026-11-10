@@ -102,7 +102,7 @@ export async function createPlan(userId: string, sessionId: string, req: PlanReq
       return { kind: "answer", answer, citations: [] };
     }
     const r = await askInbox(userId, { question: req.instruction, account: req.account });
-    return { kind: "answer", answer: r.answer, citations: r.citations, searched: r.searched, excluded: r.excluded };
+    return { kind: "answer", answer: r.answer, citations: r.citations, searched: r.searched, excluded: r.excluded, found: r.found, gmailQuery: r.gmailQuery };
   }
   if (raw.intent === "unclear") {
     return { kind: "clarify", message: raw.clarification || "Could you say a bit more precisely what you'd like me to do?" };

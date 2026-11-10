@@ -119,8 +119,36 @@ function fakeAnswer(all: string): { task: string; text: string } {
             ? { gmailQuery: "school OR from:school", explanation: "Messages from or mentioning a school.", postFilter: "none" }
             : { gmailQuery: "deadline", explanation: "Messages mentioning a deadline.", postFilter: "none" };
       break;
+    case "ask_plan": {
+      const uq = /User question \(from the user, trusted\):\s*(.+)/.exec(all)?.[1]?.trim() ?? "";
+      const norsk = /\b(hva|sa|om|fakturaen)\b/i.test(uq);
+      const notFound = norsk ? "Jeg fant ingen e-poster om det." : "I couldn't find any emails about that.";
+      // The first query is deliberately invalid so tests prove validation drops it.
+      out = /zebra|unicorn/i.test(uq)
+        ? { queries: ["https://evil.example in:anywhere", "zebra unicorn"], notFound }
+        : /invoice|faktura/i.test(uq)
+          ? { queries: ["label:\"unclosed", "invoice newer_than:60d", "invoice"], notFound }
+          : /school/i.test(uq)
+            ? { queries: ["school OR from:school"], notFound }
+            : { queries: ["deadline"], notFound };
+      break;
+    }
+    case "brief": {
+      const flagsOf = [...all.matchAll(/<email ref="([^"]+)"[^>]*?(?:labels="([^"]*)")?>/g)].map((m) => ({ ref: m[1]!, flags: m[2] ?? "" }));
+      const lang = /in (Norwegian[^,.]*)/.exec(all)?.[1];
+      out = {
+        headline: lang ? "God morgen! Du har noen viktige e-poster i dag." : `Good morning! ${flagsOf.length} conversations to look at today.`,
+        items: flagsOf.map(({ ref, flags }, i) => ({
+          ref,
+          // Misbehaving model: also tries to archive a starred thread, which the server must refuse.
+          bucket: /bulk/.test(flags) || /starred/.test(flags) && i % 2 ? "safe_to_archive" : /last message sent by the user/.test(flags) ? "skip" : i % 2 ? "awaiting_reply" : "important",
+          reason: lang ? "Viktig i dag" : `Fake reason for ${ref}`,
+        })),
+      };
+      break;
+    }
     case "ask":
-      out = { answer: refs.length ? `Based on your emails: ${question ? `regarding “${question}”, ` : ""}the most relevant conversation is cited.` : "I couldn't find anything relevant in your mail.", citations: refs.slice(0, 2).concat(["ref-that-does-not-exist"]) };
+      out = { found: refs.length > 0, answer: refs.length ? `Based on your emails: ${question ? `regarding “${question}”, ` : ""}the most relevant conversation is cited.` : "I couldn't find anything relevant in your mail.", citations: refs.slice(0, 2).concat(["ref-that-does-not-exist"]) };
       break;
     default:
       out = "OK";

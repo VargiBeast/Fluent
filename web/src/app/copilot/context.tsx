@@ -3,10 +3,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 interface CopilotCtx {
   isOpen: boolean;
   /** Open Copilot, optionally with text; `autoSend` submits it right away. */
-  open: (prefill?: string, autoSend?: boolean) => void;
+  open: (prefill?: string, autoSend?: boolean, mode?: "ask") => void;
   close: () => void;
   setOpen: (v: boolean) => void;
-  prefill: { text: string; autoSend: boolean; n: number };
+  prefill: { text: string; autoSend: boolean; n: number; mode?: "ask" };
   paletteOpen: boolean;
   setPaletteOpen: (v: boolean) => void;
 }
@@ -16,10 +16,10 @@ const Ctx = createContext<CopilotCtx>({ isOpen: false, open: () => {}, close: ()
 /** One Copilot for the whole app, opened from buttons or ⌘K / Ctrl+K anywhere. */
 export function CopilotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [prefill, setPrefill] = useState({ text: "", autoSend: false, n: 0 });
+  const [prefill, setPrefill] = useState<CopilotCtx["prefill"]>({ text: "", autoSend: false, n: 0 });
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const open = useCallback((p?: string, autoSend = false) => {
-    setPrefill((x) => ({ text: p ?? "", autoSend, n: x.n + 1 }));
+  const open = useCallback((p?: string, autoSend = false, mode?: "ask") => {
+    setPrefill((x) => ({ text: p ?? "", autoSend, n: x.n + 1, mode }));
     setIsOpen(true);
   }, []);
   const close = useCallback(() => setIsOpen(false), []);
