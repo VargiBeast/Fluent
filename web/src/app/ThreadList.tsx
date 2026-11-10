@@ -344,7 +344,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
 
 function GroupHeader({ label, action }: { label: string; action?: React.ReactNode }) {
   return (
-    <div className={cn("sticky top-0 z-10 items-center justify-between bg-surface/95 px-4 pb-1 pt-3 backdrop-blur", action ? "flex" : "hidden lg:flex")}>
+    <div className={cn("sticky top-0 z-10 items-center justify-between bg-bg px-4 pb-1 pt-3", action ? "flex" : "hidden lg:flex")}>
       <span className="text-[11px] font-medium uppercase tracking-wide text-fg-3">{label}</span>
       {action}
     </div>

@@ -128,7 +128,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
       <RD.Portal>
-        <RD.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] animate-in" />
+        <RD.Overlay className="fixed inset-0 z-50 bg-black/55 animate-in" />
         <RD.Content
           data-palette=""
           aria-describedby={undefined}

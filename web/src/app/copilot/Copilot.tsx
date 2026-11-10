@@ -112,7 +112,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
             inputRef.current?.focus();
           }}
           className={cn(
-            "fixed z-50 flex flex-col bg-surface shadow-[var(--shadow)] animate-in pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]",
+            "fixed z-50 flex flex-col bg-surface shadow-[var(--shadow)] animate-in pb-[var(--sab)] pt-[var(--sat)]",
             expanded
               ? "inset-0 sm:inset-x-[max(24px,calc(50vw-480px))] sm:inset-y-[6vh] sm:rounded-2xl sm:border sm:border-line-strong"
               : "inset-0 sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[min(600px,92vw)] sm:border-l sm:border-line",
