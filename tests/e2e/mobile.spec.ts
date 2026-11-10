@@ -60,6 +60,41 @@ test("mobile: long-press selects, bottom action bar marks unread", async ({ page
   await expect(page.getByText("Marked as unread 1 conversation")).toBeVisible();
 });
 
+test("mobile: swipe left to reply shows three AI suggestions as an editable draft", async ({ page }) => {
+  const errors = trackErrors(page);
+  await signIn(page);
+  const row = page.locator('[data-thread-id="t-canary"]');
+  const box = (await row.boundingBox())!;
+  const cdp = await page.context().newCDPSession(page);
+  const y = box.y + box.height / 2;
+  const x0 = box.x + box.width - 30;
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x0, y }] });
+  for (let i = 1; i <= 8; i++) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x0 - i * 18, y }] });
+  }
+  await expect(page.getByText("Reply", { exact: true }).first()).toBeVisible();
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+  await expect(page.getByRole("article", { name: /Q4 design review/ })).toBeVisible();
+  await expect(page).not.toHaveURL(/reply=1/); // one-shot: a reload doesn't re-trigger
+  const list = page.getByTestId("reply-suggestions");
+  await expect(list.getByRole("button")).toHaveCount(3);
+  const reply = page.getByRole("textbox", { name: "Reply text" });
+  await expect(reply).toBeFocused();
+  await expect(reply).toHaveValue("");  // nothing is pre-filled or sent until the user picks
+  await list.getByRole("button", { name: /Suggest Friday/ }).click();
+  await expect(reply).toHaveValue(/Friday at 10:00/);
+  await expect(page.getByText("Written with AI")).toBeVisible();
+  await reply.fill("Thursday is tricky for me. Would Friday at 11:00 work instead?");
+  await shot(page, "29-mobile-swipe-reply");
+  await page.getByRole("button", { name: "Send reply" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "Send AI-written reply?" }).or(page.getByRole("dialog", { name: "Send AI-written reply?" }));
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Send reply" }).click();
+  await expect(reply).toHaveValue("");
+  expect(errors).toEqual([]);
+});
+
 test("mobile: Copilot plans an action, confirms it and shows the result", async ({ page }) => {
   const errors = trackErrors(page);
   await signIn(page);

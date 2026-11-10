@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Check, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Search, Sparkles, Star, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Reply, Search, Sparkles, Star, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Category, Folder, ThreadSummary } from "@shared/mail";
 import { Avatar } from "@/components/ui/Avatar";
@@ -16,6 +16,9 @@ import { useComposer } from "./composer/context";
 import { useCopilot } from "./copilot/context";
 import { BulkBar } from "./BulkBar";
 import { toast } from "sonner";
+
+const SWIPE_TRIGGER = 72;
+const SWIPE_MAX = 120;
 
 const EMPTY_HINT: Record<string, string> = {
   search: "Try different words, or toggle Ask AI to describe what you're looking for.",
@@ -201,8 +204,9 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
     return () => window.removeEventListener("keydown", onKey, true);
   });
 
-  const open = (t: ThreadSummary) => {
+  const open = (t: ThreadSummary, reply = false) => {
     const p = new URLSearchParams(params);
+    if (reply) p.set("reply", "1");
     navigate(`/app/${folder}/${t.accountId}/${t.id}?${p}`);
   };
 
@@ -322,7 +326,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
             {starred.length > 0 && (
               <li>
                 <GroupHeader label="Starred" action={<button type="button" className="flex items-center gap-1 text-[11.5px] text-fg-3 hover:text-fg" onClick={() => setShowStarred((v) => !v)} aria-expanded={showStarred}>{showStarred ? "Hide" : "Show"}<ChevronUp className={cn("size-3.5 transition-transform", !showStarred && "rotate-180")} /></button>} />
-                {showStarred && <ul>{starred.map((t) => <Row key={`${t.accountId}:${t.id}`} t={t} picked={picked.has(`${t.accountId}:${t.id}`)} selecting={picked.size > 0} onPick={(range) => toggle(t, range)} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />)}</ul>}
+                {showStarred && <ul>{starred.map((t) => <Row key={`${t.accountId}:${t.id}`} t={t} picked={picked.has(`${t.accountId}:${t.id}`)} selecting={picked.size > 0} onPick={(range) => toggle(t, range)} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onSwipeReply={() => open(t, true)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />)}</ul>}
               </li>
             )}
             {groups.map(([label, items]) => (
@@ -330,7 +334,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
                 <GroupHeader label={label} />
                 <ul>
                   {items.map((t) => (
-                    <Row key={`${t.accountId}:${t.id}`} t={t} picked={picked.has(`${t.accountId}:${t.id}`)} selecting={picked.size > 0} onPick={(range) => toggle(t, range)} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />
+                    <Row key={`${t.accountId}:${t.id}`} t={t} picked={picked.has(`${t.accountId}:${t.id}`)} selecting={picked.size > 0} onPick={(range) => toggle(t, range)} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onSwipeReply={() => open(t, true)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />
                   ))}
                 </ul>
               </li>
@@ -358,16 +362,40 @@ function GroupHeader({ label, action }: { label: string; action?: React.ReactNod
   );
 }
 
-function Row({ t, selected, onOpen, onStar, multiAccount, picked, selecting, onPick }: {
-  t: ThreadSummary; selected: boolean; onOpen: () => void; onStar: () => void; multiAccount: boolean;
+function Row({ t, selected, onOpen, onSwipeReply, onStar, multiAccount, picked, selecting, onPick }: {
+  t: ThreadSummary; selected: boolean; onOpen: () => void; onSwipeReply: () => void; onStar: () => void; multiAccount: boolean;
   picked: boolean; selecting: boolean; onPick: (range: boolean) => void;
 }) {
   const { session } = useSession();
   const accIdx = session?.accounts?.findIndex((a) => a.id === t.accountId) ?? 0;
   const press = useRef<{ timer: number; fired: boolean } | null>(null);
   // Long-press (touch) enters selection mode; while selecting, a tap toggles instead of opening.
+  // Swipe left (touch) to reply: opens the conversation with the reply box focused and AI suggestions.
+  const swipe = useRef<{ x: number; y: number; active: boolean; done: boolean } | null>(null);
+  const [offset, setOffset] = useState(0);
+  const onPointerMove = (e: React.PointerEvent) => {
+    const s = swipe.current;
+    if (!s || e.pointerType !== "touch" || selecting) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (!s.active && dx < -12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      s.active = true;
+      cancelPress();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    }
+    if (s.active) setOffset(Math.max(-SWIPE_MAX, Math.min(0, dx)));
+  };
+  const endSwipe = () => {
+    const s = swipe.current;
+    if (s?.active) {
+      s.done = true;
+      if (offset <= -SWIPE_TRIGGER) { navigator.vibrate?.(8); onSwipeReply(); }
+    }
+    setOffset(0);
+  };
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType !== "touch") return;
+    swipe.current = { x: e.clientX, y: e.clientY, active: false, done: false };
     const state = { fired: false, timer: 0 };
     state.timer = window.setTimeout(() => {
       state.fired = true;
@@ -380,6 +408,11 @@ function Row({ t, selected, onOpen, onStar, multiAccount, picked, selecting, onP
     if (press.current) window.clearTimeout(press.current.timer);
   };
   const click = (e: React.MouseEvent) => {
+    if (swipe.current?.done) {
+      swipe.current = null;
+      e.preventDefault();
+      return;
+    }
     if (press.current?.fired) {
       press.current = null;
       e.preventDefault();
@@ -391,19 +424,27 @@ function Row({ t, selected, onOpen, onStar, multiAccount, picked, selecting, onP
   return (
     // Off-screen rows skip layout and paint (content-visibility), a cheap stand-in for virtualization that
     // keeps find-in-page, keyboard focus and screen readers working on the full list.
-    <li className="[contain-intrinsic-size:auto_78px] [content-visibility:auto]">
+    <li className="relative [contain-intrinsic-size:auto_78px] [content-visibility:auto]">
+      {offset < 0 && (
+        <div aria-hidden className={cn("absolute inset-y-0 right-2 flex items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium transition-colors", offset <= -SWIPE_TRIGGER ? "bg-accent text-accent-fg" : "bg-accent-soft text-accent-ink")}>
+          <Reply className="size-4" /> Reply
+        </div>
+      )}
       <div
         data-thread-id={t.id}
+        style={offset ? { transform: `translateX(${offset}px)` } : undefined}
         data-picked={picked ? "" : undefined}
         className={cn(
-          "group relative mx-2 flex cursor-pointer select-none gap-3 rounded-xl px-2.5 py-[var(--row-py,12px)] transition-colors",
+          "group relative mx-2 flex cursor-pointer touch-pan-y select-none gap-3 rounded-xl px-2.5 py-[var(--row-py,12px)] transition-colors",
+          offset ? "bg-surface" : "transition-transform",
           picked ? "bg-accent-soft ring-1 ring-inset ring-[var(--ai-border)]" : selected ? "bg-surface-3" : "hover:bg-surface-2",
         )}
         onClick={click}
         onPointerDown={onPointerDown}
-        onPointerUp={cancelPress}
+        onPointerMove={onPointerMove}
+        onPointerUp={() => { cancelPress(); endSwipe(); }}
         onPointerLeave={cancelPress}
-        onPointerCancel={cancelPress}
+        onPointerCancel={() => { cancelPress(); setOffset(0); }}
         onContextMenu={(e) => { if (press.current?.fired) e.preventDefault(); }}
       >
         <div className="flex w-5 flex-col items-center gap-2 pt-0.5">

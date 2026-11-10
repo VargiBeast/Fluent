@@ -329,3 +329,23 @@ export async function securityReview(userId: string, accountId: string, threadId
   await recordAudit(userId, policy, "security_check", [{ accountId, threadId, subject: t.subject }]);
   return out;
 }
+
+// ---------------- Reply suggestions (mobile swipe-to-reply) ----------------
+export const replySuggestionsSchema = z.object({
+  suggestions: z.array(z.object({ label: z.string().max(40), body: z.string().max(500) })).max(3),
+});
+
+/** Three short, different replies to the latest message. Text only: the user picks, edits and sends. */
+export async function replySuggestions(userId: string, accountId: string, threadId: string): Promise<z.infer<typeof replySuggestionsSchema>> {
+  const policy = await loadPolicy(userId);
+  const t = await loadThreadForAi(userId, policy, accountId, threadId);
+  const out = await aiCall({
+    task: "reply_suggestions",
+    system: `Suggest exactly 3 short replies the user (${t.accountEmail}) could send to the latest message in this conversation. ${todayContext()} Make them genuinely different (e.g. yes / not yet or a question / no or an alternative), each 1-3 sentences, ready to send, no subject line, no signature, and no placeholders like [name] unless a fact is truly unknown. "label" is a 1-4 word summary of the reply. ${prefs(policy)}`,
+    prompt: `Conversation:\n${threadBlocks(t)}`,
+    schema: replySuggestionsSchema,
+    maxOutputTokens: 800,
+  });
+  await recordAudit(userId, policy, "reply_suggestions", [{ accountId, threadId, subject: t.subject }]);
+  return { suggestions: out.suggestions.filter((s) => s.body.trim()).slice(0, 3) };
+}

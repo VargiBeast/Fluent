@@ -4,7 +4,7 @@ import type { AppEnv } from "../lib/context.js";
 import { requireUser } from "../auth/session.js";
 import { rateLimit } from "../lib/rateLimit.js";
 import { aiConfigured } from "../env.js";
-import { answerAboutThread, askInbox, buildOverview, draftEmail, explainThread, interpretSearch, loadPolicy, rewriteText, securityReview, threadInsights } from "../ai/features.js";
+import { answerAboutThread, askInbox, buildOverview, draftEmail, explainThread, interpretSearch, loadPolicy, replySuggestions, rewriteText, securityReview, threadInsights } from "../ai/features.js";
 
 const uuid = z.string().uuid();
 const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
@@ -26,6 +26,12 @@ aiRoutes.post("/security", async (c) => {
   const user = requireUser(c);
   const b = z.object({ accountId: uuid, threadId: gid, messageId: gid }).strict().parse(await c.req.json());
   return c.json(await securityReview(user.id, b.accountId, b.threadId, b.messageId));
+});
+
+aiRoutes.post("/reply-suggestions", async (c) => {
+  const user = requireUser(c);
+  const b = z.object({ accountId: uuid, threadId: gid }).strict().parse(await c.req.json());
+  return c.json(await replySuggestions(user.id, b.accountId, b.threadId));
 });
 
 aiRoutes.post("/draft", async (c) => {

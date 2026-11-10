@@ -81,6 +81,13 @@ function fakeAnswer(all: string): { task: string; text: string } {
         } : {}),
       };
       break;
+    case "reply_suggestions":
+      out = { suggestions: [
+        { label: "Yes, works", body: "Thursday 14:00 works for me. See you then!" },
+        { label: "Need a bit more time", body: "Thanks! Can I confirm by tomorrow morning?" },
+        { label: "Suggest Friday", body: "Thursday is tricky for me. Would Friday at 10:00 work instead?" },
+      ] };
+      break;
     case "security":
       out = /DMARC fail/.test(all)
         ? { verdict: "likely_phishing", reasons: ["Gmail couldn't confirm the sender.", "It tries to get you to act without checking."], advice: "Don't click anything; delete it." }
