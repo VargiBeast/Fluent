@@ -379,13 +379,15 @@ function Row({ t, selected, onOpen, onStar, multiAccount, picked, selecting, onP
     else onOpen();
   };
   return (
-    <li>
+    // Off-screen rows skip layout and paint (content-visibility), a cheap stand-in for virtualization that
+    // keeps find-in-page, keyboard focus and screen readers working on the full list.
+    <li className="[contain-intrinsic-size:auto_78px] [content-visibility:auto]">
       <div
         data-thread-id={t.id}
         data-picked={picked ? "" : undefined}
         className={cn(
           "group relative mx-2 flex cursor-pointer select-none gap-3 rounded-xl px-2.5 py-[var(--row-py,12px)] transition-colors",
-          picked ? "bg-accent-soft ring-1 ring-[var(--ai-border)]" : selected ? "bg-surface-3" : "hover:bg-surface-2",
+          picked ? "bg-accent-soft ring-1 ring-inset ring-[var(--ai-border)]" : selected ? "bg-surface-3" : "hover:bg-surface-2",
         )}
         onClick={click}
         onPointerDown={onPointerDown}

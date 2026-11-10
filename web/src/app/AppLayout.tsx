@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import * as RD from "@radix-ui/react-dialog";
@@ -9,7 +9,6 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { Sidebar } from "./Sidebar";
 import { ComposerProvider, useComposer } from "./composer/context";
-import { ComposerHost } from "./composer/Composer";
 import { ShortcutsProvider } from "./Shortcuts";
 import { Splash } from "@/components/Splash";
 import { CopilotProvider, useCopilot } from "./copilot/context";
@@ -65,7 +64,7 @@ function Shell() {
       <main id="main" className="min-w-0 flex-1">
         <Outlet />
       </main>
-      <ComposerHost />
+      <LazyComposer />
       <CopilotHost />
       <PaletteHost />
       <CopilotFab />
@@ -174,4 +173,19 @@ function useMailSync() {
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [qc, notif?.inApp, notif?.desktop]);
+}
+
+// The rich-text composer (TipTap/ProseMirror) is the heaviest part of the app, so it loads on first use,
+// and is prefetched once the browser is idle so opening it still feels instant.
+const loadComposer = () => import("./composer/Composer");
+const ComposerHost = lazy(() => loadComposer().then((m) => ({ default: m.ComposerHost })));
+
+function LazyComposer() {
+  const { requests } = useComposer();
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
+    idle(() => void loadComposer());
+  }, []);
+  if (!requests.length) return null;
+  return <Suspense fallback={null}><ComposerHost /></Suspense>;
 }
