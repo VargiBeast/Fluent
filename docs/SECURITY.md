@@ -31,6 +31,12 @@ Every query is scoped by the session's `user_id`. Account ids from the client ar
 
 All request bodies and queries are validated with zod (`.strict()` objects, length limits). Outgoing headers are checked for CR/LF injection, and recipients are normalised. Fixed-window rate limits, stored in Postgres so they hold across serverless instances, protect auth (30/min), mail (240/min), send (20/min), drafts (60/min), AI (30/min), settings (120/min) and privacy (60/min).
 
+Bulk actions (`POST /api/mail/bulk`) accept at most 100 conversations and one allowlisted action per request, check that every account belongs to the signed-in user, are limited to 30 requests per minute, and never delete permanently: "Delete" moves conversations to Trash.
+
+## Installable app and service worker
+
+The service worker (`public/sw.js`) caches only the static app shell (`index.html`, hashed JS/CSS, icons, manifest). It never intercepts `/api/*`, `/_vercel/*` or cross-origin requests, so no email data, tokens or API responses are written to the browser cache, and the OAuth redirect flow always goes to the network. `sw.js` is served with `no-cache` so updates aren't held back.
+
 ## Rendering untrusted email
 
 1. HTML is sanitised with DOMPurify. Scripts, frames, forms, SVG/MathML, `srcset`/`ping`, event handlers, `javascript:`/`data:` and root-relative links are removed, as is `position:fixed`.
