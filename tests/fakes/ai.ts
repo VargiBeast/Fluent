@@ -81,6 +81,11 @@ function fakeAnswer(all: string): { task: string; text: string } {
         } : {}),
       };
       break;
+    case "security":
+      out = /DMARC fail/.test(all)
+        ? { verdict: "likely_phishing", reasons: ["Gmail couldn't confirm the sender.", "It tries to get you to act without checking."], advice: "Don't click anything; delete it." }
+        : { verdict: "likely_safe", reasons: ["The sender checks passed."], advice: "Looks fine, but never share passwords by email." };
+      break;
     case "explain":
       out = "In plain terms: the sender is asking you to confirm a time and deliver something before a deadline.";
       break;

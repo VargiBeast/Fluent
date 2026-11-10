@@ -317,6 +317,7 @@ interface AuditEntry { id: string; feature: string; createdAt: string; itemCount
 const FEATURE_LABEL: Record<string, string> = {
   thread_summary: "Email summary",
   explain: "Explain email",
+  security_check: "Phishing check",
   copilot_thread: "Copilot question about an email",
   draft_new: "Draft new email",
   draft_reply: "Draft reply",

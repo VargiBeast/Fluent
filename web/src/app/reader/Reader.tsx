@@ -23,6 +23,7 @@ import { fmtAddr, quoteHtml, replyRecipients, replySubject, textToParagraphs, ty
 import { useComposer } from "../composer/context";
 import { EmailBody } from "./EmailBody";
 import { AiSummary, useInsights } from "./AiSummary";
+import { SecurityBanner } from "./SecurityBanner";
 
 export interface ReaderProps {
   accountId?: string;
@@ -172,6 +173,8 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
             <h1 className="text-[20px] font-semibold leading-snug text-fg">{thread.subject}</h1>
           </div>
           {thread.labelIds.some((l) => l.startsWith("Label_")) && <ThreadLabels thread={thread} />}
+
+          <SecurityBanner thread={thread} />
 
           <AiSummary thread={thread} insights={insights} autoEnabled={autoSummarize} onRequest={() => setSummaryRequested(true)} />
 
