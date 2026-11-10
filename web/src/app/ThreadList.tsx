@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Check, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Reply, Search, Sparkles, Star, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Reply, Search, Sparkles, Star, Wand2, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Category, Folder, ThreadSummary } from "@shared/mail";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip, EmptyState, Skeleton } from "@/components/ui/misc";
+import { EmptyState, Skeleton } from "@/components/ui/misc";
 import { IconButton, Button } from "@/components/ui/Button";
+import { Menu, MenuCheckbox, MenuContent, MenuSeparator, MenuTrigger } from "@/components/ui/Menu";
 import { cn } from "@/lib/cn";
 import { dateGroup, displayName, listDate } from "@/lib/format";
 import { useFocusMode } from "@/lib/focus";
@@ -70,8 +71,8 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
   const action = useThreadAction();
   const navigate = useNavigate();
   const composer = useComposer();
+  const copilot = useCopilot();
   const [showStarred, setShowStarred] = useState(true);
-  const [aiMode, setAiMode] = useState(Boolean(args.nl));
   const [searchText, setSearchText] = useState(args.nl ?? params.get("q") ?? "");
   const [searching, setSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -111,6 +112,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
   }, [threads]);
 
   const title = folder === "label" ? (params.get("name") ?? "Label") : folder === "search" ? "Search" : FOLDER_META[folder as Folder]?.label ?? "Mail";
+  const sectionLabel = args.category ? CATEGORY_CHIPS.find((c) => c.id === args.category)?.label ?? "Inbox" : params.get("unread") === "1" ? "Unread" : "Inbox";
   const accountLabel = args.account ? session?.accounts?.find((a) => a.id === args.account)?.email : "All accounts";
 
   const setParam = (k: string, v: string | null) => {
@@ -120,8 +122,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
     setParams(p);
   };
 
-  const submitSearch = async (e: FormEvent) => {
-    e.preventDefault();
+  const runSearch = async (mode: "gmail" | "smart") => {
     const text = searchText.trim();
     const base = new URLSearchParams();
     if (args.account) base.set("account", args.account);
@@ -129,7 +130,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
       navigate(`/app/inbox?${base}`);
       return;
     }
-    if (!aiMode) {
+    if (mode === "gmail") {
       base.set("q", text);
       navigate(`/app/search?${base}`);
       return;
@@ -215,63 +216,47 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
 
   return (
     <section aria-label={`${title} list`} className="flex h-full min-h-0 flex-col">
-      <header className="space-y-3 border-b border-line px-4 pb-3 pt-4">
-        <div className="flex items-center gap-2">
-          <IconButton label="Open navigation" className="lg:hidden" onClick={onOpenSidebar}>
-            <MenuIcon className="size-5" />
-          </IconButton>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[17px] font-semibold text-fg">
-              {title} <span className="font-normal text-fg-3">– {accountLabel}</span>
-            </h1>
-          </div>
+      <header className="space-y-1 px-3 pb-1 pt-3 lg:px-4">
+        <h1 className="sr-only">{title} – {accountLabel}</h1>
+        <SearchPill
+          inputRef={searchRef}
+          value={searchText}
+          onChange={setSearchText}
+          searching={searching}
+          aiOn={Boolean(config?.ai)}
+          onOpenSidebar={onOpenSidebar}
+          onSearch={(mode) => void runSearch(mode)}
+          onAsk={(text) => { copilot.open(text || undefined, Boolean(text)); if (text) setSearchText(""); }}
+        />
+        <div className="flex h-9 items-center gap-1 px-1">
+          {folder === "inbox" ? (
+            <Menu>
+              <MenuTrigger asChild>
+                <button type="button" aria-label={`Inbox section: ${sectionLabel}. Change section`} className="-ml-1 flex items-center gap-1 rounded-lg px-2 py-1 text-[12.5px] font-medium text-fg-3 hover:bg-surface-2 hover:text-fg focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]">
+                  {sectionLabel}<ChevronDown className="size-3.5" aria-hidden />
+                </button>
+              </MenuTrigger>
+              <MenuContent align="start">
+                {CATEGORY_CHIPS.map((c) => (
+                  <MenuCheckbox key={c.id} checked={(args.category ?? "all") === c.id} onCheckedChange={() => setParam("category", c.id === "all" ? null : c.id)}>{c.label}</MenuCheckbox>
+                ))}
+                <MenuSeparator />
+                <MenuCheckbox checked={params.get("unread") === "1"} onCheckedChange={() => setParam("unread", params.get("unread") === "1" ? null : "1")}>Unread only</MenuCheckbox>
+              </MenuContent>
+            </Menu>
+          ) : (
+            <span className="px-1 text-[12.5px] font-medium text-fg-3">{title}</span>
+          )}
+          {args.account && <span className="truncate text-[12px] text-fg-3">· {accountLabel}</span>}
+          <div className="flex-1" />
           <IconButton
             label="Refresh"
+            size="sm"
             onClick={() => { void qc.invalidateQueries({ queryKey: isDrafts ? ["drafts"] : ["threads"] }); void qc.invalidateQueries({ queryKey: ["labels"] }); }}
           >
-            <RefreshCw className={cn("size-4", (threads.isRefetching || drafts.isRefetching) && "animate-spin")} />
+            <RefreshCw className={cn("size-3.5", (threads.isRefetching || drafts.isRefetching) && "animate-spin")} />
           </IconButton>
         </div>
-
-        {config?.ai && <AskCopilotBar />}
-
-        <form onSubmit={submitSearch} role="search" className="relative">
-          {aiMode ? <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-ink" aria-hidden /> : <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden />}
-          <input
-            ref={searchRef}
-            id="mail-search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder={aiMode ? "Ask: “invoice I got last month”" : "Search mail (Gmail syntax works)"}
-            aria-label={aiMode ? "Natural-language search" : "Search mail"}
-            className={cn(
-              "h-9 w-full rounded-[10px] border bg-surface-2 pl-9 pr-[84px] text-[13.5px] text-fg placeholder:text-fg-3 outline-none focus:ring-2 focus:ring-[var(--accent-ring)]",
-              aiMode ? "border-[var(--ai-border)]" : "border-line",
-            )}
-          />
-          <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
-            {searching && <Loader2 className="size-4 animate-spin text-fg-3" aria-label="Searching" />}
-            <button
-              type="button"
-              onClick={() => setAiMode((v) => !v)}
-              aria-pressed={aiMode}
-              disabled={!config?.ai}
-              title={config?.ai ? "Toggle natural-language search" : "AI is not configured on this server"}
-              className={cn("h-7 rounded-lg px-2 text-[12px] font-medium transition-colors disabled:opacity-40", aiMode ? "bg-accent text-white" : "text-fg-3 hover:bg-surface-3 hover:text-fg")}
-            >
-              Ask AI
-            </button>
-          </div>
-        </form>
-
-        {folder === "inbox" && (
-          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 scroll-thin" role="group" aria-label="Categories">
-            {CATEGORY_CHIPS.map((c) => (
-              <Chip key={c.id} active={(args.category ?? "all") === c.id} onClick={() => setParam("category", c.id === "all" ? null : c.id)}>{c.label}</Chip>
-            ))}
-            <Chip active={params.get("unread") === "1"} onClick={() => setParam("unread", params.get("unread") === "1" ? null : "1")}>Unread</Chip>
-          </div>
-        )}
 
         {folder === "search" && (args.nl || args.q) && (
           <div className="ai-block rounded-xl px-3 py-2 text-[12.5px]">
@@ -359,8 +344,8 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
 
 function GroupHeader({ label, action }: { label: string; action?: React.ReactNode }) {
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between bg-surface/95 px-4 pb-1.5 pt-3 backdrop-blur">
-      <span className="text-[11.5px] font-medium text-fg-3">{label}</span>
+    <div className={cn("sticky top-0 z-10 items-center justify-between bg-surface/95 px-4 pb-1 pt-3 backdrop-blur", action ? "flex" : "hidden lg:flex")}>
+      <span className="text-[11px] font-medium uppercase tracking-wide text-fg-3">{label}</span>
       {action}
     </div>
   );
@@ -439,9 +424,9 @@ function Row({ t, selected, onOpen, onSwipeReply, onStar, multiAccount, picked, 
         style={offset ? { transform: `translateX(${offset}px)` } : undefined}
         data-picked={picked ? "" : undefined}
         className={cn(
-          "group relative mx-2 flex cursor-pointer touch-pan-y select-none gap-3 rounded-xl px-2.5 py-[var(--row-py,12px)] transition-colors",
+          "group relative mx-1.5 flex cursor-pointer touch-pan-y select-none gap-3.5 rounded-2xl px-3 py-[var(--row-py,12px)] transition-colors",
           offset ? "bg-surface" : "transition-transform",
-          picked ? "bg-accent-soft ring-1 ring-inset ring-[var(--ai-border)]" : selected ? "bg-surface-3" : "hover:bg-surface-2",
+          picked ? "bg-accent-soft" : selected ? "bg-surface-2" : "hover:bg-surface-2/70",
         )}
         onClick={click}
         onPointerDown={onPointerDown}
@@ -451,17 +436,6 @@ function Row({ t, selected, onOpen, onSwipeReply, onStar, multiAccount, picked, 
         onPointerCancel={() => { cancelPress(); setOffset(0); }}
         onContextMenu={(e) => { if (press.current?.fired) e.preventDefault(); }}
       >
-        <div className="flex w-5 flex-col items-center gap-2 pt-0.5">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onStar(); }}
-            aria-label={t.starred ? "Unstar conversation" : "Star conversation"}
-            aria-pressed={t.starred}
-            className={cn("rounded p-0.5 transition-colors", t.starred ? "text-amber-400" : "text-fg-3/60 hover:text-fg-2")}
-          >
-            <Star className="size-4" fill={t.starred ? "currentColor" : "none"} />
-          </button>
-        </div>
         <div className="relative size-9 shrink-0">
           <span className={cn("block transition-opacity", (picked || selecting) ? "opacity-0" : "group-hover:opacity-0 group-focus-within:opacity-0")}>
             <Avatar name={displayName(t.from)} email={t.from.email} size={36} />
@@ -480,28 +454,38 @@ function Row({ t, selected, onOpen, onSwipeReply, onStar, multiAccount, picked, 
           >
             <Check className="size-4" />
           </button>
-          {t.unread && !picked && <span className="pointer-events-none absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-surface bg-accent" aria-hidden />}
         </div>
         <button type="button" onClick={(e) => { e.stopPropagation(); click(e); }} className="min-w-0 flex-1 text-left outline-none" aria-current={selected ? "true" : undefined}>
           <span className="flex items-baseline gap-2">
-            <span className={cn("min-w-0 flex-1 truncate text-[13.5px]", t.unread ? "font-semibold text-fg" : "font-medium text-fg-2")}>
+            <span className={cn("min-w-0 flex-1 truncate text-[14.5px]", t.unread ? "font-semibold text-fg" : "text-fg-2")}>
               {displayName(t.from)}
               {t.participants.length > 1 && <span className="font-normal text-fg-3"> +{t.participants.length - 1}</span>}
             </span>
-            <time className={cn("shrink-0 text-[11.5px]", t.unread ? "text-fg-2" : "text-fg-3")} dateTime={t.lastDate}>{listDate(t.lastDate)}</time>
+            <time className={cn("shrink-0 text-[12px]", t.unread ? "font-semibold text-fg" : "text-fg-3")} dateTime={t.lastDate}>{listDate(t.lastDate)}</time>
+            {t.unread && <span className="size-2 shrink-0 self-center rounded-full bg-accent" role="img" aria-label="Unread" />}
           </span>
-          <span className={cn("mt-0.5 block truncate text-[13px]", t.unread ? "text-fg" : "text-fg-2")}>
+          <span className={cn("mt-0.5 block truncate text-[13.5px]", t.unread ? "font-semibold text-fg" : "text-fg-2")}>
             {t.important && <span className="mr-1 text-warning" title="Important" aria-label="Important">›</span>}
             {t.subject}
           </span>
           <span className="mt-0.5 flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-[12.5px] text-fg-3">{t.snippet}</span>
+            <span className="min-w-0 flex-1 truncate text-[13px] text-fg-3">{t.snippet}</span>
             {multiAccount && <span className="size-1.5 shrink-0 rounded-full" style={{ background: ["#a78bfa", "#38bdf8", "#f472b6", "#34d399", "#fbbf24"][Math.max(0, accIdx) % 5] }} title="Account" aria-hidden />}
             {t.hasAttachments && <Paperclip className="size-3.5 shrink-0 text-fg-3" aria-label="Has attachments" />}
             {t.messageCount > 1 && (
-              <span className={cn("inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10.5px] font-semibold", t.unread ? "bg-[#ef4444] text-white" : "bg-surface-3 text-fg-2")} aria-label={`${t.messageCount} messages`}>{t.messageCount}</span>
+              <span className={cn("inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10.5px] font-semibold", "text-fg-3")} aria-label={`${t.messageCount} messages`}>{t.messageCount}</span>
             )}
+            <span className="w-6 shrink-0" aria-hidden />
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onStar(); }}
+          aria-label={t.starred ? "Unstar conversation" : "Star conversation"}
+          aria-pressed={t.starred}
+          className={cn("absolute bottom-[calc(var(--row-py,12px)-4px)] right-1.5 rounded-full p-1 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]", t.starred ? "text-amber-400" : "text-fg-3 hover:text-fg-2")}
+        >
+          <Star className="size-[18px]" fill={t.starred ? "currentColor" : "none"} strokeWidth={1.75} />
         </button>
       </div>
     </li>
@@ -550,34 +534,82 @@ function DraftsList({ drafts, onOpen }: { drafts: ReturnType<typeof useDrafts>; 
 }
 
 /** The Copilot entry point at the top of every mail list: type an instruction and press Enter. */
-function AskCopilotBar() {
-  const copilot = useCopilot();
-  const [text, setText] = useState("");
+
+const QUESTION = /\?\s*$|^(what|when|who|whom|where|which|why|how|did|do|does|is|are|was|were|can|could|should|has|have|any|hva|hvem|når|hvor|hvilke|hvorfor|har|kan)\b/i;
+
+/**
+ * The one search field: Gmail search by default, a question (or the sparkle button) goes to Copilot, and
+ * "Smart search" turns plain language into a Gmail query. Hamburger and account avatar live inside it on mobile.
+ */
+function SearchPill({ inputRef, value, onChange, searching, aiOn, onOpenSidebar, onSearch, onAsk }: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  value: string;
+  onChange: (v: string) => void;
+  searching: boolean;
+  aiOn: boolean;
+  onOpenSidebar: () => void;
+  onSearch: (mode: "gmail" | "smart") => void;
+  onAsk: (text: string) => void;
+}) {
+  const { session } = useSession();
+  const navigate = useNavigate();
+  const [focused, setFocused] = useState(false);
+  const text = value.trim();
+  const asks = aiOn && QUESTION.test(text);
+  const showOptions = focused && text.length > 0;
+  const opt = "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] text-fg-2 hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none";
+  const keep = (e: React.MouseEvent) => e.preventDefault(); // don't blur the input before the click lands
+  const pick = (f: () => void) => { f(); setFocused(false); inputRef.current?.blur(); };
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        copilot.open(text.trim() || undefined, Boolean(text.trim()));
-        setText("");
-      }}
-      className="group relative"
-    >
-      <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-ink" aria-hidden />
-      <label htmlFor="ask-copilot-bar" className="sr-only">Ask Copilot</label>
-      <input
-        id="ask-copilot-bar"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        maxLength={1000}
-        placeholder="Ask Copilot. Try: archive all newsletters from last week"
-        className="h-10 w-full rounded-[10px] border border-[var(--ai-border)] bg-accent-soft pl-9 pr-24 text-[13.5px] text-fg outline-none transition-shadow placeholder:text-ai-title/70 focus:ring-2 focus:ring-[var(--accent-ring)]"
-      />
-      <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
-        <kbd className="hidden rounded border border-[var(--ai-border)] px-1.5 text-[10.5px] text-ai-title sm:inline">⌘J</kbd>
-        <button type="submit" className="h-7 rounded-lg bg-accent px-2.5 text-[12px] font-medium text-accent-fg hover:brightness-110 focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]">
-          Ask
+    <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false); }}>
+      <form
+        role="search"
+        onSubmit={(e) => { e.preventDefault(); pick(() => (asks ? onAsk(text) : onSearch("gmail"))); }}
+        className="flex h-12 items-center gap-1 rounded-full bg-surface-2 pl-1.5 pr-1.5 transition-colors focus-within:bg-surface-3 lg:h-11"
+      >
+        <IconButton label="Open navigation" className="lg:hidden" onClick={onOpenSidebar}><MenuIcon className="size-5" /></IconButton>
+        <Search className="ml-2.5 hidden size-4 shrink-0 text-fg-3 lg:block" aria-hidden />
+        <input
+          ref={inputRef}
+          id="mail-search"
+          type="search"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onKeyDown={(e) => { if (e.key === "Escape") { onChange(""); inputRef.current?.blur(); } }}
+          placeholder={aiOn ? "Search or ask Copilot" : "Search mail"}
+          aria-label={aiOn ? "Search mail or ask Copilot" : "Search mail"}
+          autoComplete="off"
+          enterKeyHint={asks ? "send" : "search"}
+          className="h-full min-w-0 flex-1 bg-transparent px-2 text-[15px] text-fg placeholder:text-fg-3 outline-none lg:text-[14px] [&::-webkit-search-cancel-button]:hidden"
+        />
+        {searching && <Loader2 className="size-4 shrink-0 animate-spin text-fg-3" aria-label="Searching" />}
+        {aiOn && (
+          <IconButton label="Ask with Copilot" onClick={() => onAsk(text)}>
+            <Sparkles className="size-[18px]" />
+          </IconButton>
+        )}
+        <button type="button" onClick={() => navigate("/app/settings/accounts")} aria-label="Accounts and settings" className="shrink-0 rounded-full p-0.5 focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] lg:hidden">
+          <Avatar name={session?.user?.name ?? "Me"} email={session?.user?.email} src={session?.user?.picture} size={32} />
         </button>
-      </div>
-    </form>
+      </form>
+      {showOptions && (
+        <div role="group" aria-label="Search options" className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-2xl border border-line bg-surface py-1 shadow-[var(--shadow)]">
+          <button type="button" onMouseDown={keep} onClick={() => pick(() => onSearch("gmail"))} className={opt}>
+            <Search className="size-4 shrink-0 text-fg-3" aria-hidden /><span className="min-w-0 truncate">Search mail for “{text}”</span>{!asks && <kbd className="ml-auto text-[11px] text-fg-3">Enter</kbd>}
+          </button>
+          {aiOn && (
+            <>
+              <button type="button" onMouseDown={keep} onClick={() => pick(() => onSearch("smart"))} className={opt}>
+                <Wand2 className="size-4 shrink-0 text-fg-3" aria-hidden /><span className="min-w-0 truncate">Smart search: “{text}”</span>
+              </button>
+              <button type="button" onMouseDown={keep} onClick={() => pick(() => onAsk(text))} className={opt}>
+                <Sparkles className="size-4 shrink-0 text-accent-ink" aria-hidden /><span className="min-w-0 truncate">Ask Copilot: “{text}”</span>{asks && <kbd className="ml-auto text-[11px] text-fg-3">Enter</kbd>}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

@@ -29,8 +29,8 @@
   --accent-fg: #ffffff;
   --accent-soft: rgba(124, 58, 237, 0.1);
   --accent-ring: rgba(124, 58, 237, 0.45);
-  --ai-bg: linear-gradient(180deg, rgba(124, 58, 237, 0.09), rgba(124, 58, 237, 0.04));
-  --ai-border: rgba(124, 58, 237, 0.25);
+  --ai-bg: linear-gradient(180deg, rgba(124, 58, 237, 0.045), rgba(124, 58, 237, 0.02));
+  --ai-border: rgba(124, 58, 237, 0.16);
   --ai-title: #6d28d9;
   --danger: #dc2626;
   --success: #15803d;
@@ -55,8 +55,8 @@
   --accent-fg: #ffffff;
   --accent-soft: rgba(139, 92, 246, 0.14);
   --accent-ring: rgba(167, 139, 250, 0.55);
-  --ai-bg: linear-gradient(180deg, rgba(139, 92, 246, 0.16), rgba(109, 40, 217, 0.08));
-  --ai-border: rgba(167, 139, 250, 0.22);
+  --ai-bg: linear-gradient(180deg, rgba(139, 92, 246, 0.08), rgba(109, 40, 217, 0.04));
+  --ai-border: rgba(167, 139, 250, 0.14);
   --ai-title: #c4b5fd;
   --danger: #f87171;
   --success: #4ade80;
@@ -77,8 +77,8 @@
   --accent-ink: #1d4ed8;
   --accent-soft: rgba(37, 99, 235, 0.1);
   --accent-ring: rgba(37, 99, 235, 0.45);
-  --ai-bg: linear-gradient(180deg, rgba(37, 99, 235, 0.09), rgba(37, 99, 235, 0.04));
-  --ai-border: rgba(37, 99, 235, 0.25);
+  --ai-bg: linear-gradient(180deg, rgba(37, 99, 235, 0.045), rgba(37, 99, 235, 0.02));
+  --ai-border: rgba(37, 99, 235, 0.16);
   --ai-title: #1d4ed8;
 }
 .dark[data-accent="blue"] {
@@ -86,8 +86,8 @@
   --accent-ink: #60a5fa;
   --accent-soft: rgba(59, 130, 246, 0.14);
   --accent-ring: rgba(96, 165, 250, 0.55);
-  --ai-bg: linear-gradient(180deg, rgba(59, 130, 246, 0.16), rgba(37, 99, 235, 0.08));
-  --ai-border: rgba(96, 165, 250, 0.22);
+  --ai-bg: linear-gradient(180deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.04));
+  --ai-border: rgba(96, 165, 250, 0.14);
   --ai-title: #93c5fd;
 }
 [data-accent="teal"] {
@@ -100,8 +100,8 @@
   --accent-ink: #0f766e;
   --accent-soft: rgba(15, 118, 110, 0.1);
   --accent-ring: rgba(15, 118, 110, 0.45);
-  --ai-bg: linear-gradient(180deg, rgba(15, 118, 110, 0.09), rgba(15, 118, 110, 0.04));
-  --ai-border: rgba(15, 118, 110, 0.25);
+  --ai-bg: linear-gradient(180deg, rgba(15, 118, 110, 0.045), rgba(15, 118, 110, 0.02));
+  --ai-border: rgba(15, 118, 110, 0.16);
   --ai-title: #115e59;
 }
 .dark[data-accent="teal"] {
@@ -109,8 +109,8 @@
   --accent-ink: #2dd4bf;
   --accent-soft: rgba(20, 184, 166, 0.14);
   --accent-ring: rgba(45, 212, 191, 0.55);
-  --ai-bg: linear-gradient(180deg, rgba(20, 184, 166, 0.16), rgba(15, 118, 110, 0.08));
-  --ai-border: rgba(45, 212, 191, 0.22);
+  --ai-bg: linear-gradient(180deg, rgba(20, 184, 166, 0.08), rgba(15, 118, 110, 0.04));
+  --ai-border: rgba(45, 212, 191, 0.14);
   --ai-title: #5eead4;
 }
 [data-accent="rose"] {
@@ -123,8 +123,8 @@
   --accent-ink: #be123c;
   --accent-soft: rgba(225, 29, 72, 0.1);
   --accent-ring: rgba(225, 29, 72, 0.45);
-  --ai-bg: linear-gradient(180deg, rgba(225, 29, 72, 0.09), rgba(225, 29, 72, 0.04));
-  --ai-border: rgba(225, 29, 72, 0.25);
+  --ai-bg: linear-gradient(180deg, rgba(225, 29, 72, 0.045), rgba(225, 29, 72, 0.02));
+  --ai-border: rgba(225, 29, 72, 0.16);
   --ai-title: #be123c;
 }
 .dark[data-accent="rose"] {
@@ -132,8 +132,8 @@
   --accent-ink: #fb7185;
   --accent-soft: rgba(244, 63, 94, 0.14);
   --accent-ring: rgba(251, 113, 133, 0.55);
-  --ai-bg: linear-gradient(180deg, rgba(244, 63, 94, 0.16), rgba(225, 29, 72, 0.08));
-  --ai-border: rgba(251, 113, 133, 0.22);
+  --ai-bg: linear-gradient(180deg, rgba(244, 63, 94, 0.08), rgba(225, 29, 72, 0.04));
+  --ai-border: rgba(251, 113, 133, 0.14);
   --ai-title: #fda4af;
 }
 [data-accent="orange"] {
@@ -146,8 +146,8 @@
   --accent-ink: #9a3412;
   --accent-soft: rgba(194, 65, 12, 0.1);
   --accent-ring: rgba(194, 65, 12, 0.45);
-  --ai-bg: linear-gradient(180deg, rgba(194, 65, 12, 0.09), rgba(194, 65, 12, 0.04));
-  --ai-border: rgba(194, 65, 12, 0.25);
+  --ai-bg: linear-gradient(180deg, rgba(194, 65, 12, 0.045), rgba(194, 65, 12, 0.02));
+  --ai-border: rgba(194, 65, 12, 0.16);
   --ai-title: #9a3412;
 }
 .dark[data-accent="orange"] {
@@ -155,8 +155,8 @@
   --accent-ink: #fb923c;
   --accent-soft: rgba(249, 115, 22, 0.14);
   --accent-ring: rgba(251, 146, 60, 0.55);
-  --ai-bg: linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(194, 65, 12, 0.08));
-  --ai-border: rgba(251, 146, 60, 0.22);
+  --ai-bg: linear-gradient(180deg, rgba(249, 115, 22, 0.08), rgba(194, 65, 12, 0.04));
+  --ai-border: rgba(251, 146, 60, 0.14);
   --ai-title: #fdba74;
 }
 
@@ -230,7 +230,7 @@ body {
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-3); float: left; height: 0; pointer-events: none; }
 
 /* The mobile bulk-action bar takes the bottom edge while selecting. */
-body[data-selecting] [data-copilot-fab] { display: none; }
+body[data-selecting] [data-fab] { display: none; }
 
 /* Toasts never cover the open composer's bottom bar (Send, attach, AI tools): lift them above it, and on wide
    screens move them beside the docked composer instead. */
