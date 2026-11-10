@@ -12,7 +12,7 @@
 
 ## What it is
 
-FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmail accounts, with AI built into the reading and writing flow. It talks to Gmail through Google's official API and does not store your messages. The AI only ever produces text for you to review: it cannot send, delete or forward anything on its own.
+FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmail accounts, with AI built into the reading and writing flow. It talks to Gmail through Google's official API and does not store your messages. The AI never acts on its own. Copilot can propose actions, but it shows you the exact plan first and nothing changes until you confirm.
 
 ## Features
 
@@ -24,18 +24,21 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - Compose with rich text (TipTap), CC/BCC, attachments, autosaved Gmail drafts, and reply, reply-all and forward with correct threading
 - Search with Gmail syntax, plus **natural-language search** ("invoice I got last month") that shows the generated Gmail query
 - Gmail filters: create and delete
+- **Multi-select and bulk actions**: hover an avatar to get a checkbox, shift-click to select a range, `x` to select and `Esc` to clear, or long-press on mobile. The action bar can archive, mark read or unread, snooze, label, or move to Trash (asks "Move 5 emails to Trash?"). Every bulk action can be undone. On the server it runs as a validated, rate-limited batch endpoint (`users.messages.batchModify`, max 100 conversations).
 - Polling-based sync with in-app and desktop notifications
 - **Undo send**: messages wait 5 s by default (off, 5, 10 or 20 s in Settings → Appearance) with an Undo button. Leaving the page during the window asks first.
 - **Snooze** (later today, tomorrow, weekend, next week) into a Snoozed folder, and **remind me if no reply** for sent mail. Both return automatically on the next sync after they are due, so no cron is needed.
 - **Follow-up radar** in the AI Overview: sent mail still waiting on a reply, and questions you haven't answered, with one-click drafted nudges (confirm first)
-- Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `g i`, `g o`, `?`, `⌘K` for Copilot) and dark (default), light or system theme
+- Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `x`, `z`, `g i`, `g o`, `?`), a **⌘K command palette** (go anywhere, run conversation actions, or ask Copilot), **⌘J** for Copilot, and dark (default), light or system theme
+- **Installable app (PWA)**: add FLUENT to your home screen on Android or iOS. It has a manifest, icons and safe-area support. The service worker caches only the static app shell and never `/api` or email.
 
 **AI** (Google Gemini by default, with xAI Grok or OpenAI as options, through the Vercel AI SDK)
 - A thread summary with key points, action items, deadlines and quick replies
 - "Explain this email simply" and questions about a specific thread
 - Draft new emails or replies from an instruction, then make them shorter or longer, fix grammar, or change the tone
 - **Ask your inbox / Copilot**: answers grounded in your emails, with links to the sources
-- **Copilot actions** (⌘K): tell it what to do ("archive newsletters from this week", "star everything from Sofia", "draft follow-ups"). It shows a plan with every affected conversation and the full draft text. Nothing runs until you confirm, Trash and send need an extra confirmation, and archive, star, read and label changes can be undone.
+- **Copilot, front and centre**: an "Ask Copilot" bar at the top of every mail list, ⌘J anywhere, "Ask Copilot about this email" in the reader, a floating Copilot button on mobile that opens a full-screen sheet, and a wide panel you can expand to a large centered view
+- **Copilot actions**: tell it what to do ("archive newsletters from this week", "star everything from Sofia", "draft follow-ups"). It shows a plan with every affected conversation and the full draft text. Nothing runs until you confirm, Trash and send need an extra confirmation, and archive, star, read and label changes can be undone.
 - **AI Overview**: a daily briefing of what needs a reply, what you're waiting on, deadlines and important mail. A Gmail-only triage still works without AI.
 - A mandatory confirmation step before any AI-written text is sent
 
@@ -58,6 +61,28 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 </tr>
 </table>
 <p align="center"><img src="docs/screenshots/10-mobile-inbox.png" alt="Mobile inbox" width="260" /> <img src="docs/screenshots/11-mobile-reader.png" alt="Mobile reader" width="260" /></p>
+
+**Copilot, follow-ups, snooze and bulk actions**
+
+<table>
+<tr>
+<td><img src="docs/screenshots/24-inbox-ask-copilot-bar.png" alt="Ask Copilot bar in the inbox" /></td>
+<td><img src="docs/screenshots/25-copilot-expanded.png" alt="Copilot expanded with a plan" /></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/15-copilot-plan-preview.png" alt="Copilot plan preview" /></td>
+<td><img src="docs/screenshots/16-copilot-result.png" alt="Copilot result with Undo" /></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/20-radar-nudge.png" alt="Follow-up radar nudge" /></td>
+<td><img src="docs/screenshots/26-bulk-select.png" alt="Multi-select bulk actions" /></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/21-snooze-menu.png" alt="Snooze menu" /></td>
+<td><img src="docs/screenshots/23-command-palette.png" alt="Command palette" /></td>
+</tr>
+</table>
+<p align="center"><img src="docs/screenshots/18-mobile-copilot-plan.png" alt="Mobile Copilot sheet" width="260" /> <img src="docs/screenshots/27-mobile-bulk-bar.png" alt="Mobile bulk action bar" width="260" /></p>
 
 ## Stack
 
