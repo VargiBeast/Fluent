@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import * as RD from "@radix-ui/react-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -11,8 +12,10 @@ import { ComposerProvider, useComposer } from "./composer/context";
 import { ComposerHost } from "./composer/Composer";
 import { ShortcutsProvider } from "./Shortcuts";
 import { Splash } from "@/components/Splash";
-import { CopilotProvider } from "./copilot/context";
+import { CopilotProvider, useCopilot } from "./copilot/context";
 import { CopilotHost } from "./copilot/Copilot";
+import { CommandPalette } from "./CommandPalette";
+import { InstallHint } from "./InstallHint";
 
 export const SidebarContext = { open: () => {} };
 
@@ -64,8 +67,36 @@ function Shell() {
       </main>
       <ComposerHost />
       <CopilotHost />
+      <PaletteHost />
+      <CopilotFab />
+      <InstallHint />
     </div>
   );
+}
+
+/** Mobile: a floating Copilot button on list screens that opens Copilot as a full-screen sheet. */
+function CopilotFab() {
+  const { isOpen, open } = useCopilot();
+  const inThread = useMatch("/app/:folder/:accountId/:threadId");
+  const inSettings = useMatch("/app/settings/*");
+  const { config } = useSession();
+  if (isOpen || inThread || inSettings || !config?.ai) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => open()}
+      aria-label="Ask Copilot"
+      data-copilot-fab=""
+      className="fixed bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-accent px-4 text-[14px] font-medium text-accent-fg shadow-[0_10px_30px_-8px_var(--accent)] animate-in active:scale-95 lg:hidden"
+    >
+      <Sparkles className="size-4" /> Copilot
+    </button>
+  );
+}
+
+function PaletteHost() {
+  const { paletteOpen, setPaletteOpen } = useCopilot();
+  return <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />;
 }
 
 function useGlobalShortcuts() {

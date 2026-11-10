@@ -110,7 +110,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       >
         <Sparkles className="size-4 text-accent-400" aria-hidden />
         <span className="flex-1 text-left">Copilot</span>
-        <kbd className="text-[11px] text-fg-3">⌘K</kbd>
+        <kbd className="text-[11px] text-fg-3">⌘J</kbd>
       </button>
 
       <NavLink to={withAccount("/app/overview")} onClick={onNavigate} className={({ isActive }) => item(isActive)}>

@@ -2,37 +2,48 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 interface CopilotCtx {
   isOpen: boolean;
-  open: (prefill?: string) => void;
+  /** Open Copilot, optionally with text; `autoSend` submits it right away. */
+  open: (prefill?: string, autoSend?: boolean) => void;
   close: () => void;
   setOpen: (v: boolean) => void;
-  prefill: string;
+  prefill: { text: string; autoSend: boolean; n: number };
+  paletteOpen: boolean;
+  setPaletteOpen: (v: boolean) => void;
 }
 
-const Ctx = createContext<CopilotCtx>({ isOpen: false, open: () => {}, close: () => {}, setOpen: () => {}, prefill: "" });
+const Ctx = createContext<CopilotCtx>({ isOpen: false, open: () => {}, close: () => {}, setOpen: () => {}, prefill: { text: "", autoSend: false, n: 0 }, paletteOpen: false, setPaletteOpen: () => {} });
 
 /** One Copilot for the whole app, opened from buttons or ⌘K / Ctrl+K anywhere. */
 export function CopilotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [prefill, setPrefill] = useState("");
-  const open = useCallback((p?: string) => {
-    setPrefill(p ?? "");
+  const [prefill, setPrefill] = useState({ text: "", autoSend: false, n: 0 });
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const open = useCallback((p?: string, autoSend = false) => {
+    setPrefill((x) => ({ text: p ?? "", autoSend, n: x.n + 1 }));
     setIsOpen(true);
   }, []);
   const close = useCallback(() => setIsOpen(false), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "k") {
-        // Don't steal ⌘K from the composer's link shortcut or other dialogs.
-        const inOtherDialog = [...document.querySelectorAll("[role=dialog]")].some((d) => !d.hasAttribute("data-copilot"));
-        if (inOtherDialog) return;
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "j") {
         e.preventDefault();
+        setPaletteOpen(false);
         setIsOpen((v) => !v);
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "k") {
+        // ⌘K opens the command palette (which also asks Copilot). Inside the composer it stays the editor's link shortcut.
+        const t = e.target as HTMLElement | null;
+        if (t?.closest?.("[data-composer]")) return;
+        e.preventDefault();
+        setIsOpen(false);
+        setPaletteOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const value = useMemo(() => ({ isOpen, open, close, setOpen: setIsOpen, prefill }), [isOpen, open, close, prefill]);
+  const value = useMemo(() => ({ isOpen, open, close, setOpen: setIsOpen, prefill, paletteOpen, setPaletteOpen }), [isOpen, open, close, prefill, paletteOpen]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

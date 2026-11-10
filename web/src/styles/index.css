@@ -82,6 +82,12 @@
 }
 
 html, body, #root { height: 100%; }
+/* Installed (standalone) on notched phones: keep content clear of the status bar, notch and home indicator. */
+#root {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -123,3 +129,6 @@ body {
 .tiptap blockquote { border-left: 3px solid var(--border-strong); padding-left: 0.8em; color: var(--text-2); }
 .tiptap a { color: var(--accent); text-decoration: underline; }
 .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-3); float: left; height: 0; pointer-events: none; }
+
+/* The mobile bulk-action bar takes the bottom edge while selecting. */
+body[data-selecting] [data-copilot-fab] { display: none; }

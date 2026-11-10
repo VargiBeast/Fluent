@@ -80,15 +80,16 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
   }, [thread.id]);
 
   const run = (a: ThreadAction, msg?: string, leave = false) => {
-    action.mutate({ accountId: thread.accountId, threadId: thread.id, action: a, folder: folder as never }, {
-      onSuccess: () => {
-        if (msg) {
-          toast.success(msg, a === "archive" || a === "trash" ? {
-            action: { label: "Undo", onClick: () => action.mutate({ accountId: thread.accountId, threadId: thread.id, action: a === "archive" ? "inbox" : "untrash" }) },
-          } : undefined);
-        }
-      },
-    });
+    // mutateAsync, not mutate callbacks: leaving opens the next thread, whose mark-read mutation would
+    // otherwise replace this one as the observer's latest and silently drop its success toast.
+    const { accountId, id: threadId } = thread;
+    action.mutateAsync({ accountId, threadId, action: a, folder: folder as never }).then(() => {
+      if (msg) {
+        toast.success(msg, a === "archive" || a === "trash" ? {
+          action: { label: "Undo", onClick: () => action.mutate({ accountId, threadId, action: a === "archive" ? "inbox" : "untrash" }) },
+        } : undefined);
+      }
+    }, () => { /* the mutation's own onError already shows the error */ });
     if (leave) {
       if (position?.next) position.next();
       else onClose();
@@ -154,8 +155,8 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
           </div>
         )}
         {aiOn && (
-          <Button size="sm" variant="ai" className="ml-1" icon={<Sparkles className="size-3.5" />} onClick={onOpenCopilot}>
-            <span className="hidden sm:inline">Copilot</span>
+          <Button size="sm" variant="ai" className="ml-1" icon={<Sparkles className="size-3.5" />} onClick={onOpenCopilot} title="Ask Copilot about this email (⌘J)" aria-label="Ask Copilot about this email">
+            <span className="hidden sm:inline">Ask Copilot</span>
           </Button>
         )}
       </div>
@@ -209,8 +210,17 @@ function useReaderShortcuts(map: Record<string, () => void>) {
         fn();
       }
     };
+    // Commands from the ⌘K palette arrive as a custom event (no dialog check: the palette has just closed).
+    const onCommand = (e: Event) => {
+      const fn = map[(e as CustomEvent<string>).detail];
+      if (fn) fn();
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("fluent:reader-command", onCommand);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("fluent:reader-command", onCommand);
+    };
   });
 }
 

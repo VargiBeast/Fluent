@@ -307,6 +307,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
   return (
     <div
       role="dialog"
+      data-composer=""
       aria-label={title}
       aria-modal="false"
       hidden={hidden}
