@@ -3,7 +3,8 @@ import { getDb } from "../db/client.js";
 import { copilotPlans } from "../db/schema.js";
 import { decrypt, encrypt } from "../crypto.js";
 import { GmailClient, mapLimit } from "../gmail/client.js";
-import { buildMime, formatAddress, toBase64Url } from "../gmail/mime.js";
+import { buildMime, toBase64Url } from "../gmail/mime.js";
+import { senderFrom } from "../services/sendas.js";
 import { aiCall, sanitizeForPrompt, todayContext } from "../ai/core.js";
 import { answerAboutThread, askInbox, draftEmail } from "../ai/features.js";
 import { isExcluded, loadPolicy, recordAudit, type AiPolicy } from "../ai/policy.js";
@@ -281,7 +282,7 @@ async function resolveAction(
     const acc = ctx.accs[0]!;
     const d = await draftEmail(userId, { mode: "new", instruction: a.instruction ?? undefined });
     const draft: StoredDraft = {
-      key: `${acc.id}:new`, accountId: acc.id, threadId: null, from: formatAddress(acc.name || undefined, acc.email),
+      key: `${acc.id}:new`, accountId: acc.id, threadId: null, from: await senderFrom(acc),
       to: a.to ? [a.to] : [], subject: (d.subject ?? "").slice(0, 200), body: d.body, inReplyTo: null, references: null,
     };
     const send = a.type === "send_new";
@@ -376,7 +377,7 @@ async function buildReplyDraft(userId: string, t: Candidate, instruction: string
   const acc = await getOwnedAccount(userId, t.accountId);
   return {
     key: key(t.accountId, t.threadId), accountId: t.accountId, threadId: t.threadId,
-    from: formatAddress(acc.name || undefined, acc.email), to, subject: subject.slice(0, 250), body: d.body.slice(0, 8000),
+    from: await senderFrom(acc), to, subject: subject.slice(0, 250), body: d.body.slice(0, 8000),
     inReplyTo: anchor.messageIdHeader || null,
     references: [anchor.references, anchor.messageIdHeader].filter(Boolean).join(" ").slice(-3900) || null,
   };
@@ -580,3 +581,4 @@ function textToHtml(text: string): string {
   const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   return `<div>${esc.split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("")}</div>`;
 }
+

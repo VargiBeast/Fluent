@@ -1,5 +1,5 @@
 import { GmailClient } from "../gmail/client.js";
-import { cleanOutgoingHtml } from "../gmail/mime.js";
+import { cleanOutgoingHtml, formatAddress } from "../gmail/mime.js";
 import { HttpError, notFound } from "../lib/errors.js";
 import { logger } from "../logger.js";
 import type { SendAsAccount, SendAsIdentity, SendAsPatch } from "../../shared/sendas.js";
@@ -54,6 +54,7 @@ export async function updateSendAs(userId: string, accountId: string, sendAsEmai
   if (patch.displayName !== undefined) body.displayName = patch.displayName;
   if (patch.signature !== undefined) body.signature = cleanOutgoingHtml(patch.signature);
   const r = await gm.request<GmailSendAs>("PATCH", `/settings/sendAs/${encodeURIComponent(target.sendAsEmail)}`, { body });
+  fromCache.delete(acc.id);
   return toIdentity(r);
 }
 
@@ -70,4 +71,18 @@ export async function senderDisplayName(gm: GmailClient): Promise<string | undef
     logger.warn({ code: err instanceof HttpError ? err.code : "error" }, "sendas_name_lookup_failed");
     return acc.name || undefined;
   }
+}
+
+// Copilot builds the From line when it plans (so the preview shows it), often for several drafts at once.
+// A short per-instance cache keeps that to one settings call per account; saving a new name clears it here.
+const fromCache = new Map<string, { v: string; at: number }>();
+
+/** `"Display Name" <address>` for mail FLUENT writes on the user's behalf. */
+export async function senderFrom(acc: AccountRow): Promise<string> {
+  const hit = fromCache.get(acc.id);
+  if (hit && Date.now() - hit.at < 15_000) return hit.v;
+  const v = formatAddress(await senderDisplayName(new GmailClient(acc)), acc.email);
+  fromCache.set(acc.id, { v, at: Date.now() });
+  if (fromCache.size > 500) fromCache.delete(fromCache.keys().next().value!);
+  return v;
 }
