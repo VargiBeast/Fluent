@@ -64,7 +64,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 | Data | PostgreSQL, Drizzle ORM and SQL migrations (Supabase or any Postgres 14+) |
 | Auth | Google OAuth 2.0 server-side code flow with PKCE, state and nonce; httpOnly cookies; CSRF tokens |
 | Mail | Gmail REST API v1 |
-| AI | Vercel AI SDK with `@ai-sdk/google` (default `gemini-2.5-flash`), switchable to `@ai-sdk/xai` (`grok-4.7`) or OpenAI by env. The Gemini free tier is for development only; see [SETUP](docs/SETUP.md#5-ai). |
+| AI | Vercel AI SDK with `@ai-sdk/google` (default `gemini-3.5-flash-lite`), switchable to `@ai-sdk/xai` (`grok-4.7`) or OpenAI by env. The Gemini free tier is for development only; see [SETUP](docs/SETUP.md#5-ai). |
 | Quality | zod everywhere, pino structured logs (no email content), ESLint, Vitest, Playwright |
 
 ## Architecture

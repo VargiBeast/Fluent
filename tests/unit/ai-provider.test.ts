@@ -20,10 +20,10 @@ afterEach(() => {
 });
 
 describe("AI provider selection", () => {
-  it("defaults to Google Gemini (gemini-2.5-flash) when the Gemini key is set", () => {
+  it("defaults to Google Gemini (gemini-3.5-flash-lite) when the Gemini key is set", () => {
     setEnv({ GOOGLE_GENERATIVE_AI_API_KEY: "g", XAI_API_KEY: "x" });
     expect(aiProvider()).toBe("google");
-    expect(aiModelId()).toBe("gemini-2.5-flash");
+    expect(aiModelId()).toBe("gemini-3.5-flash-lite");
     expect(aiApiKey()).toBe("g");
     expect(aiConfigured()).toBe(true);
   });

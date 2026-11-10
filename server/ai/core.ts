@@ -7,7 +7,7 @@ import { aiApiKey, aiBaseUrl, aiConfigured, aiProvider, getEnv } from "../env.js
 import { HttpError, notConfigured } from "../lib/errors.js";
 import { logger } from "../logger.js";
 
-export const DEFAULT_MODELS = { google: "gemini-2.5-flash", xai: "grok-4.7", openai: "gpt-4.1-mini" } as const;
+export const DEFAULT_MODELS = { google: "gemini-3.5-flash-lite", xai: "grok-4.7", openai: "gpt-4.1-mini" } as const;
 
 export function aiModelId(): string {
   return getEnv().AI_MODEL || DEFAULT_MODELS[aiProvider()];
@@ -92,8 +92,8 @@ export async function aiCall<T = string>(o: AiCallOptions<T>): Promise<T> {
       providerOptions: {
         xai: { reasoningEffort: "low", store: false },
         openai: { store: false },
-        // Gemini 2.5 Flash: skip "thinking" for these short, latency-sensitive tasks (thinking tokens
-        // would also eat into maxOutputTokens). Other Gemini models keep their defaults.
+        // Gemini 2.5 models: skip "thinking" for these short, latency-sensitive tasks (thinking tokens
+        // would also eat into maxOutputTokens). Gemini 3.x models keep their own defaults.
         google: /gemini-2\.5-flash/.test(aiModelId()) ? { thinkingConfig: { thinkingBudget: 0 } } : {},
       },
     };

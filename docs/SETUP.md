@@ -25,7 +25,7 @@ cp .env.example .env
 | `TOKEN_ENCRYPTION_KEY` | yes for sign-in | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts OAuth tokens and audit subjects. Changing it invalidates stored tokens (users must sign in again). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | for Gmail | OAuth 2.0 "Web application" client. |
 | `AI_PROVIDER` | no | `google`, `xai` or `openai`. If empty, the provider is picked from the keys that are set: Gemini first, then xAI, then OpenAI. |
-| `AI_MODEL` | no | Overrides the default model (`gemini-2.5-flash` for Gemini, `grok-4.7` for xAI, `gpt-4.1-mini` for OpenAI). |
+| `AI_MODEL` | no | Overrides the default model (`gemini-3.5-flash-lite` for Gemini, `grok-4.7` for xAI, `gpt-4.1-mini` for OpenAI). |
 | `GOOGLE_GENERATIVE_AI_API_KEY` / `XAI_API_KEY` / `OPENAI_API_KEY` | for AI | Key for the selected provider. Without it, AI features report "not configured". |
 | `LOG_LEVEL` | no | `info` by default. Logs never contain email bodies, subjects, prompts or tokens. |
 | `SESSION_TTL_DAYS` | no | Session lifetime, default 30. |
@@ -55,7 +55,7 @@ Migrations are plain SQL under `drizzle/`. `0001_lockdown.sql` enables row-level
 
 ## 5. AI
 
-FLUENT uses Google Gemini by default (`gemini-2.5-flash` through `@ai-sdk/google`). Create a key in [Google AI Studio](https://aistudio.google.com/apikey) and set `GOOGLE_GENERATIVE_AI_API_KEY`; `/api/config` then reports `"aiProvider":"google"`.
+FLUENT uses Google Gemini by default (`gemini-3.5-flash-lite` through `@ai-sdk/google`). Older models such as `gemini-2.5-flash` are no longer available to new API keys, and on the free tier `gemini-3.8-flash` often returns `503 high demand`. Flash-Lite answered reliably in testing. Set `AI_MODEL=gemini-3.8-flash` for higher quality on a paid key. Create a key in [Google AI Studio](https://aistudio.google.com/apikey) and set `GOOGLE_GENERATIVE_AI_API_KEY`; `/api/config` then reports `"aiProvider":"google"`.
 
 > **Free tier vs paid tier.** A key without billing uses Gemini's free tier. Under the [Gemini API terms](https://ai.google.dev/gemini-api/terms), Google may use free-tier prompts and responses to improve its products, human reviewers may read them, and Google asks you not to send personal or confidential information. That's fine for development with test mailboxes. **Before real users' email goes through FLUENT, switch to a paid key** (a Cloud project with billing enabled): paid-tier content isn't used for product improvement and is processed under Google's data-processing terms. Free-tier rate limits are also low, so heavy use may get `ai_unavailable` errors. (The terms say users in the EEA, Switzerland and the UK get paid-tier data handling even on unpaid quota, but don't rely on that alone for production.)
 
