@@ -62,6 +62,8 @@ function hasAttachment(p: FakePart): boolean {
 
 export class FakeGmail {
   private boxes = new Map<string, Mailbox>();
+  /** Base URL of the fake's one-click unsubscribe endpoint, used in seeded List-Unsubscribe headers. */
+  unsubBase = "https://unsubscribe.invalid";
 
   has(email: string): boolean {
     return this.boxes.has(email);
@@ -83,7 +85,7 @@ export class FakeGmail {
     for (const [lid, lname] of [["Label_1", "Clients"], ["Label_2", "Travel"], ["Label_3", "Receipts"]] as const) {
       b.labels.set(lid, { id: lid, name: lname, type: "user", color: { backgroundColor: "#8e63ce", textColor: "#ffffff" } });
     }
-    for (const m of seedMessages(email, name)) this.insertSeed(b, m);
+    for (const m of seedMessages(email, name, this.unsubBase)) this.insertSeed(b, m);
   }
 
   insertSeed(b: Mailbox, m: SeedMessage): string {
@@ -279,6 +281,24 @@ export class FakeGmail {
     }
 
     if (seg[0] === "messages") {
+      if (method === "GET" && seg.length === 1) {
+        const q = qs.get("q") ?? "";
+        const includeSpamTrash = qs.get("includeSpamTrash") === "true" || /\bin:(trash|spam)\b/.test(q);
+        const max = Math.min(Number(qs.get("maxResults") ?? 100), 500);
+        const start = Number(qs.get("pageToken") ?? 0);
+        const all = [...b.messages.values()]
+          .filter((m) => (includeSpamTrash || !(m.labelIds.has("TRASH") || m.labelIds.has("SPAM"))) && (!q || this.matches(b, m, q)))
+          .sort((a, z) => z.internalDate - a.internalDate);
+        const page = all.slice(start, start + max);
+        return {
+          status: 200,
+          body: {
+            messages: page.length ? page.map((m) => ({ id: m.id, threadId: m.threadId })) : undefined,
+            nextPageToken: start + max < all.length ? String(start + max) : undefined,
+            resultSizeEstimate: all.length,
+          },
+        };
+      }
       if (method === "POST" && seg[1] === "batchModify") {
         const ids = (body.ids as string[] | undefined) ?? [];
         if (ids.length > 1000) return err(400, "Too many ids");

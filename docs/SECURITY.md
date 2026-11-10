@@ -33,6 +33,13 @@ All request bodies and queries are validated with zod (`.strict()` objects, leng
 
 Bulk actions (`POST /api/mail/bulk`) accept at most 100 conversations and one allowlisted action per request, check that every account belongs to the signed-in user, are limited to 30 requests per minute, and never delete permanently: "Delete" moves conversations to Trash.
 
+## Unsubscribe assistant (outbound requests)
+
+- **Nothing automatic.** Scanning only reads message metadata (From, Date, `List-Unsubscribe`, `List-Unsubscribe-Post`, labels) and stores nothing. Unsubscribing and archiving happen only on a user click, and the API requires `confirm: true`. The mailto method and archiving also go through a confirm dialog that shows exactly what will happen. The AI has no access to these routes.
+- **Headers are untrusted.** For an action the client sends only the account and message id. The server re-reads the header from Gmail, so a client can't supply its own URL or address. Mailto targets must be a single valid address, and subject/body values have CR/LF and control characters removed. The sent message is built with the normal header-safe MIME builder and has no Cc/Bcc. Sender filters for archiving are zod-validated plain addresses, so they can't change the Gmail query.
+- **SSRF protection for one-click (RFC 8058).** `server/lib/oneClick.ts` sends a single `POST List-Unsubscribe=One-Click` with no cookies or credentials, a 10 s timeout, no redirects, and discards the response body. It only allows `https` on port 443, with no userinfo and no IP-literal private hosts or local names. Every resolved address is checked against private, loopback, link-local, CGNAT, multicast, documentation, ULA, IPv4-mapped/compatible, 6to4 and Teredo ranges in the socket's `lookup` hook, so DNS rebinding can't reach an internal address. The local HTTP fake is allowed only outside production.
+- Unsubscribes are logged in the security log as `newsletter_unsubscribed` with the method and sender domain only.
+
 ## Installable app and service worker
 
 The service worker (`public/sw.js`) caches only the static app shell (`index.html`, hashed JS/CSS, icons, manifest). It never intercepts `/api/*`, `/_vercel/*` or cross-origin requests, so no email data, tokens or API responses are written to the browser cache, and the OAuth redirect flow always goes to the network. `sw.js` is served with `no-cache` so updates aren't held back.

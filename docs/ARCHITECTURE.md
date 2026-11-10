@@ -99,3 +99,11 @@ Saved replies live in `templates` (name, subject and text, each AES-GCM encrypte
 ## Private notes
 
 `GET/PUT/DELETE /api/notes/:accountId/:threadId` reads, saves (`{body}`, zod-validated, up to 5,000 characters) and deletes the one private note pinned to a conversation. The thread must exist in the user's own account. `thread_notes` holds the account, thread id and the text AES-GCM encrypted (purpose `note`, AAD = user + account + thread). Notes are never written to Gmail, never included in AI prompts, and are removed with the account (cascade). The reader shows the note under the subject (toolbar button or shortcut `n`). Notes are included in the data summary and export.
+
+## Unsubscribe assistant
+
+`GET /api/newsletters/senders?days=30|90|180&account=` lists up to 500 recent messages per account (`messages.list newer_than:Nd -in:sent -in:drafts -in:chats`), reads only their metadata headers, and groups those with a usable `List-Unsubscribe` by account + sender. Results are ranked by open rate (read ÷ total, least-opened first), then by volume. Each sender lists the unsubscribe methods its latest message offers: one-click (RFC 8058, https + `List-Unsubscribe-Post`), mailto, or an https page to open. Nothing is stored. The page (`/app/newsletters`, sidebar "Unsubscribe") also remembers which senders you unsubscribed from in localStorage only.
+
+- `POST /api/newsletters/unsubscribe {accountId, messageId, method, confirm: true}` re-reads the header from Gmail. It then sends the one-click POST (`server/lib/oneClick.ts`, SSRF-guarded) or, after the confirm dialog, one unsubscribe email from the user's account.
+- `POST /api/newsletters/archive {senders[], confirm: true}` archives every Inbox message from those senders (`from:<addr> in:inbox` + `messages.batchModify`) and returns the ids. `POST /api/newsletters/archive/undo` puts them back.
+- See SECURITY.md for the threat model.
