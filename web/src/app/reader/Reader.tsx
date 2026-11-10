@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { SnoozeBanner, SnoozeMenu } from "./SnoozeMenu";
+import { ReadLaterButton } from "./ReadLaterButton";
 import { sendWithUndo } from "@/lib/undoSend";
 import { Menu, MenuCheckbox, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "@/components/ui/Menu";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
@@ -102,6 +103,7 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
     s: () => run(thread.starred ? "unstar" : "star"),
     u: () => run("unread", "Marked as unread", true),
     z: () => document.querySelector<HTMLButtonElement>("[data-snooze-trigger]")?.click(),
+    b: () => document.querySelector<HTMLButtonElement>("[data-read-later-trigger]")?.click(),
     r: () => composer.open({ mode: "reply", thread, message: last }),
     a: () => composer.open({ mode: "replyAll", thread, message: last }),
     f: () => composer.open({ mode: "forward", thread, message: last }),
@@ -128,6 +130,7 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
         )}
         <IconButton label="Mark as unread (u)" onClick={() => run("unread", "Marked as unread", true)}><MailOpen className="size-[18px]" /></IconButton>
         {!thread.inTrash && <SnoozeMenu thread={thread} onSnoozed={() => (position?.next ? position.next() : onClose())} />}
+        {!thread.inTrash && <ReadLaterButton thread={thread} />}
         <div className="mx-1 h-5 w-px bg-line" aria-hidden />
         <IconButton label={thread.starred ? "Unstar (s)" : "Star (s)"} active={thread.starred} onClick={() => run(thread.starred ? "unstar" : "star")}>
           <Star className={cn("size-[18px]", thread.starred && "text-amber-400")} fill={thread.starred ? "currentColor" : "none"} />

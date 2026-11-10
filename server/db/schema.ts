@@ -120,3 +120,12 @@ export const templates = pgTable("templates", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("templates_user_idx").on(t.userId, t.createdAt)]);
+
+/** Read later list: only ids and when it was added, no content. Threads are fetched live from Gmail. */
+export const readLater = pgTable("read_later", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  threadId: text("thread_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("read_later_thread_uq").on(t.accountId, t.threadId), index("read_later_user_idx").on(t.userId, t.createdAt)]);

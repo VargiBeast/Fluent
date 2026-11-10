@@ -29,6 +29,8 @@ export function folderQuery(folder: Folder, category?: Category, labelId?: strin
     case "inbox": return { labelIds: ["INBOX", ...(category ? [CATEGORY_LABEL[category]] : [])], q: "", includeSpamTrash: false };
     case "starred": return { labelIds: ["STARRED"], q: "", includeSpamTrash: false };
     case "snoozed": return { labelIds: [], q: "label:snoozed", includeSpamTrash: false };
+    // Read later is a FLUENT list, not a Gmail query: /mail/threads serves it from services/readLater.ts.
+    case "later": throw badRequest("Read later is not a Gmail folder");
     case "important": return { labelIds: ["IMPORTANT"], q: "", includeSpamTrash: false };
     case "sent": return { labelIds: ["SENT"], q: "", includeSpamTrash: false };
     case "drafts": return { labelIds: ["DRAFT"], q: "", includeSpamTrash: false };
