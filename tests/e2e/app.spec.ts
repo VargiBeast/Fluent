@@ -55,6 +55,22 @@ test("AI quick reply requires explicit confirmation before sending", async () =>
   await expect.poll(async () => (await e2eState(page)).sent).toBe(before + 1);
 });
 
+test("undo send: a reply can be taken back during the delay", async () => {
+  await page.locator('[data-thread-id="t-team"]').click();
+  const before = (await e2eState(page)).sent;
+  const box = page.getByRole("textbox", { name: "Reply text" });
+  await box.fill("Sounds good, will do.");
+  await page.getByRole("button", { name: "Send reply" }).first().click();
+  const undo = page.getByRole("button", { name: "Undo" });
+  await expect(undo).toBeVisible();
+  await shot(page, "22-undo-send");
+  await undo.click();
+  await expect(page.getByText("Sending cancelled")).toBeVisible();
+  await expect(box).toHaveValue("Sounds good, will do.");
+  await page.waitForTimeout(6000);
+  expect((await e2eState(page)).sent).toBe(before);
+});
+
 test("archives with a keyboard shortcut and syncs to Gmail", async () => {
   await page.locator('[data-thread-id="t-school"]').click();
   await expect(page.getByRole("article", { name: /Parent–teacher/ })).toBeVisible();
@@ -86,8 +102,8 @@ test("composes a new email with AI help, formatting and confirmation", async () 
   await page.goto("/app/inbox");
   await page.getByRole("button", { name: "Compose" }).first().click();
   const composer = page.getByRole("dialog", { name: /New message/ }).or(page.getByRole("region", { name: /New message/ }));
-  await page.getByLabel("To").first().fill("maya@studio.example");
-  await page.getByLabel("To").first().press("Enter");
+  await page.getByLabel("To", { exact: true }).first().fill("maya@studio.example");
+  await page.getByLabel("To", { exact: true }).first().press("Enter");
   await page.locator("#compose-subject").fill("Moodboard follow-up");
   await page.getByRole("button", { name: "Write with AI" }).click();
   await page.locator("#ai-instruction").fill("Thank Maya and ask for the source files");
@@ -149,10 +165,11 @@ test("Copilot turns an instruction into a plan, runs it only after Confirm, and 
   await page.goto("/app/inbox");
   await expect(page.locator('[data-thread-id="t-news"]')).toBeVisible();
   await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  await palette.getByRole("combobox", { name: "Command" }).fill("Archive the newsletters");
+  await palette.getByRole("option", { name: /Ask Copilot: “Archive the newsletters”/ }).click();
   const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
   await expect(panel).toBeVisible();
-  await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("Archive the newsletters");
-  await panel.getByRole("button", { name: "Send to Copilot" }).click();
   const card = panel.getByTestId("plan-card");
   await expect(card.getByText("Archive 2 conversations")).toBeVisible();
   await expect(card.getByText("10 interface patterns worth stealing")).toBeVisible();
@@ -188,6 +205,76 @@ test("Copilot turns an instruction into a plan, runs it only after Confirm, and 
   expect((await e2eState(page)).sent).toBe(before + 1);
   await page.keyboard.press("Escape");
   expect(errors).toEqual([]);
+});
+
+test("Copilot is front and centre: the inbox Ask bar sends straight to Copilot, which expands", async () => {
+  await page.goto("/app/inbox");
+  await shot(page, "24-inbox-ask-copilot-bar");
+  await page.getByRole("textbox", { name: "Ask Copilot" }).fill("Star everything from marcus");
+  await page.getByRole("textbox", { name: "Ask Copilot" }).press("Enter");
+  const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
+  await expect(panel.getByTestId("plan-card").getByText(/Star 1 conversation/)).toBeVisible();
+  await panel.getByRole("button", { name: "Expand Copilot" }).click();
+  await shot(page, "25-copilot-expanded");
+  await panel.getByRole("button", { name: "Dock to the side" }).click();
+  await page.keyboard.press("Control+j");
+  await expect(panel).toBeHidden();
+  await page.keyboard.press("Control+j");
+  await expect(panel).toBeVisible();
+  await page.keyboard.press("Escape");
+});
+
+test("multi-select: shift-click range, bulk archive with undo, Trash with specific confirm", async () => {
+  await page.goto("/app/inbox");
+  await expect(page.getByRole("list", { name: "Conversations" })).toBeVisible();
+  await page.getByRole("checkbox", { name: "Select: Your invoice INV-20431 is ready" }).click();
+  await page.locator('[data-thread-id="t-landlord"]').click({ modifiers: ["Shift"] });
+  const bar = page.getByRole("toolbar", { name: /Bulk actions/ });
+  await expect(bar).toContainText(/[2-9] selected/);
+  await shot(page, "26-bulk-select");
+  await bar.getByRole("button", { name: "Archive" }).click();
+  await expect(page.getByText(/Archived \d+ conversations/)).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-invoice"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.locator('[data-thread-id="t-invoice"]')).toBeVisible();
+
+  await page.getByRole("checkbox", { name: "Select: Weekly digest: 12 new answers" }).click();
+  await page.keyboard.press("Escape");
+  await expect(bar).toBeHidden();
+  await page.getByRole("checkbox", { name: "Select: Weekly digest: 12 new answers" }).click();
+  await bar.getByRole("button", { name: "Delete" }).click();
+  const confirm = page.getByRole("dialog", { name: "Move 1 email to Trash?" });
+  await confirm.getByRole("button", { name: "Move 1 to Trash" }).click();
+  await expect(page.locator('[data-thread-id="t-forum"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.locator('[data-thread-id="t-forum"]')).toBeVisible();
+});
+
+test("⌘K command palette navigates and runs conversation actions", async () => {
+  await page.goto("/app/inbox");
+  await expect(page.getByRole("list", { name: "Conversations" })).toBeVisible();
+  await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  const input = palette.getByRole("combobox", { name: "Command" });
+  await input.fill("star");
+  await shot(page, "23-command-palette");
+  await expect(palette.getByRole("option").first()).toContainText("Starred");
+  await input.press("Enter");
+  await expect(page).toHaveURL(/\/app\/starred/);
+
+  await page.goto("/app/inbox");
+  await page.locator('[data-thread-id="t-social"]').click();
+  await expect(page.getByRole("article", { name: /Lena mentioned you/ })).toBeVisible();
+  await page.keyboard.press("Control+k");
+  await input.fill("archive conv");
+  await expect(palette.getByRole("option").first()).toContainText("Archive conversation");
+  await input.press("ArrowDown");
+  await input.press("ArrowUp");
+  await expect(palette.getByRole("option", { selected: true })).toContainText("Archive conversation");
+  await input.press("Enter");
+  await expect(palette).toBeHidden();
+  await expect(page.getByText("Conversation archived")).toBeVisible();
+  await expect(page.locator('[data-thread-id="t-social"]')).toHaveCount(0);
 });
 
 test("privacy dashboard lists AI access by subject and enforces exclusions", async () => {

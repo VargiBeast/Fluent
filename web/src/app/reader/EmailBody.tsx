@@ -79,7 +79,7 @@ export function EmailBody({ message, accountId }: { message: MessageDetail; acco
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-fg-2">
           <ImageOff className="size-4 text-fg-3" aria-hidden />
           <span className="flex-1">Remote images are hidden to protect your privacy (they can track when you open mail).</span>
-          <button type="button" className="font-medium text-accent-400 hover:underline" onClick={() => setAllowImages(true)}>Show images</button>
+          <button type="button" className="font-medium text-accent-ink hover:underline" onClick={() => setAllowImages(true)}>Show images</button>
         </div>
       )}
       <div className={rendered.rich ? "overflow-hidden rounded-xl bg-white" : ""}>

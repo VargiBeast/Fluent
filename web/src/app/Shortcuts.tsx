@@ -8,7 +8,7 @@ const GROUPS: Array<[string, Array<[string, string]>]> = [
   ["Navigation", [["j / k", "Next / previous conversation"], ["Enter", "Open selected conversation"], ["Esc", "Close conversation"], ["/", "Search"], ["g then i", "Go to Inbox"], ["g then o", "Go to AI Overview"], ["g then s", "Go to Starred"]]],
   ["Actions", [["c", "Compose"], ["r", "Reply"], ["a", "Reply all"], ["f", "Forward"], ["e", "Archive"], ["#", "Move to Trash (asks first)"], ["s", "Star / unstar"], ["u", "Mark as unread"], ["z", "Snooze or remind"]]],
   ["Compose", [["⌘/Ctrl + Enter", "Send"], ["Esc", "Close composer (draft kept)"]]],
-  ["Copilot", [["⌘/Ctrl + K", "Open Copilot (ask or give an instruction)"]]],
+  ["Copilot", [["⌘/Ctrl + J", "Open or close Copilot"], ["⌘/Ctrl + K", "Command palette: go anywhere, run actions, ask Copilot"]]],
   ["Help", [["?", "Show this list"]]],
 ];
 

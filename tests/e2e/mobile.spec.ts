@@ -41,11 +41,29 @@ test("mobile: landing, inbox, reader, navigation drawer, overview and privacy", 
   expect(errors).toEqual([]);
 });
 
+test("mobile: long-press selects, bottom action bar marks unread", async ({ page }) => {
+  await signIn(page);
+  const row = page.locator('[data-thread-id="t-landlord"]');
+  await row.scrollIntoViewIfNeeded();
+  const box = (await row.boundingBox())!;
+  const cdp = await page.context().newCDPSession(page);
+  const pt = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [pt] });
+  await page.waitForTimeout(650);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  const bar = page.getByRole("toolbar", { name: /Bulk actions/ });
+  await expect(bar).toContainText("1 selected");
+  await expect(page.locator("[data-copilot-fab]")).toBeHidden(); // the bar owns the bottom edge
+  await expect(page).toHaveURL(/\/app\/inbox$/); // long-press didn't open the conversation
+  await shot(page, "27-mobile-bulk-bar");
+  await bar.getByRole("button", { name: "Mark unread" }).click();
+  await expect(page.getByText("Marked as unread 1 conversation")).toBeVisible();
+});
+
 test("mobile: Copilot plans an action, confirms it and shows the result", async ({ page }) => {
   const errors = trackErrors(page);
   await signIn(page);
-  await page.getByRole("button", { name: "Open navigation" }).first().click();
-  await page.getByRole("dialog", { name: "Navigation" }).getByRole("button", { name: /Copilot/ }).click();
+  await page.getByRole("button", { name: "Ask Copilot" }).click(); // floating button
   const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });
   await expect(panel).toBeVisible();
   await panel.getByRole("textbox", { name: "Ask or instruct Copilot" }).fill("Star everything from riverside");

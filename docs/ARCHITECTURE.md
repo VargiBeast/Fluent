@@ -68,3 +68,11 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
 ## Snooze and reminders
 
 `POST /api/mail/snoozes {accountId, threadId, until, kind}` stores a row in `snoozes`. For `snooze`, it also moves the thread out of the Inbox and adds the user label "Snoozed" (the Snoozed folder is `label:snoozed`). `remind` changes nothing in Gmail until it is due. There is no cron: every `/api/mail/sync` poll (about every 45 s while FLUENT is open) runs `processDueSnoozes`. That claims due rows with `DELETE … RETURNING`, so it is idempotent across tabs. A snooze returns to the Inbox unread. A reminder fires only if the user's message is still the last one: it is brought back to the Inbox, unread and starred. Anything due while FLUENT was closed comes back on the next load.
+
+## Bulk actions
+
+The thread list keeps a selection set (checkbox, shift-click range, `x`/`Esc`, long-press on mobile). The bulk bar calls `POST /api/mail/bulk`, which groups the conversations by account and runs label changes as one `users.messages.batchModify` per 1000 messages, and Trash/Restore per thread. The response includes the inverse action, which the Undo toast sends back to the same endpoint.
+
+## PWA
+
+`public/manifest.webmanifest`, icons in `public/icons/`, and `public/sw.js` (registered from `web/src/main.tsx` in production only). See SECURITY.md for exactly what the worker caches.

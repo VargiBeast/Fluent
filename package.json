@@ -11,7 +11,7 @@
     "dev": "concurrently -k -n api,web \"pnpm dev:api\" \"pnpm dev:web\"",
     "dev:api": "tsx watch --env-file-if-exists=.env server/dev.ts",
     "dev:web": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/check-bundle.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint . --max-warnings=0",
@@ -21,7 +21,8 @@
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env server/db/migrate.ts",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.114",

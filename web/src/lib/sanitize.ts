@@ -116,7 +116,7 @@ export function buildSrcDoc(bodyHtml: string, opts: { dark: boolean; rich: boole
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer"><base target="_blank"><style>
 html{color-scheme:${opts.dark && !opts.rich ? "dark" : "light"};}
 html,body{margin:0;padding:0;background:${opts.rich ? "#ffffff" : "transparent"};}
-body{color:${fg};font:14px/1.6 "Inter Variable",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;word-wrap:break-word;overflow-wrap:anywhere;padding:${opts.rich ? "16px" : "0"};}
+body{color:${fg};font:14px/1.6 "Inter Variable",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;word-wrap:break-word;overflow-wrap:anywhere;padding:${opts.rich ? "16px" : "0"};${opts.rich ? "" : "max-width:72ch;"}}
 a{color:${link};}
 img{max-width:100%;height:auto;}
 img[data-blocked]{display:inline-block;min-width:16px;min-height:16px;background:rgba(127,127,127,.15);}

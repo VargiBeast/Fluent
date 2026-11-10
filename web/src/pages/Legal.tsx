@@ -66,7 +66,7 @@ export function PrivacyPage() {
         <li><strong className="text-fg">Gmail read, compose, send and modify (gmail.modify)</strong> — to show your messages, threads, labels and attachments; to send replies and new emails you write; to save drafts; to archive, star, mark read/unread, label, report spam and move messages to Trash when you ask. FLUENT cannot permanently delete messages; “Delete” moves mail to Gmail's Trash.</li>
         <li><strong className="text-fg">Gmail basic settings (gmail.settings.basic)</strong> — to list, create and delete Gmail filters from FLUENT's filter settings.</li>
       </UL>
-      <p>You can review or remove FLUENT's access at any time at <a className="text-accent-400 hover:underline" href="https://myaccount.google.com/permissions" target="_blank" rel="noreferrer">myaccount.google.com/permissions</a>.</p>
+      <p>You can review or remove FLUENT's access at any time at <a className="text-accent-ink hover:underline" href="https://myaccount.google.com/permissions" target="_blank" rel="noreferrer">myaccount.google.com/permissions</a>.</p>
 
       <H>2. What FLUENT stores</H>
       <UL>
@@ -86,7 +86,7 @@ export function PrivacyPage() {
       <H>4. Google API Services User Data Policy and Limited Use</H>
       <p>
         FLUENT's use and transfer to any other app of information received from Google APIs will adhere to the{" "}
-        <a className="text-accent-400 hover:underline" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements. In particular:
+        <a className="text-accent-ink hover:underline" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements. In particular:
       </p>
       <UL>
         <li>We use Gmail data only to provide or improve user-facing features that are prominent in FLUENT's interface.</li>
@@ -154,7 +154,7 @@ export function TermsPage() {
       <H>1. The service</H>
       <p>FLUENT is an email client that connects to your Gmail account through Google's APIs. FLUENT is currently in preview: features may change, and the service may be interrupted.</p>
       <H>2. Your account</H>
-      <p>You must have the right to use the Google accounts you connect. You are responsible for activity in your FLUENT account and for keeping access to your Google account secure. Our use of your data is described in the <Link to="/privacy" className="text-accent-400 hover:underline">Privacy Policy</Link>.</p>
+      <p>You must have the right to use the Google accounts you connect. You are responsible for activity in your FLUENT account and for keeping access to your Google account secure. Our use of your data is described in the <Link to="/privacy" className="text-accent-ink hover:underline">Privacy Policy</Link>.</p>
       <H>3. Your email and AI output</H>
       <p>You remain responsible for every email you send. AI features can be inaccurate or incomplete: review summaries, answers and drafts before relying on or sending them. FLUENT never sends AI-written text without your confirmation.</p>
       <H>4. Acceptable use</H>
@@ -178,7 +178,7 @@ export function TermsPage() {
 export function NotFoundPage() {
   return (
     <div className="dark flex min-h-full flex-col items-center justify-center gap-4 bg-[#08080b] px-6 text-center text-fg">
-      <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-400"><Compass className="size-6" /></span>
+      <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink"><Compass className="size-6" /></span>
       <h1 className="text-xl font-semibold">Page not found</h1>
       <p className="text-[14px] text-fg-3">The page you're looking for doesn't exist.</p>
       <Link to="/" className="rounded-lg bg-accent px-4 py-2 text-[14px] font-medium text-white">Go home</Link>

@@ -86,7 +86,7 @@ export function OnboardingPage() {
           )}
           {step === 3 && (
             <>
-              <h1 className="flex items-center gap-2 text-xl font-semibold text-fg"><ShieldCheck className="size-5 text-accent-400" /> Your privacy</h1>
+              <h1 className="flex items-center gap-2 text-xl font-semibold text-fg"><ShieldCheck className="size-5 text-accent-ink" /> Your privacy</h1>
               <ul className="mt-4 space-y-2.5 text-[13.5px] text-fg-2">
                 <li>• Email bodies are never stored by FLUENT — they're read live from Gmail.</li>
                 <li>• Remote images are blocked by default so senders can't track when you open mail.</li>

@@ -6,7 +6,7 @@ import { rateLimit } from "../lib/rateLimit.js";
 import { CATEGORIES, FOLDERS, THREAD_ACTIONS } from "../../shared/mail.js";
 import {
   createFilter, createLabel, deleteFilter, deleteLabel, getAttachment, getLabels, getThread, listDrafts,
-  listFilters, listThreads, modifyLabels, renameLabel, syncChanges, threadAction,
+  listFilters, listThreads, modifyLabels, renameLabel, syncChanges, threadAction, bulkAction, BULK_ACTIONS, BULK_MAX,
 } from "../services/mail.js";
 import { logSecurityEvent } from "../services/accounts.js";
 import { cancelSnooze, listSnoozes, processDueSnoozes, setSnooze } from "../services/snooze.js";
@@ -142,6 +142,16 @@ mailRoutes.get("/sync", async (c) => {
   const due = await processDueSnoozes(user.id).catch(() => ({ returned: 0, reminders: 0 }));
   const r = await syncChanges(user.id);
   return c.json({ ...r, changed: r.changed || due.returned + due.reminders > 0, snoozeReturned: due.returned, remindersDue: due.reminders });
+});
+
+mailRoutes.post("/bulk", rateLimit("bulk", 30), async (c) => {
+  const user = requireUser(c);
+  const b = z.object({
+    items: z.array(z.object({ accountId: uuid, threadId: gid }).strict()).min(1).max(BULK_MAX),
+    action: z.enum(BULK_ACTIONS),
+    labelId: gid.optional(),
+  }).strict().parse(await c.req.json());
+  return c.json(await bulkAction(user.id, b));
 });
 
 mailRoutes.get("/snoozes", async (c) => {

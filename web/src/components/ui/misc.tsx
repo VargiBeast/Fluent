@@ -57,7 +57,7 @@ export function EmptyState({ icon, title, description, action }: {
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-8 py-16 text-center animate-in">
-      <div className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-400">{icon}</div>
+      <div className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">{icon}</div>
       <div>
         <p className="text-[15px] font-semibold text-fg">{title}</p>
         {description && <p className="mt-1 max-w-sm text-[13px] text-fg-3">{description}</p>}

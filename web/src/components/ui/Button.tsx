@@ -36,7 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        "inline-flex select-none items-center justify-center font-medium whitespace-nowrap transition-[background,filter,color] duration-150 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex select-none items-center justify-center font-medium whitespace-nowrap transition-[background,filter,color,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
         className,
@@ -66,9 +66,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-lg text-fg-3 transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-40 disabled:pointer-events-none",
+        "inline-flex shrink-0 items-center justify-center rounded-lg text-fg-3 transition-[background,color,transform] duration-150 hover:bg-surface-2 hover:text-fg active:scale-95 disabled:opacity-40 disabled:pointer-events-none",
         size === "md" ? "size-9" : "size-7",
-        active && "text-accent-400",
+        active && "text-accent-ink",
         className,
       )}
       {...rest}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Search, Sparkles, Star, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronUp, Inbox, Loader2, Menu as MenuIcon, Paperclip, RefreshCw, Search, Sparkles, Star, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Category, Folder, ThreadSummary } from "@shared/mail";
 import { Avatar } from "@/components/ui/Avatar";
@@ -13,7 +13,19 @@ import { useSession } from "@/lib/session";
 import { api, errorMessage } from "@/lib/api";
 import { FOLDER_META } from "./nav";
 import { useComposer } from "./composer/context";
+import { useCopilot } from "./copilot/context";
+import { BulkBar } from "./BulkBar";
 import { toast } from "sonner";
+
+const EMPTY_HINT: Record<string, string> = {
+  search: "Try different words, or toggle Ask AI to describe what you're looking for.",
+  inbox: "You're all caught up.",
+  snoozed: "Snooze a conversation (z) and it waits here until it's time to come back to your Inbox.",
+  starred: "Star a conversation (s) to keep it close at hand.",
+  drafts: "Drafts you start in FLUENT or Gmail show up here.",
+  spam: "No spam. Nice.",
+  trash: "Trash is empty. Gmail deletes items here after 30 days.",
+};
 
 const CATEGORY_CHIPS: Array<{ id: Category | "all"; label: string }> = [
   { id: "all", label: "All" },
@@ -58,6 +70,14 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
   const [searching, setSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const sentinel = useRef<HTMLDivElement>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const anchor = useRef<string | null>(null);
+  // While selecting, the mobile bulk bar owns the bottom edge, so the floating Copilot button steps aside.
+  useEffect(() => {
+    if (picked.size === 0) return;
+    document.body.dataset.selecting = "";
+    return () => { delete document.body.dataset.selecting; };
+  }, [picked.size > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const all = useMemo(() => threads.data?.pages.flatMap((p) => p.threads) ?? [], [threads.data]);
   const accountErrors = threads.data?.pages[0]?.errors ?? [];
@@ -133,6 +153,54 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
     else groups.push([g, [t]]);
   }
 
+  const keyOf = (t: ThreadSummary) => `${t.accountId}:${t.id}`;
+  const ordered = [...(showStarred ? starred : []), ...groups.flatMap(([, items]) => items)];
+  const pickedThreads = ordered.filter((t) => picked.has(keyOf(t)));
+  const toggle = (t: ThreadSummary, range: boolean) => {
+    const k = keyOf(t);
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (range && anchor.current) {
+        // Shift-click: select everything between the last clicked row and this one.
+        const keys = ordered.map(keyOf);
+        const i = keys.indexOf(anchor.current);
+        const j = keys.indexOf(k);
+        if (i >= 0 && j >= 0) for (const kk of keys.slice(Math.min(i, j), Math.max(i, j) + 1)) next.add(kk);
+      } else if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+    anchor.current = k;
+  };
+  // Selection is per list: clear it when the folder or search changes.
+  useEffect(() => setPicked(new Set()), [folder, params]);
+  // Drop selected rows that left the list (e.g. after archiving).
+  useEffect(() => {
+    setPicked((prev) => {
+      const live = new Set(all.map(keyOf));
+      const next = new Set([...prev].filter((k) => live.has(k)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [all]);
+  // x toggles the open conversation, Esc clears the selection.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector("[role=dialog]")) return;
+      if (e.key === "x") {
+        const cur = all.find((t) => keyOf(t) === selectedKey) ?? ordered[0];
+        if (cur) { e.preventDefault(); toggle(cur, false); }
+      } else if (e.key === "Escape" && picked.size) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setPicked(new Set());
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  });
+
   const open = (t: ThreadSummary) => {
     const p = new URLSearchParams(params);
     navigate(`/app/${folder}/${t.accountId}/${t.id}?${p}`);
@@ -158,8 +226,10 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
           </IconButton>
         </div>
 
+        {config?.ai && <AskCopilotBar />}
+
         <form onSubmit={submitSearch} role="search" className="relative">
-          {aiMode ? <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-400" aria-hidden /> : <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden />}
+          {aiMode ? <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-ink" aria-hidden /> : <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden />}
           <input
             ref={searchRef}
             id="mail-search"
@@ -199,7 +269,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
         {folder === "search" && (args.nl || args.q) && (
           <div className="ai-block rounded-xl px-3 py-2 text-[12.5px]">
             <div className="flex items-start gap-2">
-              {args.nl ? <Sparkles className="mt-0.5 size-3.5 shrink-0 text-accent-400" aria-hidden /> : <Search className="mt-0.5 size-3.5 shrink-0 text-fg-3" aria-hidden />}
+              {args.nl ? <Sparkles className="mt-0.5 size-3.5 shrink-0 text-accent-ink" aria-hidden /> : <Search className="mt-0.5 size-3.5 shrink-0 text-fg-3" aria-hidden />}
               <div className="min-w-0 flex-1 text-fg-2">
                 {args.nl && <p className="text-fg">“{args.nl}”</p>}
                 {args.explanation && <p>{args.explanation}</p>}
@@ -215,7 +285,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
         <div role="alert" className="mx-3 mt-3 flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-fg-2">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
           <span className="flex-1">{accountErrors.map((e) => e.message).join(" ")}</span>
-          <Link to="/app/settings/accounts" className="shrink-0 font-medium text-accent-400 hover:underline">Fix</Link>
+          <Link to="/app/settings/accounts" className="shrink-0 font-medium text-accent-ink hover:underline">Fix</Link>
         </div>
       )}
 
@@ -235,14 +305,24 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
           <EmptyState
             icon={<Inbox className="size-5" />}
             title={folder === "search" ? "No matching email" : `Nothing in ${title}`}
-            description={folder === "search" ? "Try different words, or toggle Ask AI to describe what you're looking for." : folder === "inbox" ? "You're all caught up." : "When there's mail here, it will show up instantly."}
+            description={EMPTY_HINT[folder] ?? "When there's mail here, it will show up instantly."}
           />
         ) : (
-          <ul className="pb-4" aria-label="Conversations">
+          <>
+          {picked.size > 0 && !isDrafts && (
+            <BulkBar
+              selected={pickedThreads}
+              folder={folder}
+              allVisible={ordered.length > 0 && ordered.every((t) => picked.has(keyOf(t)))}
+              onSelectAll={(on) => setPicked(on ? new Set(ordered.slice(0, 100).map(keyOf)) : new Set())}
+              onClear={() => setPicked(new Set())}
+            />
+          )}
+          <ul className={cn("pb-4", picked.size > 0 && "pb-24 lg:pb-4")} aria-label="Conversations">
             {starred.length > 0 && (
               <li>
                 <GroupHeader label="Starred" action={<button type="button" className="flex items-center gap-1 text-[11.5px] text-fg-3 hover:text-fg" onClick={() => setShowStarred((v) => !v)} aria-expanded={showStarred}>{showStarred ? "Hide" : "Show"}<ChevronUp className={cn("size-3.5 transition-transform", !showStarred && "rotate-180")} /></button>} />
-                {showStarred && <ul>{starred.map((t) => <Row key={`${t.accountId}:${t.id}`} t={t} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />)}</ul>}
+                {showStarred && <ul>{starred.map((t) => <Row key={`${t.accountId}:${t.id}`} t={t} picked={picked.has(`${t.accountId}:${t.id}`)} selecting={picked.size > 0} onPick={(range) => toggle(t, range)} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />)}</ul>}
               </li>
             )}
             {groups.map(([label, items]) => (
@@ -250,7 +330,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
                 <GroupHeader label={label} />
                 <ul>
                   {items.map((t) => (
-                    <Row key={`${t.accountId}:${t.id}`} t={t} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />
+                    <Row key={`${t.accountId}:${t.id}`} t={t} picked={picked.has(`${t.accountId}:${t.id}`)} selecting={picked.size > 0} onPick={(range) => toggle(t, range)} selected={selectedKey === `${t.accountId}:${t.id}`} onOpen={() => open(t)} onStar={() => action.mutate({ accountId: t.accountId, threadId: t.id, action: t.starred ? "unstar" : "star", folder: args.folder })} multiAccount={(session?.accounts?.length ?? 0) > 1 && !args.account} />
                   ))}
                 </ul>
               </li>
@@ -262,6 +342,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
               </div>
             )}
           </ul>
+          </>
         )}
       </div>
     </section>
@@ -277,18 +358,53 @@ function GroupHeader({ label, action }: { label: string; action?: React.ReactNod
   );
 }
 
-function Row({ t, selected, onOpen, onStar, multiAccount }: { t: ThreadSummary; selected: boolean; onOpen: () => void; onStar: () => void; multiAccount: boolean }) {
+function Row({ t, selected, onOpen, onStar, multiAccount, picked, selecting, onPick }: {
+  t: ThreadSummary; selected: boolean; onOpen: () => void; onStar: () => void; multiAccount: boolean;
+  picked: boolean; selecting: boolean; onPick: (range: boolean) => void;
+}) {
   const { session } = useSession();
   const accIdx = session?.accounts?.findIndex((a) => a.id === t.accountId) ?? 0;
+  const press = useRef<{ timer: number; fired: boolean } | null>(null);
+  // Long-press (touch) enters selection mode; while selecting, a tap toggles instead of opening.
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== "touch") return;
+    const state = { fired: false, timer: 0 };
+    state.timer = window.setTimeout(() => {
+      state.fired = true;
+      navigator.vibrate?.(10);
+      onPick(false);
+    }, 450);
+    press.current = state;
+  };
+  const cancelPress = () => {
+    if (press.current) window.clearTimeout(press.current.timer);
+  };
+  const click = (e: React.MouseEvent) => {
+    if (press.current?.fired) {
+      press.current = null;
+      e.preventDefault();
+      return;
+    }
+    if (selecting || e.shiftKey) onPick(e.shiftKey);
+    else onOpen();
+  };
   return (
-    <li>
+    // Off-screen rows skip layout and paint (content-visibility), a cheap stand-in for virtualization that
+    // keeps find-in-page, keyboard focus and screen readers working on the full list.
+    <li className="[contain-intrinsic-size:auto_78px] [content-visibility:auto]">
       <div
         data-thread-id={t.id}
+        data-picked={picked ? "" : undefined}
         className={cn(
-          "group relative mx-2 flex cursor-pointer gap-3 rounded-xl px-2.5 py-[var(--row-py,12px)] transition-colors",
-          selected ? "bg-surface-3" : "hover:bg-surface-2",
+          "group relative mx-2 flex cursor-pointer select-none gap-3 rounded-xl px-2.5 py-[var(--row-py,12px)] transition-colors",
+          picked ? "bg-accent-soft ring-1 ring-inset ring-[var(--ai-border)]" : selected ? "bg-surface-3" : "hover:bg-surface-2",
         )}
-        onClick={onOpen}
+        onClick={click}
+        onPointerDown={onPointerDown}
+        onPointerUp={cancelPress}
+        onPointerLeave={cancelPress}
+        onPointerCancel={cancelPress}
+        onContextMenu={(e) => { if (press.current?.fired) e.preventDefault(); }}
       >
         <div className="flex w-5 flex-col items-center gap-2 pt-0.5">
           <button
@@ -301,11 +417,27 @@ function Row({ t, selected, onOpen, onStar, multiAccount }: { t: ThreadSummary; 
             <Star className="size-4" fill={t.starred ? "currentColor" : "none"} />
           </button>
         </div>
-        <div className="relative">
-          <Avatar name={displayName(t.from)} email={t.from.email} size={36} />
-          {t.unread && <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-surface bg-accent" aria-hidden />}
+        <div className="relative size-9 shrink-0">
+          <span className={cn("block transition-opacity", (picked || selecting) ? "opacity-0" : "group-hover:opacity-0 group-focus-within:opacity-0")}>
+            <Avatar name={displayName(t.from)} email={t.from.email} size={36} />
+          </span>
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={picked}
+            aria-label={`Select: ${t.subject || "(no subject)"}`}
+            onClick={(e) => { e.stopPropagation(); onPick(e.shiftKey); }}
+            className={cn(
+              "absolute inset-0 flex items-center justify-center rounded-full border transition-opacity focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]",
+              picked ? "border-accent bg-accent text-accent-fg opacity-100" : "border-line-strong bg-surface-2 text-transparent",
+              !picked && (selecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"),
+            )}
+          >
+            <Check className="size-4" />
+          </button>
+          {t.unread && !picked && <span className="pointer-events-none absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-surface bg-accent" aria-hidden />}
         </div>
-        <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left outline-none" aria-current={selected ? "true" : undefined}>
+        <button type="button" onClick={(e) => { e.stopPropagation(); click(e); }} className="min-w-0 flex-1 text-left outline-none" aria-current={selected ? "true" : undefined}>
           <span className="flex items-baseline gap-2">
             <span className={cn("min-w-0 flex-1 truncate text-[13.5px]", t.unread ? "font-semibold text-fg" : "font-medium text-fg-2")}>
               {displayName(t.from)}
@@ -369,5 +501,38 @@ function DraftsList({ drafts, onOpen }: { drafts: ReturnType<typeof useDrafts>; 
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The Copilot entry point at the top of every mail list: type an instruction and press Enter. */
+function AskCopilotBar() {
+  const copilot = useCopilot();
+  const [text, setText] = useState("");
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        copilot.open(text.trim() || undefined, Boolean(text.trim()));
+        setText("");
+      }}
+      className="group relative"
+    >
+      <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-ink" aria-hidden />
+      <label htmlFor="ask-copilot-bar" className="sr-only">Ask Copilot</label>
+      <input
+        id="ask-copilot-bar"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        maxLength={1000}
+        placeholder="Ask Copilot. Try: archive all newsletters from last week"
+        className="h-10 w-full rounded-[10px] border border-[var(--ai-border)] bg-accent-soft pl-9 pr-24 text-[13.5px] text-fg outline-none transition-shadow placeholder:text-ai-title/70 focus:ring-2 focus:ring-[var(--accent-ring)]"
+      />
+      <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+        <kbd className="hidden rounded border border-[var(--ai-border)] px-1.5 text-[10.5px] text-ai-title sm:inline">⌘J</kbd>
+        <button type="submit" className="h-7 rounded-lg bg-accent px-2.5 text-[12px] font-medium text-accent-fg hover:brightness-110 focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]">
+          Ask
+        </button>
+      </div>
+    </form>
   );
 }

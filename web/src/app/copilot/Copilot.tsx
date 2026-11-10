@@ -4,7 +4,7 @@ import { useMatch, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, Archive, ArrowUp, Check, ChevronDown, FilePen, Inbox, Loader2, Mail, MailOpen, Search, Send, ShieldCheck,
-  Sparkles, Star, StarOff, Tag, Trash2, Undo2, X,
+  Maximize2, Minimize2, Sparkles, Star, StarOff, Tag, Trash2, Undo2, X,
 } from "lucide-react";
 import type { ThreadSummary } from "@shared/mail";
 import type { ActionResult, CopilotActionType, CopilotReply, ExecuteResult, PlanAction, PlanPreview } from "@shared/copilot";
@@ -36,17 +36,19 @@ export function CopilotHost() {
   return <CopilotPanel open={isOpen} onOpenChange={setOpen} context={context} prefill={prefill} />;
 }
 
-export function CopilotPanel({ open, onOpenChange, context, prefill = "" }: {
+export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   context?: { accountId: string; threadId: string };
-  prefill?: string;
+  prefill?: { text: string; autoSend: boolean; n: number };
 }) {
   const { config, session } = useSession();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [useThread, setUseThread] = useState(true);
+  const [expanded, setExpanded] = useState(() => localStorage.getItem("fluent.copilot.expanded") === "1");
+  useEffect(() => localStorage.setItem("fluent.copilot.expanded", expanded ? "1" : "0"), [expanded]);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scoped = Boolean(context) && useThread;
@@ -54,8 +56,12 @@ export function CopilotPanel({ open, onOpenChange, context, prefill = "" }: {
 
   useEffect(() => setUseThread(true), [context?.accountId, context?.threadId]);
   useEffect(() => {
-    if (open && prefill) setInput(prefill);
-  }, [open, prefill]);
+    if (!open || !prefill?.text) return;
+    if (prefill.autoSend) send(prefill.text);
+    else setInput(prefill.text);
+    // Only when a new prefill arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, prefill?.n]);
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages]);
@@ -96,23 +102,31 @@ export function CopilotPanel({ open, onOpenChange, context, prefill = "" }: {
             e.preventDefault();
             inputRef.current?.focus();
           }}
-          className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-line bg-surface shadow-[var(--shadow)] animate-in sm:w-[460px]"
+          className={cn(
+            "fixed z-50 flex flex-col bg-surface shadow-[var(--shadow)] animate-in pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]",
+            expanded
+              ? "inset-0 sm:inset-x-[max(24px,calc(50vw-480px))] sm:inset-y-[6vh] sm:rounded-2xl sm:border sm:border-line-strong"
+              : "inset-0 sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[min(600px,92vw)] sm:border-l sm:border-line",
+          )}
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-400"><Sparkles className="size-4" /></span>
+              <span className="flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-ink"><Sparkles className="size-4" /></span>
               <div>
                 <RD.Title className="text-[14.5px] font-semibold text-fg">FLUENT Copilot</RD.Title>
                 <RD.Description className="text-[11.5px] text-fg-3">Ask or tell it what to do. Nothing changes until you confirm.</RD.Description>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <span className="hidden text-[11px] text-fg-3 sm:inline"><Kbd>⌘K</Kbd></span>
+              <span className="hidden text-[11px] text-fg-3 sm:inline" title="Toggle Copilot"><Kbd>⌘J</Kbd></span>
+              <IconButton label={expanded ? "Dock to the side" : "Expand Copilot"} className="hidden sm:inline-flex" onClick={() => setExpanded((v) => !v)}>
+                {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              </IconButton>
               <RD.Close asChild><IconButton label="Close copilot"><X className="size-4" /></IconButton></RD.Close>
             </div>
           </header>
 
-          <div className="scroll-thin flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
+          <div className={cn("scroll-thin flex-1 space-y-3 overflow-y-auto px-4 py-4", expanded && "sm:px-8")} aria-live="polite">
             {!aiReady ? (
               <div className="rounded-xl border border-line bg-surface-2 p-4 text-[13px] text-fg-2">
                 {!config?.ai ? "AI isn’t configured on this server. Add an AI provider key (see docs/SETUP.md) to use Copilot." : "AI features are turned off in Settings → AI."}
@@ -164,7 +178,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill = "" }: {
                               }}
                               className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-left hover:border-[var(--ai-border)]"
                             >
-                              <Mail className="size-3.5 shrink-0 text-accent-400" />
+                              <Mail className="size-3.5 shrink-0 text-accent-ink" />
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-[12.5px] font-medium text-fg">{t.subject || "(no subject)"}</span>
                                 <span className="block truncate text-[11px] text-fg-3">{displayName(t.from)} · {listDate(t.lastDate)}</span>
@@ -222,7 +236,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill = "" }: {
                     send(input);
                   }
                 }}
-                placeholder={scoped ? "Ask, or e.g. “draft a reply saying yes”…" : "Ask, or e.g. “archive newsletters”…"}
+                placeholder={scoped ? "Try: draft a reply saying Thursday works" : "Try: archive all newsletters from last week"}
                 className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-[13.5px] text-fg outline-none placeholder:text-fg-3"
               />
               <button type="submit" disabled={!input.trim() || ask.isPending || !aiReady} aria-label="Send to Copilot" className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-fg disabled:opacity-40">
@@ -326,7 +340,7 @@ export function PlanCard({ plan, onOpenThread }: { plan: PlanPreview; onOpenThre
   return (
     <section aria-label="Copilot plan" data-testid="plan-card" className="rounded-2xl border border-[var(--ai-border)] bg-surface-2 p-3 animate-in">
       <div className="mb-2 flex items-start gap-2">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-400" />
+        <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-ink" />
         <div className="min-w-0">
           <p className="text-[13.5px] font-medium text-fg">{plan.summary || "Here’s the plan"}</p>
           {plan.planId && phase === "review" && <p className="text-[11.5px] text-fg-3">Review and untick anything you don’t want. Nothing has changed yet.</p>}
@@ -457,7 +471,7 @@ function ActionItem({ action: a, selected, locked, onToggle, onToggleAll, result
         ) : (
           <span className="mt-0.5 size-4 shrink-0" />
         )}
-        <span className={cn("mt-0.5 shrink-0 [&>svg]:size-4", a.risk === "trash" || a.risk === "send" ? "text-danger" : "text-accent-400")}>{ICONS[a.type]}</span>
+        <span className={cn("mt-0.5 shrink-0 [&>svg]:size-4", a.risk === "trash" || a.risk === "send" ? "text-danger" : "text-accent-ink")}>{ICONS[a.type]}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-fg">{a.title}</p>
           {a.query && <p className="truncate font-mono text-[11px] text-fg-3" title={a.query}>{a.query}</p>}
@@ -501,7 +515,7 @@ function ActionItem({ action: a, selected, locked, onToggle, onToggleAll, result
           ))}
           {a.threads.length > 5 && (
             <li>
-              <button type="button" onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 text-[12px] text-accent-400 hover:underline">
+              <button type="button" onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 text-[12px] text-accent-ink hover:underline">
                 <ChevronDown className={cn("size-3", expanded && "rotate-180")} /> {expanded ? "Show fewer" : `Show all ${a.threads.length}`}
               </button>
             </li>

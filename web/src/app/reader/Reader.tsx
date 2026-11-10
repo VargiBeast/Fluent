@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { SnoozeBanner, SnoozeMenu } from "./SnoozeMenu";
+import { sendWithUndo } from "@/lib/undoSend";
 import { Menu, MenuCheckbox, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "@/components/ui/Menu";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
 import { cn } from "@/lib/cn";
@@ -79,15 +80,16 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
   }, [thread.id]);
 
   const run = (a: ThreadAction, msg?: string, leave = false) => {
-    action.mutate({ accountId: thread.accountId, threadId: thread.id, action: a, folder: folder as never }, {
-      onSuccess: () => {
-        if (msg) {
-          toast.success(msg, a === "archive" || a === "trash" ? {
-            action: { label: "Undo", onClick: () => action.mutate({ accountId: thread.accountId, threadId: thread.id, action: a === "archive" ? "inbox" : "untrash" }) },
-          } : undefined);
-        }
-      },
-    });
+    // mutateAsync, not mutate callbacks: leaving opens the next thread, whose mark-read mutation would
+    // otherwise replace this one as the observer's latest and silently drop its success toast.
+    const { accountId, id: threadId } = thread;
+    action.mutateAsync({ accountId, threadId, action: a, folder: folder as never }).then(() => {
+      if (msg) {
+        toast.success(msg, a === "archive" || a === "trash" ? {
+          action: { label: "Undo", onClick: () => action.mutate({ accountId, threadId, action: a === "archive" ? "inbox" : "untrash" }) },
+        } : undefined);
+      }
+    }, () => { /* the mutation's own onError already shows the error */ });
     if (leave) {
       if (position?.next) position.next();
       else onClose();
@@ -153,8 +155,8 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
           </div>
         )}
         {aiOn && (
-          <Button size="sm" variant="ai" className="ml-1" icon={<Sparkles className="size-3.5" />} onClick={onOpenCopilot}>
-            <span className="hidden sm:inline">Copilot</span>
+          <Button size="sm" variant="ai" className="ml-1" icon={<Sparkles className="size-3.5" />} onClick={onOpenCopilot} title="Ask Copilot about this email (⌘J)" aria-label="Ask Copilot about this email">
+            <span className="hidden sm:inline">Ask Copilot</span>
           </Button>
         )}
       </div>
@@ -208,8 +210,17 @@ function useReaderShortcuts(map: Record<string, () => void>) {
         fn();
       }
     };
+    // Commands from the ⌘K palette arrive as a custom event (no dialog check: the palette has just closed).
+    const onCommand = (e: Event) => {
+      const fn = map[(e as CustomEvent<string>).detail];
+      if (fn) fn();
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("fluent:reader-command", onCommand);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("fluent:reader-command", onCommand);
+    };
   });
 }
 
@@ -343,7 +354,7 @@ function AttachmentList({ accountId, files }: { accountId: string; files: Messag
               className="group flex w-56 items-center gap-2.5 rounded-xl border border-line bg-surface-2 px-3 py-2 hover:border-line-strong"
               aria-label={`Download ${a.filename} (${formatBytes(a.size)})`}
             >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-400">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-ink">
                 {a.mimeType.startsWith("image/") ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}
               </span>
               <span className="min-w-0 flex-1">
@@ -408,19 +419,34 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
       aiGenerated: isAi,
       aiConfirmed,
     };
-    try {
-      await api.post("/compose/send", payload);
-      toast.success("Reply sent");
-      setText("");
-      setAiText(null);
-      setConfirm(false);
-      await qc.invalidateQueries({ queryKey: ["thread", thread.accountId, thread.id] });
-      void qc.invalidateQueries({ queryKey: ["threads"] });
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setSending(false);
-    }
+    const draft = { text, aiText };
+    setConfirm(false);
+    setText("");
+    setAiText(null);
+    sendWithUndo({
+      seconds: Number(session?.settings?.compose?.undoSendSeconds ?? "5"),
+      label: "Sending reply…",
+      onUndo: () => {
+        setText(draft.text);
+        setAiText(draft.aiText);
+        setSending(false);
+        toast("Sending cancelled", { description: "Your reply is back in the box." });
+      },
+      run: async () => {
+        try {
+          await api.post("/compose/send", payload);
+          toast.success("Reply sent");
+          await qc.invalidateQueries({ queryKey: ["thread", thread.accountId, thread.id] });
+          void qc.invalidateQueries({ queryKey: ["threads"] });
+        } catch (err) {
+          setText(draft.text);
+          setAiText(draft.aiText);
+          toast.error(errorMessage(err));
+        } finally {
+          setSending(false);
+        }
+      },
+    });
   };
 
   return (

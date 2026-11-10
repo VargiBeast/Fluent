@@ -27,6 +27,10 @@ export const settingsSchema = z.object({
   profile: z.object({
     displayName: z.string().max(120).default(""),
   }).prefault({}),
+  compose: z.object({
+    /** Seconds FLUENT waits before actually sending, so you can undo. */
+    undoSendSeconds: z.enum(["0", "5", "10", "20"]).default("5"),
+  }).prefault({}),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -53,6 +57,7 @@ export const settingsPatchSchema = z.object({
     keepAiHistoryDays: z.number().int().min(0).max(365),
   }).partial().strict().optional(),
   profile: z.object({ displayName: z.string().max(120) }).partial().strict().optional(),
+  compose: z.object({ undoSendSeconds: z.enum(["0", "5", "10", "20"]) }).partial().strict().optional(),
   onboarded: z.boolean().optional(),
 }).strict();
 

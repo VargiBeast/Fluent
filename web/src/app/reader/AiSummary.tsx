@@ -104,7 +104,7 @@ export function AiSummary({ thread, insights, autoEnabled, onRequest }: {
               <p className="mb-1 text-[11.5px] font-medium uppercase tracking-wide text-ai-title">Action items</p>
               <ul className="space-y-1">
                 {d.actionItems.map((a, i) => (
-                  <li key={i} className="flex gap-2 text-fg-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-accent-400" aria-hidden /><span>{a.task}{a.due ? <span className="text-fg-3"> · {a.due}</span> : null}</span></li>
+                  <li key={i} className="flex gap-2 text-fg-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-accent-ink" aria-hidden /><span>{a.task}{a.due ? <span className="text-fg-3"> · {a.due}</span> : null}</span></li>
                 ))}
               </ul>
             </div>
@@ -114,7 +114,7 @@ export function AiSummary({ thread, insights, autoEnabled, onRequest }: {
               <p className="mb-1 text-[11.5px] font-medium uppercase tracking-wide text-ai-title">Deadlines</p>
               <ul className="space-y-1">
                 {d.deadlines.map((a, i) => (
-                  <li key={i} className="flex gap-2 text-fg-2"><CalendarClock className="mt-0.5 size-3.5 shrink-0 text-accent-400" aria-hidden /><span>{a.what} — <span className="text-fg">{a.when}</span></span></li>
+                  <li key={i} className="flex gap-2 text-fg-2"><CalendarClock className="mt-0.5 size-3.5 shrink-0 text-accent-ink" aria-hidden /><span>{a.what} — <span className="text-fg">{a.when}</span></span></li>
                 ))}
               </ul>
             </div>

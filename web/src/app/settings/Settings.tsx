@@ -75,7 +75,7 @@ function SettingsIndex() {
       <nav aria-label="Settings sections" className="divide-y divide-line">
         {SECTIONS.map((s) => (
           <Link key={s.id} to={`/app/settings/${s.id}`} className="flex items-center gap-3 px-4 py-3.5 text-[14px] text-fg hover:bg-surface-2">
-            <s.icon className="size-4 text-accent-400" />{s.label}
+            <s.icon className="size-4 text-accent-ink" />{s.label}
           </Link>
         ))}
       </nav>
@@ -244,6 +244,9 @@ function AppearanceSection() {
       <Row label="Reading pane" description="Open emails next to the list, or full width.">
         <Segmented label="Reading pane" value={s.appearance.readingPane} onChange={(readingPane) => update.mutate({ appearance: { readingPane } })} options={[{ value: "right", label: "Right" }, { value: "full", label: "Full" }]} />
       </Row>
+      <Row label="Undo send" description="Wait a few seconds before sending, so you can take it back.">
+        <Segmented label="Undo send" value={s.compose.undoSendSeconds} onChange={(undoSendSeconds) => update.mutate({ compose: { undoSendSeconds } })} options={[{ value: "0", label: "Off" }, { value: "5", label: "5 s" }, { value: "10", label: "10 s" }, { value: "20", label: "20 s" }]} />
+      </Row>
     </Panel>
   );
 }
@@ -297,7 +300,7 @@ function AiSection() {
           <div className="flex justify-end"><Button type="submit" variant="primary" loading={update.isPending}>Save</Button></div>
         </form>
       </Panel>
-      <p className="text-[12.5px] text-fg-3">Want to keep certain senders or labels away from AI? <Link to="/app/settings/privacy" className="text-accent-400 hover:underline">Manage AI exclusions</Link>.</p>
+      <p className="text-[12.5px] text-fg-3">Want to keep certain senders or labels away from AI? <Link to="/app/settings/privacy" className="text-accent-ink hover:underline">Manage AI exclusions</Link>.</p>
     </>
   );
 }
@@ -360,8 +363,8 @@ function PrivacySection() {
   return (
     <>
       <div className="ai-block flex gap-3 rounded-[var(--radius-card)] p-4 text-[13px] text-fg-2">
-        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-accent-400" />
-        <p>FLUENT never stores your email bodies. Mail is read live from Gmail. When you use an AI feature, only the emails needed are sent to the AI provider ({aiProviderName(config?.aiProvider)}), which processes them under its API terms. Everything the AI accessed is listed below. Read the <Link to="/privacy" className="text-accent-400 hover:underline">privacy policy</Link>.</p>
+        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-accent-ink" />
+        <p>FLUENT never stores your email bodies. Mail is read live from Gmail. When you use an AI feature, only the emails needed are sent to the AI provider ({aiProviderName(config?.aiProvider)}), which processes them under its API terms. Everything the AI accessed is listed below. Read the <Link to="/privacy" className="text-accent-ink hover:underline">privacy policy</Link>.</p>
       </div>
 
       <Panel title="Exclude from AI" description="Excluded conversations are never sent to AI. This is enforced on the server before any AI request.">
