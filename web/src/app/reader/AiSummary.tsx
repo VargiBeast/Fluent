@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CalendarClock, CheckCircle2, ShieldOff, Sparkles } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, CircleHelp, Gavel, ShieldOff, Sparkles, UserRound } from "lucide-react";
 import { useState } from "react";
 import type { ThreadDetail } from "@shared/mail";
 import { api, ApiError, errorMessage } from "@/lib/api";
@@ -15,6 +15,10 @@ export interface Insights {
   deadlines: Array<{ what: string; when: string }>;
   needsReply: boolean;
   quickReplies: string[];
+  /** Long threads only. */
+  asks?: Array<{ who: string; wants: string }>;
+  decisions?: string[];
+  openQuestions?: string[];
 }
 
 export function useInsights(thread: ThreadDetail | undefined, enabled: boolean) {
@@ -96,7 +100,8 @@ export function AiSummary({ thread, insights, autoEnabled, onRequest }: {
   const hasMore = d.keyPoints.length > 0 || d.actionItems.length > 0 || d.deadlines.length > 0;
   return (
     <Block title={title}>
-      <p className="text-fg-2">{d.summary}</p>
+      <p className="max-w-[70ch] text-fg-2">{d.summary}</p>
+      <ThreadDigest d={d} />
       {hasMore && expanded && (
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {d.actionItems.length > 0 && (
@@ -146,5 +151,43 @@ function Block({ title, children, busy }: { title: string; children: React.React
       </h2>
       {children}
     </section>
+  );
+}
+
+/** "Who wants what, what's decided" for long threads. Shown open: it's the point of summarising a long thread. */
+function ThreadDigest({ d }: { d: Insights }) {
+  const asks = d.asks ?? [];
+  const decisions = d.decisions ?? [];
+  const open = d.openQuestions ?? [];
+  if (!asks.length && !decisions.length && !open.length) return null;
+  return (
+    <div className="mt-3 grid gap-3 border-t border-[var(--ai-border)] pt-3 sm:grid-cols-2" data-testid="thread-digest">
+      {asks.length > 0 && (
+        <div className="sm:col-span-2">
+          <p className="mb-1 text-[11.5px] font-medium uppercase tracking-wide text-ai-title">Who wants what</p>
+          <ul className="space-y-1">
+            {asks.map((a, i) => (
+              <li key={i} className="flex gap-2 text-fg-2"><UserRound className="mt-0.5 size-3.5 shrink-0 text-accent-ink" aria-hidden /><span><span className="font-medium text-fg">{a.who}</span> — {a.wants}</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {decisions.length > 0 && (
+        <div>
+          <p className="mb-1 text-[11.5px] font-medium uppercase tracking-wide text-ai-title">Decided</p>
+          <ul className="space-y-1">
+            {decisions.map((x, i) => <li key={i} className="flex gap-2 text-fg-2"><Gavel className="mt-0.5 size-3.5 shrink-0 text-success" aria-hidden /><span>{x}</span></li>)}
+          </ul>
+        </div>
+      )}
+      {open.length > 0 && (
+        <div>
+          <p className="mb-1 text-[11.5px] font-medium uppercase tracking-wide text-ai-title">Still open</p>
+          <ul className="space-y-1">
+            {open.map((x, i) => <li key={i} className="flex gap-2 text-fg-2"><CircleHelp className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden /><span>{x}</span></li>)}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }

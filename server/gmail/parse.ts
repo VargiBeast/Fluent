@@ -1,3 +1,4 @@
+import { assessMessage } from "../security/phish.js";
 import type { Address, AttachmentMeta, MessageDetail, ThreadSummary } from "../../shared/mail.js";
 
 export interface GmailHeader { name: string; value: string }
@@ -135,6 +136,9 @@ export function parseMessage(m: GmailMessage, accountEmail: string): MessageDeta
   const labels = m.labelIds ?? [];
   const html = acc.html.length ? acc.html.join("<hr>") : null;
   const text = acc.text.length ? acc.text.join("\n\n") : html ? htmlToText(html) : null;
+  const isFromMe = from.email === accountEmail.toLowerCase() || labels.includes("SENT");
+  const isDraft = labels.includes("DRAFT");
+  const replyTo = parseAddresses(header(m.payload, "Reply-To"));
   return {
     id: m.id,
     threadId: m.threadId,
@@ -142,7 +146,7 @@ export function parseMessage(m: GmailMessage, accountEmail: string): MessageDeta
     to: parseAddresses(header(m.payload, "To")),
     cc: parseAddresses(header(m.payload, "Cc")),
     bcc: parseAddresses(header(m.payload, "Bcc")),
-    replyTo: parseAddresses(header(m.payload, "Reply-To")),
+    replyTo,
     date: new Date(Number(m.internalDate ?? Date.parse(header(m.payload, "Date")) ?? Date.now())).toISOString(),
     subject: header(m.payload, "Subject"),
     messageIdHeader: header(m.payload, "Message-ID") || header(m.payload, "Message-Id"),
@@ -153,8 +157,18 @@ export function parseMessage(m: GmailMessage, accountEmail: string): MessageDeta
     attachments: acc.attachments,
     labelIds: labels,
     unread: labels.includes("UNREAD"),
-    isFromMe: from.email === accountEmail.toLowerCase() || labels.includes("SENT"),
-    isDraft: labels.includes("DRAFT"),
+    isFromMe,
+    isDraft,
+    security: isFromMe || isDraft ? null : assessMessage({
+      fromName: from.name,
+      fromEmail: from.email,
+      replyTo: replyTo.map((r) => r.email),
+      subject: header(m.payload, "Subject"),
+      text: (text ?? "").slice(0, 20_000),
+      html: html ? html.slice(0, 200_000) : null,
+      attachments: acc.attachments.map((a) => a.filename),
+      authResults: (m.payload?.headers ?? []).filter((h) => h.name.toLowerCase() === "authentication-results").map((h) => h.value),
+    }),
   };
 }
 

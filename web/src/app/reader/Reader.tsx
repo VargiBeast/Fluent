@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle, Archive, ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, CornerUpLeft, Download, FileText, Forward, Image as ImageIcon,
   Inbox, Mail, MailOpen, Maximize2, MoreHorizontal, Paperclip, Reply, ReplyAll, Send, ShieldAlert, Sparkles, Star, Tag, Trash2, Undo2, Wand2,
@@ -23,6 +24,7 @@ import { fmtAddr, quoteHtml, replyRecipients, replySubject, textToParagraphs, ty
 import { useComposer } from "../composer/context";
 import { EmailBody } from "./EmailBody";
 import { AiSummary, useInsights } from "./AiSummary";
+import { SecurityBanner } from "./SecurityBanner";
 
 export interface ReaderProps {
   accountId?: string;
@@ -172,6 +174,8 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
             <h1 className="text-[20px] font-semibold leading-snug text-fg">{thread.subject}</h1>
           </div>
           {thread.labelIds.some((l) => l.startsWith("Label_")) && <ThreadLabels thread={thread} />}
+
+          <SecurityBanner thread={thread} />
 
           <AiSummary thread={thread} insights={insights} autoEnabled={autoSummarize} onRequest={() => setSummaryRequested(true)} />
 
@@ -373,8 +377,42 @@ function AttachmentList({ accountId, files }: { accountId: string; files: Messag
   );
 }
 
+interface ReplySuggestion { label: string; body: string }
+
 function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDetail; message: MessageDetail; suggestions: string[]; aiOn: boolean }) {
   const { session } = useSession();
+  const [params, setParams] = useSearchParams();
+  const box = useRef<HTMLTextAreaElement>(null);
+  const [smart, setSmart] = useState<ReplySuggestion[] | null>(null);
+  const [loadingSmart, setLoadingSmart] = useState(false);
+  const loadSmart = async () => {
+    setLoadingSmart(true);
+    try {
+      const r = await api.post<{ suggestions: ReplySuggestion[] }>("/ai/reply-suggestions", { accountId: thread.accountId, threadId: thread.id });
+      setSmart(r.suggestions);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setLoadingSmart(false);
+    }
+  };
+  // Arriving from a swipe-to-reply gesture (?reply=1): focus the reply box and fetch three suggested replies.
+  const swiped = params.get("reply") === "1";
+  useEffect(() => {
+    if (!swiped) return;
+    const next = new URLSearchParams(params);
+    next.delete("reply");
+    setParams(next, { replace: true });
+    box.current?.scrollIntoView({ block: "center" });
+    box.current?.focus({ preventScroll: true });
+    if (aiOn) void loadSmart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swiped]);
+  const pick = (s: ReplySuggestion) => {
+    setText(s.body);
+    setAiText(s.body);
+    box.current?.focus();
+  };
   const composer = useComposer();
   const qc = useQueryClient();
   const [text, setText] = useState("");
@@ -426,6 +464,7 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
     setConfirm(false);
     setText("");
     setAiText(null);
+    setSmart(null);
     sendWithUndo({
       seconds: Number(session?.settings?.compose?.undoSendSeconds ?? "5"),
       label: "Sending reply…",
@@ -454,7 +493,28 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
 
   return (
     <div className="space-y-3 pt-2">
-      {aiOn && suggestions.length > 0 && (
+      {aiOn && (smart || loadingSmart) && (
+        <div data-testid="reply-suggestions">
+          <p className="mb-2 flex items-center gap-1.5 text-[12px] text-fg-3"><Sparkles className="size-3.5 text-ai-title" aria-hidden /> Suggested replies, tap one to edit it, nothing is sent until you press Send</p>
+          {loadingSmart && !smart ? (
+            <div className="grid gap-2 sm:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+          ) : smart && smart.length > 0 ? (
+            <ul className="grid gap-2 sm:grid-cols-3">
+              {smart.map((s) => (
+                <li key={s.label + s.body}>
+                  <button type="button" onClick={() => pick(s)} aria-pressed={text === s.body} className={cn("h-full w-full rounded-xl border bg-surface-2 px-3 py-2 text-left hover:border-[var(--ai-border)]", text === s.body ? "border-[var(--ai-border)]" : "border-line")}>
+                    <span className="block text-[12.5px] font-medium text-fg">{s.label}</span>
+                    <span className="mt-0.5 line-clamp-2 block text-[12px] text-fg-3">{s.body}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[12.5px] text-fg-3">No suggestions for this conversation.</p>
+          )}
+        </div>
+      )}
+      {aiOn && !smart && !loadingSmart && suggestions.length > 0 && (
         <div>
           <p className="mb-2 text-[12px] text-fg-3">Quick answers</p>
           <div className="flex flex-wrap gap-2">
@@ -475,6 +535,11 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
         >
           <div className="flex items-center justify-between gap-2 px-4 pt-3 text-[12.5px]">
             <span className="min-w-0 truncate text-fg-3">Recipient <span className="text-fg-2">{rec.to.join(", ")}</span></span>
+            {aiOn && !smart && (
+              <button type="button" onClick={() => void loadSmart()} disabled={loadingSmart} className="ml-auto shrink-0 font-medium text-fg-3 hover:text-fg disabled:opacity-50">
+                Suggest replies
+              </button>
+            )}
             {aiOn && (
               <button type="button" onClick={() => void generate()} disabled={generating} className="flex shrink-0 items-center gap-1.5 font-medium text-ai-title hover:brightness-125 disabled:opacity-50">
                 <Wand2 className={cn("size-3.5", generating && "animate-pulse")} aria-hidden />
@@ -484,6 +549,7 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
           </div>
           <label htmlFor={`qr-${thread.id}`} className="sr-only">Reply text</label>
           <textarea
+            ref={box}
             id={`qr-${thread.id}`}
             value={text}
             onChange={(e) => setText(e.target.value)}

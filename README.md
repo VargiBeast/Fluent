@@ -34,6 +34,9 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 
 **AI** (Google Gemini by default, with xAI Grok or OpenAI as options, through the Vercel AI SDK)
 - A thread summary with key points, action items, deadlines and quick replies
+- **Long-thread digest**: on conversations with 4+ messages the summary adds "who wants what", what's been decided and what's still open
+- **Phishing guard**: every received message is checked on the server for failed SPF/DKIM/DMARC, lookalike sender domains (paypa1.com), mismatched or raw-IP links and urgent payment language. Risky mail shows a plain-language banner, and "Ask Copilot why" gives a short AI explanation.
+- **Swipe to reply (mobile)**: swipe a conversation left to open it with the reply box focused and three short AI-suggested replies. Tapping one fills an editable draft. Nothing is sent until you press Send and confirm.
 - "Explain this email simply" and questions about a specific thread
 - Draft new emails or replies from an instruction, then make them shorter or longer, fix grammar, or change the tone
 - **Ask your inbox / Copilot**: answers grounded in your emails, with links to the sources
@@ -82,7 +85,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 <td><img src="docs/screenshots/23-command-palette.png" alt="Command palette" /></td>
 </tr>
 </table>
-<p align="center"><img src="docs/screenshots/18-mobile-copilot-plan.png" alt="Mobile Copilot sheet" width="260" /> <img src="docs/screenshots/27-mobile-bulk-bar.png" alt="Mobile bulk action bar" width="260" /></p>
+<p align="center"><img src="docs/screenshots/18-mobile-copilot-plan.png" alt="Mobile Copilot sheet" width="260" /> <img src="docs/screenshots/27-mobile-bulk-bar.png" alt="Mobile bulk action bar" width="260" /> <img src="docs/screenshots/29-mobile-swipe-reply.png" alt="Swipe-to-reply suggestions" width="260" /></p>
 
 ## Stack
 

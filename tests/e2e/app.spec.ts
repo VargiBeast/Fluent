@@ -283,6 +283,21 @@ test("⌘K command palette navigates and runs conversation actions", async () =>
   await expect(page.locator('[data-thread-id="t-social"]')).toHaveCount(0);
 });
 
+test("phishing guard warns with plain reasons and Copilot gives a second opinion", async () => {
+  await page.goto("/app/inbox");
+  await page.locator('[data-thread-id="t-injection"]').click();
+  const warn = page.getByRole("alert", { name: "Security warning" });
+  await expect(warn).toContainText("Be careful: this looks like phishing");
+  await expect(warn).toContainText("couldn't verify that this really comes from suspicious.example");
+  await warn.getByRole("button", { name: "Ask Copilot to check" }).click();
+  await expect(warn.getByTestId("security-review")).toContainText("likely phishing");
+  await shot(page, "28-phishing-guard");
+  await page.goto("/app/inbox");
+  await page.locator('[data-thread-id="t-invoice"]').click();
+  await expect(page.getByRole("article", { name: /Your invoice INV-20431/ })).toBeVisible();
+  await expect(page.getByRole("alert", { name: "Security warning" })).toHaveCount(0);
+});
+
 test("privacy dashboard lists AI access by subject and enforces exclusions", async () => {
   await page.goto("/app/settings/privacy");
   const log = page.getByRole("list", { name: "AI access log" });

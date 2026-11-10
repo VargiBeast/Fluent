@@ -74,7 +74,24 @@ function fakeAnswer(all: string): { task: string; text: string } {
         actionItems: [{ task: "Reply with confirmation", owner: "you", due: "Thursday" }],
         deadlines: [{ what: "Sign-off", when: "Friday" }],
         needsReply: true,
+        ...(/This is a long thread/.test(all) ? {
+          asks: [{ who: "Marcus Chen", wants: "Alex to own the release notes by Wednesday" }, { who: "Priya Patel", wants: "to know if Alex needs screenshots" }],
+          decisions: ["Ship v2.3 after QA sign-off"],
+          openQuestions: ["Who updates the status page?"],
+        } : {}),
       };
+      break;
+    case "reply_suggestions":
+      out = { suggestions: [
+        { label: "Yes, works", body: "Thursday 14:00 works for me. See you then!" },
+        { label: "Need a bit more time", body: "Thanks! Can I confirm by tomorrow morning?" },
+        { label: "Suggest Friday", body: "Thursday is tricky for me. Would Friday at 10:00 work instead?" },
+      ] };
+      break;
+    case "security":
+      out = /DMARC fail/.test(all)
+        ? { verdict: "likely_phishing", reasons: ["Gmail couldn't confirm the sender.", "It tries to get you to act without checking."], advice: "Don't click anything; delete it." }
+        : { verdict: "likely_safe", reasons: ["The sender checks passed."], advice: "Looks fine, but never share passwords by email." };
       break;
     case "explain":
       out = "In plain terms: the sender is asking you to confirm a time and deliver something before a deadline.";

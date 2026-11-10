@@ -1,3 +1,4 @@
+import type { SecurityAssessment } from "./security.js";
 export interface Address {
   name: string;
   email: string;
@@ -52,6 +53,8 @@ export interface MessageDetail {
   unread: boolean;
   isFromMe: boolean;
   isDraft: boolean;
+  /** Phishing / fake-invoice signals for received mail; null for the user's own messages and drafts. */
+  security: SecurityAssessment | null;
 }
 
 export interface ThreadDetail {
