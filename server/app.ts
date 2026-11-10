@@ -15,6 +15,8 @@ import { aiRoutes } from "./routes/ai.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { sql } from "drizzle-orm";
 import { getDb, hasDatabase } from "./db/client.js";
+import { clientIp, hit } from "./lib/rateLimit.js";
+import { deepChecks } from "./lib/readiness.js";
 
 export function createApp() {
   const app = new Hono<AppEnv>().basePath("/api");
@@ -41,15 +43,29 @@ export function createApp() {
 
   app.get("/health", (c) => c.json({ ok: true }));
   // Readiness: proves the DB is reachable and the app role can query the schema. Never leaks errors.
+  // `?deep=1` also verifies the AI key (tiny synthetic prompt, output discarded) and the Google OAuth
+  // client (bogus-code exchange). Deep checks are rate limited per IP and globally, and cached for 60s.
   app.get("/ready", async (c) => {
     if (!hasDatabase()) return c.json({ ok: false, database: "not_configured" }, 503);
+    let database: "ok" | "error" = "ok";
     try {
       await getDb().execute(sql`select 1 from "users" limit 1`);
-      return c.json({ ok: true, database: "ok" });
     } catch (err) {
       logger.warn({ err: { name: (err as Error).name, code: (err as { code?: string }).code } }, "readiness_db_error");
-      return c.json({ ok: false, database: "error" }, 503);
+      database = "error";
     }
+    if (c.req.query("deep") !== "1" || database !== "ok") {
+      return c.json({ ok: database === "ok", database }, database === "ok" ? 200 : 503);
+    }
+    const perIp = await hit(`ready_deep:ip:${clientIp(c)}`, 5, 600);
+    const global = await hit("ready_deep:global", 30, 3600);
+    if (!perIp.ok || !global.ok) {
+      c.header("Retry-After", String(Math.max(perIp.ok ? 0 : perIp.retryAfter, global.ok ? 0 : global.retryAfter)));
+      return c.json({ error: { code: "rate_limited", message: "Too many requests. Please slow down and try again shortly." } }, 429);
+    }
+    const deep = await deepChecks();
+    const ok = deep.ai === "ok" && deep.googleClient === "ok";
+    return c.json({ ok, database, ai: deep.ai, googleClient: deep.googleClient, cached: deep.cached }, ok ? 200 : 503);
   });
   app.get("/config", (c) =>
     c.json({
