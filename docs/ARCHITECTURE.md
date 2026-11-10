@@ -15,7 +15,7 @@ Vercel Function  api/index.ts  ──►  Hono app (server/app.ts, basePath /api
    │                                   ├─ /send-as   Gmail send-as display name + signature (gmail.settings.basic)
    │                                   ├─ /stats     inbox stats from live Gmail metadata
    │                                   └─ /settings, /security/*, /accounts, /privacy/*, /me
-   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates · read_later
+   ├──► PostgreSQL (Drizzle, postgres.js)  users · accounts · sessions · user_settings · ai_audit · security_events · rate_limits · copilot_plans · snoozes · templates · read_later · thread_notes
    ├──► Google  (OAuth token/JWKS/revoke, Gmail REST v1)
    └──► AI provider via Vercel AI SDK (Google Gemini by default; xAI or OpenAI optional)
 ```
@@ -95,3 +95,7 @@ Saved replies live in `templates` (name, subject and text, each AES-GCM encrypte
 ## Read later
 
 `POST /api/mail/read-later {accountId, threadId}` saves a conversation (the thread must exist in the user's own account; idempotent; up to 500), `DELETE /api/mail/read-later/:accountId/:threadId` removes it and `GET /api/mail/read-later` lists the saved keys. Rows in `read_later` hold only the account, thread id and time. Nothing changes in Gmail. `later` is a FLUENT folder: `GET /api/mail/threads?folder=later` is answered by `services/readLater.ts` with the same `ThreadPage` shape as Gmail folders (newest saved first, offset cursor, summaries fetched live with `threads.get?format=metadata`), so the normal list, reader and keyboard navigation work. Conversations deleted in Gmail are dropped from the list; trashed or spam ones are hidden until restored. The reader has a bookmark toggle (shortcut `b`) and the sidebar a Read later entry. The list is included in the data summary and export.
+
+## Private notes
+
+`GET/PUT/DELETE /api/notes/:accountId/:threadId` reads, saves (`{body}`, zod-validated, up to 5,000 characters) and deletes the one private note pinned to a conversation. The thread must exist in the user's own account. `thread_notes` holds the account, thread id and the text AES-GCM encrypted (purpose `note`, AAD = user + account + thread). Notes are never written to Gmail, never included in AI prompts, and are removed with the account (cascade). The reader shows the note under the subject (toolbar button or shortcut `n`). Notes are included in the data summary and export.
