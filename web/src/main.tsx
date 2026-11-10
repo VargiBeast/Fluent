@@ -49,3 +49,10 @@ createRoot(document.getElementById("root")!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Installable PWA: a static-shell service worker (it never touches /api). Skipped in dev and automated browsers.
+if (import.meta.env.PROD && "serviceWorker" in navigator && !navigator.webdriver) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+  });
+}
