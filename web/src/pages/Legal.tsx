@@ -122,7 +122,7 @@ export function PrivacyPage() {
       <UL>
         <li>OAuth tokens are kept until you disconnect the account or delete your data. Disconnecting revokes FLUENT's token at Google and deletes it.</li>
         <li>The AI access log is kept for the period you choose (default 30 days; “Off” records nothing).</li>
-        <li>Sessions expire after 30 days of inactivity or when you sign out.</li>
+        <li>Sessions expire 30 days after sign-in, or earlier when you sign out or revoke them.</li>
         <li>Your profile, settings and security log are kept until you delete your data.</li>
         <li>Settings → Your data lets you export everything FLUENT stores as JSON and permanently delete it. Deletion revokes Google access for every connected account and removes all records immediately. Encrypted database backups held by our providers expire on their normal schedule.</li>
         <li>Application logs never contain email bodies and are retained according to our hosting provider's log retention.</li>

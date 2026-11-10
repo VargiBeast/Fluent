@@ -459,7 +459,7 @@ function SecuritySection() {
   const others = sessions.data?.sessions.filter((s) => !s.current).length ?? 0;
   return (
     <>
-      <Panel title="Active sessions" description="Browsers signed in to FLUENT. Sessions expire after 30 days of inactivity." actions={<Button size="sm" variant="ghost" disabled={others === 0} loading={revokeOthers.isPending} onClick={() => revokeOthers.mutate()}>Sign out others</Button>}>
+      <Panel title="Active sessions" description="Browsers signed in to FLUENT. Sessions expire 30 days after sign-in." actions={<Button size="sm" variant="ghost" disabled={others === 0} loading={revokeOthers.isPending} onClick={() => revokeOthers.mutate()}>Sign out others</Button>}>
         {sessions.isLoading ? <Skeleton className="my-3 h-16 w-full" /> : (
           <ul className="divide-y divide-line">
             {sessions.data?.sessions.map((s) => (

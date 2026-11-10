@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { purgeAudit } from "../ai/policy.js";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -49,11 +50,13 @@ authRoutes.get("/session", async (c) => {
     listAccounts(user.id),
     getDb().select().from(userSettings).where(eq(userSettings.userId, user.id)).limit(1),
   ]);
+  const settings = parseSettings(settingsRows[0]?.data);
+  await purgeAudit(user.id, settings.privacy.keepAiHistoryDays);
   return c.json({
     user,
     csrfToken: c.get("csrfToken"),
     onboarded: settingsRows[0]?.onboarded ?? false,
-    settings: parseSettings(settingsRows[0]?.data),
+    settings,
     accounts: accs.map(toPublicAccount),
   });
 });

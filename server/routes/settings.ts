@@ -9,7 +9,7 @@ import { parseSettings, settingsPatchSchema } from "../../shared/settings.js";
 import { getOwnedAccount, listAccounts, logSecurityEvent, toPublicAccount } from "../services/accounts.js";
 import { decrypt } from "../crypto.js";
 import { revokeToken } from "../auth/google.js";
-import { clearAudit, listAudit } from "../ai/policy.js";
+import { clearAudit, listAudit, purgeAudit } from "../ai/policy.js";
 import { rateLimit } from "../lib/rateLimit.js";
 import { badRequest } from "../lib/errors.js";
 
@@ -39,6 +39,7 @@ settingsRoutes.patch("/settings", async (c) => {
     .values({ userId: user.id, data: next, onboarded: onboarded ?? rows[0]?.onboarded ?? false })
     .onConflictDoUpdate({ target: userSettings.userId, set: { data: next, updatedAt: new Date(), ...(onboarded !== undefined ? { onboarded } : {}) } });
   if (patch.ai?.excludedLabels || patch.ai?.excludedSenders) await logSecurityEvent(user.id, "ai_exclusions_updated");
+  if (patch.privacy?.keepAiHistoryDays !== undefined) await purgeAudit(user.id, next.privacy.keepAiHistoryDays);
   if (patch.ai?.enabled !== undefined) await logSecurityEvent(user.id, patch.ai.enabled ? "ai_enabled" : "ai_disabled");
   return c.json({ settings: next });
 });

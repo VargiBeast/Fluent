@@ -20,7 +20,7 @@
     "test:integration": "vitest run --project integration",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx server/db/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env server/db/migrate.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "dependencies": {

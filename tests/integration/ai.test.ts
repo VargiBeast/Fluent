@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Client, startHarness, type Harness } from "./harness.js";
+import postgres from "postgres";
+import { Client, startHarness, TEST_DB_URL, type Harness } from "./harness.js";
 
 let h: Harness;
 let c: Client;
@@ -146,6 +147,15 @@ describe("Privacy dashboard: AI audit log, exclusions, export and deletion", () 
     const text = await res.text();
     expect(text).toContain("alex@fluent.test");
     expect(text).not.toMatch(/refresh|ya29|access_token|v1\.[A-Za-z0-9_-]{10,}\./);
+  });
+
+  it("purges AI history older than the retention window even without new AI use", async () => {
+    await c.json("/api/ai/rewrite", { method: "POST", body: JSON.stringify({ text: "hello", operation: "fix" }) });
+    const sql = postgres(TEST_DB_URL, { onnotice: () => {} });
+    await sql`update ai_audit set created_at = now() - interval '45 days'`;
+    await sql.end();
+    await c.json("/api/auth/session");
+    expect((await c.json<{ entries: unknown[] }>("/api/privacy/audit")).body.entries).toHaveLength(0);
   });
 
   it("keeps no AI history when retention is 0 days", async () => {

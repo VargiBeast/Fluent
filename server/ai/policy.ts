@@ -63,7 +63,13 @@ export async function recordAudit(userId: string, policy: AiPolicy, feature: str
     itemCount: items.length,
     excludedCount,
   });
-  await db.delete(aiAudit).where(and(eq(aiAudit.userId, userId), lt(aiAudit.createdAt, sql`now() - make_interval(days => ${policy.keepDays})`)));
+  await purgeAudit(userId, policy.keepDays);
+}
+
+/** Enforce the user's AI-history retention window (called on writes, reads and session loads). */
+export async function purgeAudit(userId: string, keepDays: number): Promise<void> {
+  if (keepDays <= 0) return;
+  await getDb().delete(aiAudit).where(and(eq(aiAudit.userId, userId), lt(aiAudit.createdAt, sql`now() - make_interval(days => ${keepDays})`)));
 }
 
 export interface AuditEntry {
