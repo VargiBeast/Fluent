@@ -244,6 +244,9 @@ function AppearanceSection() {
       <Row label="Reading pane" description="Open emails next to the list, or full width.">
         <Segmented label="Reading pane" value={s.appearance.readingPane} onChange={(readingPane) => update.mutate({ appearance: { readingPane } })} options={[{ value: "right", label: "Right" }, { value: "full", label: "Full" }]} />
       </Row>
+      <Row label="Undo send" description="Wait a few seconds before sending, so you can take it back.">
+        <Segmented label="Undo send" value={s.compose.undoSendSeconds} onChange={(undoSendSeconds) => update.mutate({ compose: { undoSendSeconds } })} options={[{ value: "0", label: "Off" }, { value: "5", label: "5 s" }, { value: "10", label: "10 s" }, { value: "20", label: "20 s" }]} />
+      </Row>
     </Panel>
   );
 }

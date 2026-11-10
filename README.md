@@ -25,6 +25,7 @@ FLUENT is a fast, keyboard-friendly, three-pane mail client for one or more Gmai
 - Search with Gmail syntax, plus **natural-language search** ("invoice I got last month") that shows the generated Gmail query
 - Gmail filters: create and delete
 - Polling-based sync with in-app and desktop notifications
+- **Undo send**: messages wait 5 s by default (off, 5, 10 or 20 s in Settings → Appearance) with an Undo button. Leaving the page during the window asks first.
 - **Snooze** (later today, tomorrow, weekend, next week) into a Snoozed folder, and **remind me if no reply** for sent mail. Both return automatically on the next sync after they are due, so no cron is needed.
 - **Follow-up radar** in the AI Overview: sent mail still waiting on a reply, and questions you haven't answered, with one-click drafted nudges (confirm first)
 - Keyboard shortcuts (`j`/`k`, `e`, `#`, `r`, `c`, `/`, `g i`, `g o`, `?`, `⌘K` for Copilot) and dark (default), light or system theme

@@ -55,6 +55,22 @@ test("AI quick reply requires explicit confirmation before sending", async () =>
   await expect.poll(async () => (await e2eState(page)).sent).toBe(before + 1);
 });
 
+test("undo send: a reply can be taken back during the delay", async () => {
+  await page.locator('[data-thread-id="t-team"]').click();
+  const before = (await e2eState(page)).sent;
+  const box = page.getByRole("textbox", { name: "Reply text" });
+  await box.fill("Sounds good, will do.");
+  await page.getByRole("button", { name: "Send reply" }).first().click();
+  const undo = page.getByRole("button", { name: "Undo" });
+  await expect(undo).toBeVisible();
+  await shot(page, "22-undo-send");
+  await undo.click();
+  await expect(page.getByText("Sending cancelled")).toBeVisible();
+  await expect(box).toHaveValue("Sounds good, will do.");
+  await page.waitForTimeout(6000);
+  expect((await e2eState(page)).sent).toBe(before);
+});
+
 test("archives with a keyboard shortcut and syncs to Gmail", async () => {
   await page.locator('[data-thread-id="t-school"]').click();
   await expect(page.getByRole("article", { name: /Parent–teacher/ })).toBeVisible();

@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { SnoozeBanner, SnoozeMenu } from "./SnoozeMenu";
+import { sendWithUndo } from "@/lib/undoSend";
 import { Menu, MenuCheckbox, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "@/components/ui/Menu";
 import { EmptyState, Skeleton } from "@/components/ui/misc";
 import { cn } from "@/lib/cn";
@@ -408,19 +409,34 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
       aiGenerated: isAi,
       aiConfirmed,
     };
-    try {
-      await api.post("/compose/send", payload);
-      toast.success("Reply sent");
-      setText("");
-      setAiText(null);
-      setConfirm(false);
-      await qc.invalidateQueries({ queryKey: ["thread", thread.accountId, thread.id] });
-      void qc.invalidateQueries({ queryKey: ["threads"] });
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setSending(false);
-    }
+    const draft = { text, aiText };
+    setConfirm(false);
+    setText("");
+    setAiText(null);
+    sendWithUndo({
+      seconds: Number(session?.settings?.compose?.undoSendSeconds ?? "5"),
+      label: "Sending reply…",
+      onUndo: () => {
+        setText(draft.text);
+        setAiText(draft.aiText);
+        setSending(false);
+        toast("Sending cancelled", { description: "Your reply is back in the box." });
+      },
+      run: async () => {
+        try {
+          await api.post("/compose/send", payload);
+          toast.success("Reply sent");
+          await qc.invalidateQueries({ queryKey: ["thread", thread.accountId, thread.id] });
+          void qc.invalidateQueries({ queryKey: ["threads"] });
+        } catch (err) {
+          setText(draft.text);
+          setAiText(draft.aiText);
+          toast.error(errorMessage(err));
+        } finally {
+          setSending(false);
+        }
+      },
+    });
   };
 
   return (

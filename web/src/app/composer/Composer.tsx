@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
 import { api, errorMessage } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { sendWithUndo } from "@/lib/undoSend";
 import { formatBytes } from "@/lib/format";
 import {
   EMAIL_RE, fileToBase64, fmtAddr, forwardHtml, forwardSubject, htmlToPlain, quoteHtml, replyRecipients, replySubject, textToParagraphs,
@@ -122,6 +123,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(init.draftId ? "saved" : "idle");
   const [dirty, setDirty] = useState(false);
   const [sending, setSending] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [confirmAi, setConfirmAi] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [maximized, setMaximized] = useState(false);
@@ -179,10 +181,10 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
 
   // Autosave 3s after the last change.
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty || hidden) return;
     const t = window.setTimeout(() => void saveDraft(true), 3000);
     return () => window.clearTimeout(t);
-  }, [dirty, saveDraft, to, cc, bcc, subject, attachments]);
+  }, [dirty, hidden, saveDraft, to, cc, bcc, subject, attachments]);
 
   const markDirty = <T,>(set: (v: T) => void) => (v: T) => { set(v); setDirty(true); };
 
@@ -222,18 +224,33 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
     }
     if (!subject.trim() && !window.confirm("Send without a subject?")) return;
     setSending(true);
-    try {
-      await api.post("/compose/send", { ...payload(), aiConfirmed });
-      toast.success("Message sent");
-      void qc.invalidateQueries({ queryKey: ["threads"] });
-      void qc.invalidateQueries({ queryKey: ["drafts"] });
-      if (init.thread) void qc.invalidateQueries({ queryKey: ["thread", init.thread.accountId, init.thread.id] });
-      onClose();
-    } catch (err) {
-      toast.error(errorMessage(err));
-      setSending(false);
-      setConfirmAi(false);
-    }
+    const body = { ...payload(), aiConfirmed };
+    // Hide the composer during the undo window; it stays mounted so Undo restores everything.
+    setHidden(true);
+    setConfirmAi(false);
+    sendWithUndo({
+      seconds: Number(session?.settings?.compose?.undoSendSeconds ?? "5"),
+      label: "Sending message…",
+      onUndo: () => {
+        setHidden(false);
+        setSending(false);
+        toast("Sending cancelled", { description: "Your message is back in the composer." });
+      },
+      run: async () => {
+        try {
+          await api.post("/compose/send", body);
+          toast.success("Message sent");
+          void qc.invalidateQueries({ queryKey: ["threads"] });
+          void qc.invalidateQueries({ queryKey: ["drafts"] });
+          if (init.thread) void qc.invalidateQueries({ queryKey: ["thread", init.thread.accountId, init.thread.id] });
+          onClose();
+        } catch (err) {
+          toast.error(errorMessage(err));
+          setHidden(false);
+          setSending(false);
+        }
+      },
+    });
   };
 
   const addFiles = async (files: FileList | null) => {
@@ -292,6 +309,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
       role="dialog"
       aria-label={title}
       aria-modal="false"
+      hidden={hidden}
       onKeyDown={onKeyDown}
       className={cn(
         "fixed z-40 flex flex-col overflow-hidden border border-line-strong bg-surface shadow-[var(--shadow)] animate-in",
