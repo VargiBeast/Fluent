@@ -180,10 +180,18 @@
   --color-ai-title: var(--ai-title);
 }
 
+/* Safe-area insets as variables so e2e can emulate a notched, installed iPhone. */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  background: var(--bg);
+}
 html, body, #root { height: 100%; }
-/* Installed (standalone) on notched phones: keep content clear of the status bar, notch and home indicator. */
+/* Installed (standalone) on notched phones: keep content clear of the status bar, notch and home indicator.
+   The strip under the status bar is the solid app background, never a blurred or translucent layer. */
 #root {
-  padding-top: env(safe-area-inset-top);
+  min-height: 100dvh;
+  padding-top: var(--sat);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }

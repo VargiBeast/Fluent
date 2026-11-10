@@ -56,8 +56,8 @@ function Shell() {
       </aside>
       <RD.Root open={drawer} onOpenChange={setDrawer}>
         <RD.Portal>
-          <RD.Overlay className="fixed inset-0 z-40 bg-black/50 lg:hidden" />
-          <RD.Content className="fixed inset-y-0 left-0 z-50 w-[290px] max-w-[85vw] border-r border-line bg-surface shadow-[var(--shadow)] animate-in lg:hidden" aria-describedby={undefined}>
+          <RD.Overlay data-drawer-overlay="" className="fixed inset-x-0 top-0 z-40 h-[100dvh] min-h-full bg-black/55 lg:hidden" />
+          <RD.Content className="fixed left-0 top-0 z-50 box-border flex h-[100dvh] min-h-full w-[290px] max-w-[85vw] flex-col border-r border-line bg-surface pb-[var(--sab)] pt-[var(--sat)] shadow-[var(--shadow)] animate-in lg:hidden" aria-describedby={undefined}>
             <RD.Title className="sr-only">Navigation</RD.Title>
             <Sidebar onNavigate={() => setDrawer(false)} />
           </RD.Content>

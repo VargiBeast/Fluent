@@ -125,7 +125,7 @@ export function NewslettersPage() {
                   <AlertTriangle className="size-4 text-warning" aria-hidden /> Some accounts couldn't be read: {q.data.errors.map((e) => e.message).join(" ")}
                 </p>
               )}
-              <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/95 px-3 py-2 backdrop-blur">
+              <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2">
                 <span className="text-[12.5px] text-fg-3">
                   {senders.length} sender{senders.length === 1 ? "" : "s"} · {q.data.sample.messages.toLocaleString()} emails scanned{q.data.sample.truncated ? ` (latest ${q.data.sample.limit} per account)` : ""}
                 </span>

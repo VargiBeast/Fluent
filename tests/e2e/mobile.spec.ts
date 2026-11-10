@@ -25,7 +25,21 @@ test("mobile: landing, inbox, reader, navigation drawer, overview and privacy", 
   await page.getByRole("button", { name: "Open navigation" }).first().click();
   const drawer = page.getByRole("dialog", { name: "Navigation" });
   await expect(drawer).toBeVisible();
+  // Installed iPhone: the drawer's solid background runs edge to edge behind the status bar and home indicator.
+  await page.evaluate(() => { document.documentElement.style.setProperty("--sat", "47px"); document.documentElement.style.setProperty("--sab", "34px"); });
+  const vh = page.viewportSize()!.height;
+  await expect.poll(async () => Math.round((await drawer.boundingBox())!.y)).toBe(0); // after the open animation
+  const box = (await drawer.boundingBox())!;
+  expect(Math.round(box.height)).toBe(vh);
+  const styles = await drawer.evaluate((el) => { const c = getComputedStyle(el); return [c.paddingTop, c.paddingBottom, c.backgroundColor]; });
+  expect(styles.slice(0, 2)).toEqual(["47px", "34px"]);
+  expect(styles[2]).not.toMatch(/rgba\(.*, 0(\.\d+)?\)$/); // opaque
+  const overlay = page.locator("[data-drawer-overlay]");
+  expect(await overlay.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe("none");
+  expect(Math.round((await overlay.boundingBox())!.height)).toBe(vh);
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById("root")!).paddingTop)).toBe("47px");
   await shot(page, "12-mobile-drawer");
+  await page.evaluate(() => { document.documentElement.style.removeProperty("--sat"); document.documentElement.style.removeProperty("--sab"); });
   await drawer.getByRole("link", { name: /AI Overview/ }).click();
   await expect(page.getByRole("heading", { name: "AI Overview" })).toBeVisible();
   await expect(drawer).toBeHidden();

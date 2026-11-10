@@ -16,7 +16,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
       <RD.Portal>
-        <RD.Overlay className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] animate-in" />
+        <RD.Overlay className="fixed inset-0 z-50 bg-black/60 animate-in" />
         <RD.Content
           className={cn(
             "fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-2xl border border-line-strong bg-surface p-5 shadow-[var(--shadow)] animate-in scroll-thin",
