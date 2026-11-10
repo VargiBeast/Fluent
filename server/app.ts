@@ -12,7 +12,8 @@ import { mailRoutes } from "./routes/mail.js";
 import { composeRoutes } from "./routes/compose.js";
 import { aiRoutes } from "./routes/ai.js";
 import { settingsRoutes } from "./routes/settings.js";
-import { hasDatabase } from "./db/client.js";
+import { sql } from "drizzle-orm";
+import { getDb, hasDatabase } from "./db/client.js";
 
 export function createApp() {
   const app = new Hono<AppEnv>().basePath("/api");
@@ -38,6 +39,17 @@ export function createApp() {
   });
 
   app.get("/health", (c) => c.json({ ok: true }));
+  // Readiness: proves the DB is reachable and the app role can query the schema. Never leaks errors.
+  app.get("/ready", async (c) => {
+    if (!hasDatabase()) return c.json({ ok: false, database: "not_configured" }, 503);
+    try {
+      await getDb().execute(sql`select 1 from "users" limit 1`);
+      return c.json({ ok: true, database: "ok" });
+    } catch (err) {
+      logger.warn({ err: { name: (err as Error).name, code: (err as { code?: string }).code } }, "readiness_db_error");
+      return c.json({ ok: false, database: "error" }, 503);
+    }
+  });
   app.get("/config", (c) =>
     c.json({
       google: googleConfigured(),

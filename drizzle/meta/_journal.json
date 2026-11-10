@@ -15,6 +15,13 @@
       "when": 1794325500558,
       "tag": "0001_lockdown",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794330000000,
+      "tag": "0002_app_role",
+      "breakpoints": true
     }
   ]
 }

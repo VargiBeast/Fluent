@@ -33,7 +33,7 @@ Migrations are not run during the build. Run them from a trusted machine before 
 DATABASE_URL='postgres://…' DATABASE_SSL=require pnpm db:migrate
 ```
 
-They are idempotent (Drizzle tracks applied migrations in the `drizzle` schema).
+They are idempotent (Drizzle tracks applied migrations in the `drizzle` schema). Run them with the owner (`postgres`) connection string, not the app's restricted `DATABASE_URL`. If you use a least-privilege app role, create the `fluent_app` login role **before** running migrations so `0002_app_role.sql` can grant it access. Without that role, the migration does nothing.
 
 ## Google OAuth redirect URIs
 
@@ -55,6 +55,12 @@ When `APP_URL` starts with `https://`, the session cookie is `__Host-fluent_sess
 
 ## Preview deployments of the `rebuild` branch
 
-At the time of writing, preview deployments for `rebuild` exist in the Vercel project but are in state **BLOCKED** with Vercel's "team configuration" reason, meaning that the commit author (`grok-bot@users.noreply.github.com`) is not a member of the Vercel team. The project owner must either allow these commits (see the [Vercel docs](https://vercel.com/docs/deployments/troubleshoot-project-collaboration#team-configuration)) or redeploy the commit from the Vercel dashboard. A Vercel build of this branch has therefore not been verified yet.
+Commits on `rebuild` are authored by the repository owner so Vercel builds them (earlier commits by a non-member author were **BLOCKED** by Vercel's team configuration). The branch alias is `https://fluent-git-rebuild-vargs-projects-93e3d823.vercel.app`.
 
-<!-- Preview build trigger: commits on this branch are authored by the repository owner. -->
+The preview uses a Supabase Postgres database:
+
+- Migrations `0000`–`0002` are applied; every table has RLS enabled and `anon`/`authenticated` have no table privileges.
+- The app connects through the Supabase transaction pooler (port 6543) as a dedicated login role, `fluent_app`. It is not a superuser, has no `BYPASSRLS`, and has only `SELECT/INSERT/UPDATE/DELETE` on the app tables, which migration `0002_app_role.sql` grants together with a `fluent_app_all` RLS policy. The role and its password are created outside the repo; migrations run as `postgres`.
+- Preview-only variables, scoped to the `rebuild` branch: `DATABASE_URL` (sensitive), `DATABASE_SSL=require`, `TOKEN_ENCRYPTION_KEY` (sensitive), `APP_URL`. No Google or xAI variables are set yet, so sign-in and AI stay disabled on the preview.
+
+`GET /api/health` is a liveness check with no dependencies. `GET /api/ready` runs a trivial query against `users` and returns `{"ok":true,"database":"ok"}`, or a 503 with `"not_configured"` or `"error"` (details are logged, never returned).
