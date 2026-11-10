@@ -1,3 +1,4 @@
+import { capabilitiesOf, providerKind, type ProviderCapabilities, type ProviderKind } from "../providers/index.js";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import { accounts, securityEvents, userSettings, users } from "../db/schema.js";
@@ -18,6 +19,8 @@ export interface PublicAccount {
   color: string | null;
   lastSyncedAt: string | null;
   createdAt: string;
+  provider: ProviderKind;
+  capabilities: ProviderCapabilities;
 }
 
 export function toPublicAccount(a: AccountRow): PublicAccount {
@@ -31,6 +34,8 @@ export function toPublicAccount(a: AccountRow): PublicAccount {
     color: a.color,
     lastSyncedAt: a.lastSyncedAt?.toISOString() ?? null,
     createdAt: a.createdAt.toISOString(),
+    provider: providerKind(a),
+    capabilities: capabilitiesOf(a),
   };
 }
 
