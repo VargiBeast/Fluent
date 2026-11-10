@@ -71,6 +71,13 @@
       "when": 1794346171183,
       "tag": "0009_account_last_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794347408551,
+      "tag": "0010_account_providers",
+      "breakpoints": true
     }
   ]
 }

@@ -18,7 +18,10 @@ type Query = Record<string, string | number | boolean | string[] | undefined>;
 export class GmailClient {
   private token: string | null = null;
 
-  constructor(public readonly account: AccountRow) {}
+  constructor(public readonly account: AccountRow) {
+    // Gmail-only features (send-as, filters, unsubscribe, stats, ...) fail clearly on other providers.
+    if ((account.provider ?? "gmail") !== "gmail") throw new HttpError(400, "not_supported_for_provider", "This feature is only available for Gmail accounts.");
+  }
 
   private aad(): string {
     return `${this.account.userId}:${this.account.googleSub}`;

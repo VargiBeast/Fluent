@@ -36,6 +36,17 @@ const SECTIONS = [
   { id: "about", label: "About", icon: Info },
 ] as const;
 type SectionId = (typeof SECTIONS)[number]["id"];
+
+/** Gmail-only settings (labels & filters, signatures and send-as name) are hidden when no connected account supports them. */
+function useCaps() {
+  const accounts = useSession().session?.accounts ?? [];
+  const has = (k: "labels" | "filters" | "sendAs") => accounts.some((a) => a.capabilities?.[k] ?? true);
+  return { labels: has("labels") || has("filters"), sendAs: has("sendAs") };
+}
+function useSections() {
+  const caps = useCaps();
+  return SECTIONS.filter((s) => s.id !== "labels" || caps.labels).map((s) => (s.id === "templates" && !caps.sendAs ? { ...s, label: "Templates" } : s));
+}
 /** Old section links that moved: signatures live with templates; profile, accounts, security and data on the Account page. */
 const MOVED: Record<string, string> = { signatures: "/app/settings/templates", profile: "/app/account", accounts: "/app/account#accounts", security: "/app/account#sessions", data: "/app/account#data" };
 
@@ -43,16 +54,17 @@ export function SettingsPage() {
   const { section } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const sections = useSections();
   if (!section) return <SettingsIndex />;
   if (MOVED[section]) return <Navigate to={MOVED[section] + (MOVED[section].includes("#") ? "" : location.search)} replace />;
-  const meta = SECTIONS.find((s) => s.id === section);
+  const meta = sections.find((s) => s.id === section);
   if (!meta) return <Navigate to="/app/settings/general" replace />;
   return (
     <div className="flex h-full min-h-0">
       <nav aria-label="Settings sections" className="hidden w-[248px] shrink-0 flex-col gap-0.5 overflow-y-auto px-3 py-4 scroll-thin md:flex">
         <h2 className="px-3 pb-2 text-[20px] font-semibold text-fg">Settings</h2>
         <AccountLink compact />
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <NavLink key={s.id} to={`/app/settings/${s.id}`} className={({ isActive }) => cn("flex h-9 items-center gap-3 rounded-full px-3 text-[13.5px] transition-colors", isActive ? "bg-accent-soft font-medium text-fg" : "text-fg-2 hover:bg-surface-2 hover:text-fg")}>
             <s.icon className="size-4 text-fg-3" aria-hidden />{s.label}
           </NavLink>
@@ -115,6 +127,7 @@ function AccountLink({ compact = false }: { compact?: boolean }) {
 }
 
 function SettingsIndex() {
+  const sections = useSections();
   const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
   if (isDesktop) return <Navigate to="/app/settings/general" replace />;
   return (
@@ -126,7 +139,7 @@ function SettingsIndex() {
       <div className="scroll-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-8 pt-1">
         <AccountLink />
         <nav aria-label="Settings sections" className="overflow-hidden rounded-2xl bg-surface">
-          {SECTIONS.map((s, i) => (
+          {sections.map((s, i) => (
             <Link key={s.id} to={`/app/settings/${s.id}`} className="flex items-center gap-3 px-4 hover:bg-surface-2">
               <s.icon className="size-[18px] shrink-0 text-fg-2" aria-hidden />
               <span className={cn("flex min-h-[50px] flex-1 items-center justify-between gap-2 text-[15px] text-fg", i > 0 && "border-t border-line")}>
@@ -140,6 +153,11 @@ function SettingsIndex() {
   );
 }
 
+function TemplatesAndSignatures() {
+  const { sendAs } = useCaps();
+  return <><TemplatesSection />{sendAs && <SignaturesSection />}</>;
+}
+
 function Section({ id }: { id: SectionId }) {
   switch (id) {
     case "general": return <GeneralSection />;
@@ -148,7 +166,7 @@ function Section({ id }: { id: SectionId }) {
     case "ai": return <AiSection />;
     case "privacy": return <PrivacySection />;
     case "shortcuts": return <ShortcutsSection />;
-    case "templates": return <><TemplatesSection /><SignaturesSection /></>;
+    case "templates": return <TemplatesAndSignatures />;
     case "labels": return <LabelsFiltersSection />;
     case "about": return <AboutSection />;
   }

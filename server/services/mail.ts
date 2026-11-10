@@ -1,44 +1,19 @@
-import { eq } from "drizzle-orm";
-import { getDb } from "../db/client.js";
-import { accounts } from "../db/schema.js";
-import { GmailClient, mapLimit } from "../gmail/client.js";
-import { decodeB64Url, parseMessage, summarizeThread, type GmailMessage, type GmailThread } from "../gmail/parse.js";
-import type { Category, DraftSummary, Folder, GmailLabel, ThreadAction, ThreadDetail, ThreadPage, ThreadSummary } from "../../shared/mail.js";
+import { GmailClient } from "../gmail/client.js";
+import type { Category, DraftSummary, Folder, ThreadAction, ThreadDetail, ThreadPage, ThreadSummary } from "../../shared/mail.js";
 import { HttpError, badRequest } from "../lib/errors.js";
 import { getOwnedAccount, listAccounts, type AccountRow } from "./accounts.js";
+import { capabilitiesOf, gmailOnlyError, providerFor } from "../providers/index.js";
+import { assertMailId, folderQuery, MAIL_ID } from "../providers/gmail.js";
 
-const META_HEADERS = ["From", "To", "Cc", "Subject", "Date"];
-export const GMAIL_ID = /^[A-Za-z0-9_-]{1,128}$/;
+// Mail ids are opaque, URL-safe strings for every provider (Gmail ids; other providers encode theirs the same way).
+export const GMAIL_ID = MAIL_ID;
+export const assertGmailId = assertMailId;
+export { folderQuery };
 
-export function assertGmailId(id: string, what = "id"): string {
-  if (!GMAIL_ID.test(id)) throw badRequest(`Invalid ${what}`);
-  return id;
-}
-
-const CATEGORY_LABEL: Record<Category, string> = {
-  primary: "CATEGORY_PERSONAL",
-  promotions: "CATEGORY_PROMOTIONS",
-  social: "CATEGORY_SOCIAL",
-  updates: "CATEGORY_UPDATES",
-  forums: "CATEGORY_FORUMS",
-};
-
-export function folderQuery(folder: Folder, category?: Category, labelId?: string): { labelIds: string[]; q: string; includeSpamTrash: boolean } {
-  if (labelId) return { labelIds: [assertGmailId(labelId, "label")], q: "", includeSpamTrash: false };
-  switch (folder) {
-    case "inbox": return { labelIds: ["INBOX", ...(category ? [CATEGORY_LABEL[category]] : [])], q: "", includeSpamTrash: false };
-    case "starred": return { labelIds: ["STARRED"], q: "", includeSpamTrash: false };
-    case "snoozed": return { labelIds: [], q: "label:snoozed", includeSpamTrash: false };
-    // Read later is a FLUENT list, not a Gmail query: /mail/threads serves it from services/readLater.ts.
-    case "later": throw badRequest("Read later is not a Gmail folder");
-    case "important": return { labelIds: ["IMPORTANT"], q: "", includeSpamTrash: false };
-    case "sent": return { labelIds: ["SENT"], q: "", includeSpamTrash: false };
-    case "drafts": return { labelIds: ["DRAFT"], q: "", includeSpamTrash: false };
-    case "archive": return { labelIds: [], q: "-in:inbox -in:spam -in:trash -in:drafts -in:sent -in:chats", includeSpamTrash: false };
-    case "spam": return { labelIds: ["SPAM"], q: "", includeSpamTrash: true };
-    case "trash": return { labelIds: ["TRASH"], q: "", includeSpamTrash: true };
-    case "all": return { labelIds: [], q: "", includeSpamTrash: false };
-  }
+/** A Gmail REST client for Gmail-only features (labels, filters); other providers get a clear 400. */
+function gmailClient(a: AccountRow): GmailClient {
+  if (!capabilitiesOf(a).filters) throw gmailOnlyError();
+  return new GmailClient(a);
 }
 
 function encodeCursor(c: Record<string, string | null>): string | null {
@@ -76,8 +51,9 @@ export interface ListParams {
 export async function listThreads(userId: string, p: ListParams): Promise<ThreadPage> {
   const accs = await resolveAccounts(userId, p.account);
   const cursor = decodeCursor(p.cursor);
-  const fq = folderQuery(p.folder, p.category, p.label);
-  const q = [fq.q, p.q?.trim()].filter(Boolean).join(" ");
+  if (p.folder === "later") throw badRequest("Read later is not a Gmail folder");
+  const folder = p.folder;
+  if (p.label) assertMailId(p.label, "label");
   const perAccount = accs.length > 1 ? Math.max(10, Math.ceil(p.limit / accs.length) + 5) : p.limit;
   const nextCursor: Record<string, string | null> = {};
   const errors: ThreadPage["errors"] = [];
@@ -89,15 +65,15 @@ export async function listThreads(userId: string, p: ListParams): Promise<Thread
       return [];
     }
     try {
-      const gm = new GmailClient(a);
-      const list = await gm.request<{ threads?: Array<{ id: string }>; nextPageToken?: string }>("GET", "/threads", {
-        query: { labelIds: fq.labelIds, q: q || undefined, maxResults: perAccount, pageToken: pageToken ?? undefined, includeSpamTrash: fq.includeSpamTrash || undefined },
-      });
-      nextCursor[a.id] = list.nextPageToken ?? null;
-      const threads = await mapLimit(list.threads ?? [], 8, (t) =>
-        gm.request<GmailThread>("GET", `/threads/${t.id}`, { query: { format: "metadata", metadataHeaders: META_HEADERS } }).catch(() => null),
-      );
-      return threads.filter((t): t is GmailThread => t !== null).map((t) => summarizeThread(t, a.id, a.email));
+      const caps = capabilitiesOf(a);
+      // Gmail-only views (categories, Gmail labels) simply have nothing to show on other providers.
+      if ((p.category && !caps.categories) || (p.label && !caps.labels)) {
+        nextCursor[a.id] = null;
+        return [];
+      }
+      const r = await providerFor(a).listThreads({ folder, category: p.category, label: p.label, q: p.q, pageToken: pageToken ?? undefined, limit: perAccount });
+      nextCursor[a.id] = r.nextPageToken;
+      return r.threads;
     } catch (err) {
       nextCursor[a.id] = null;
       errors.push({ accountId: a.id, code: err instanceof HttpError ? err.code : "error", message: err instanceof HttpError ? err.message : "Could not load this account." });
@@ -114,49 +90,11 @@ export async function listThreads(userId: string, p: ListParams): Promise<Thread
 }
 
 export async function getThread(userId: string, accountId: string, threadId: string): Promise<ThreadDetail> {
-  const a = await getOwnedAccount(userId, accountId);
-  const t = await new GmailClient(a).request<GmailThread>("GET", `/threads/${assertGmailId(threadId)}`, { query: { format: "full" } });
-  const messages = (t.messages ?? []).map((m) => parseMessage(m, a.email));
-  const labelIds = [...new Set(messages.flatMap((m) => m.labelIds))];
-  const firstReal = messages.find((m) => !m.isDraft) ?? messages[0];
-  return {
-    id: t.id,
-    accountId: a.id,
-    accountEmail: a.email,
-    subject: firstReal?.subject || "(no subject)",
-    labelIds,
-    starred: labelIds.includes("STARRED"),
-    important: labelIds.includes("IMPORTANT"),
-    unread: messages.some((m) => m.unread),
-    inTrash: labelIds.includes("TRASH"),
-    inInbox: labelIds.includes("INBOX"),
-    messages,
-  };
+  return providerFor(await getOwnedAccount(userId, accountId)).getThread(threadId);
 }
 
-const ACTIONS: Record<ThreadAction, { add?: string[]; remove?: string[]; trash?: boolean; untrash?: boolean }> = {
-  star: { add: ["STARRED"] },
-  unstar: { remove: ["STARRED"] },
-  read: { remove: ["UNREAD"] },
-  unread: { add: ["UNREAD"] },
-  archive: { remove: ["INBOX"] },
-  inbox: { add: ["INBOX"], remove: ["SPAM"] },
-  important: { add: ["IMPORTANT"] },
-  unimportant: { remove: ["IMPORTANT"] },
-  trash: { trash: true },
-  untrash: { untrash: true },
-  spam: { add: ["SPAM"], remove: ["INBOX"] },
-  notspam: { add: ["INBOX"], remove: ["SPAM"] },
-};
-
 export async function threadAction(userId: string, accountId: string, threadId: string, action: ThreadAction): Promise<void> {
-  const a = await getOwnedAccount(userId, accountId);
-  const gm = new GmailClient(a);
-  const id = assertGmailId(threadId);
-  const spec = ACTIONS[action];
-  if (spec.trash) return void (await gm.request("POST", `/threads/${id}/trash`));
-  if (spec.untrash) return void (await gm.request("POST", `/threads/${id}/untrash`));
-  await gm.request("POST", `/threads/${id}/modify`, { body: { addLabelIds: spec.add ?? [], removeLabelIds: spec.remove ?? [] } });
+  await providerFor(await getOwnedAccount(userId, accountId)).threadAction(threadId, action);
 }
 
 export const BULK_MAX = 100;
@@ -184,46 +122,16 @@ export async function bulkAction(userId: string, p: { items: Array<{ accountId: 
   let ok = 0;
   let failed = 0;
   for (const [accountId, threadIds] of byAcc) {
-    const gm = new GmailClient(await getOwnedAccount(userId, accountId));
-    if (p.action === "trash" || p.action === "untrash") {
-      await mapLimit(threadIds, 5, async (id) => {
-        try { await gm.request("POST", `/threads/${id}/${p.action}`); ok++; } catch { failed++; }
-      });
-      continue;
-    }
-    if (labelId) {
-      const { labels } = await gm.request<{ labels?: Array<{ id: string; type: string }> }>("GET", "/labels");
-      if (!(labels ?? []).some((l) => l.id === labelId && l.type === "user")) throw badRequest("Unknown label");
-    }
-    const spec = p.action === "label_add" ? { add: [labelId!] } : p.action === "label_remove" ? { remove: [labelId!] } : ACTIONS[p.action];
-    const msgIds: string[] = [];
-    const okThreads: string[] = [];
-    await mapLimit(threadIds, 5, async (id) => {
-      try {
-        const t = await gm.request<{ messages?: Array<{ id: string }> }>("GET", `/threads/${id}`, { query: { format: "minimal" } });
-        msgIds.push(...(t.messages ?? []).map((m) => m.id));
-        okThreads.push(id);
-      } catch { failed++; }
-    });
-    for (let i = 0; i < msgIds.length; i += 1000) {
-      await gm.request("POST", "/messages/batchModify", { body: { ids: msgIds.slice(i, i + 1000), addLabelIds: spec.add ?? [], removeLabelIds: spec.remove ?? [] } });
-    }
-    ok += okThreads.length;
+    const provider = providerFor(await getOwnedAccount(userId, accountId));
+    const r = await provider.bulk(threadIds, labelId ? { kind: "label", labelId, add: p.action === "label_add" } : { kind: "action", action: p.action as ThreadAction });
+    ok += r.ok;
+    failed += r.failed;
   }
   return { ok, failed, undo: { action: BULK_INVERSE[p.action], ...(labelId ? { labelId } : {}) } };
 }
 
-const SYSTEM_MUTABLE = new Set(["STARRED", "UNREAD", "IMPORTANT", "INBOX"]);
-
 export async function modifyLabels(userId: string, accountId: string, threadId: string, add: string[], remove: string[]): Promise<void> {
-  const a = await getOwnedAccount(userId, accountId);
-  const gm = new GmailClient(a);
-  const { labels } = await gm.request<{ labels?: Array<{ id: string; type: string }> }>("GET", "/labels");
-  const userLabels = new Set((labels ?? []).filter((l) => l.type === "user").map((l) => l.id));
-  for (const l of [...add, ...remove]) {
-    if (!userLabels.has(l) && !SYSTEM_MUTABLE.has(l)) throw badRequest("Unknown label");
-  }
-  await gm.request("POST", `/threads/${assertGmailId(threadId)}/modify`, { body: { addLabelIds: add, removeLabelIds: remove } });
+  await providerFor(await getOwnedAccount(userId, accountId)).modifyLabels(threadId, add, remove);
 }
 
 export async function getLabels(userId: string, accountParam?: string) {
@@ -231,25 +139,8 @@ export async function getLabels(userId: string, accountParam?: string) {
   return {
     accounts: await Promise.all(accs.map(async (a) => {
       try {
-        const gm = new GmailClient(a);
-        const { labels } = await gm.request<{ labels?: Array<{ id: string; name: string; type: string; color?: GmailLabel["color"] }> }>("GET", "/labels");
-        const counted = await mapLimit(["INBOX", "DRAFT", "SPAM", "STARRED", "IMPORTANT"], 5, (id) =>
-          gm.request<{ id: string; threadsUnread?: number; threadsTotal?: number }>("GET", `/labels/${id}`).catch(() => null),
-        );
-        const counts: Record<string, number> = {};
-        for (const c of counted) {
-          if (!c) continue;
-          counts[c.id] = c.id === "DRAFT" ? (c.threadsTotal ?? 0) : (c.threadsUnread ?? 0);
-        }
-        return {
-          accountId: a.id,
-          labels: (labels ?? [])
-            .filter((l) => l.type === "user")
-            .map((l) => ({ id: l.id, name: l.name, type: "user" as const, color: l.color ?? null }))
-            .sort((x, y) => x.name.localeCompare(y.name)),
-          counts,
-          error: null as string | null,
-        };
+        const { labels, counts } = await providerFor(a).labels();
+        return { accountId: a.id, labels, counts, error: null as string | null };
       } catch (err) {
         return { accountId: a.id, labels: [], counts: {}, error: err instanceof HttpError ? err.code : "error" };
       }
@@ -258,17 +149,17 @@ export async function getLabels(userId: string, accountParam?: string) {
 }
 
 export async function createLabel(userId: string, accountId: string, name: string) {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+  const gm = gmailClient(await getOwnedAccount(userId, accountId));
   return gm.request<{ id: string; name: string }>("POST", "/labels", { body: { name, labelListVisibility: "labelShow", messageListVisibility: "show" } });
 }
 
 export async function renameLabel(userId: string, accountId: string, labelId: string, name: string) {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+  const gm = gmailClient(await getOwnedAccount(userId, accountId));
   return gm.request<{ id: string; name: string }>("PATCH", `/labels/${assertGmailId(labelId, "label")}`, { body: { name } });
 }
 
 export async function deleteLabel(userId: string, accountId: string, labelId: string) {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+  const gm = gmailClient(await getOwnedAccount(userId, accountId));
   await gm.request("DELETE", `/labels/${assertGmailId(labelId, "label")}`);
 }
 
@@ -278,63 +169,32 @@ export interface FilterSpec {
 }
 
 export async function listFilters(userId: string, accountId: string) {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+  const gm = gmailClient(await getOwnedAccount(userId, accountId));
   const r = await gm.request<{ filter?: Array<{ id: string } & FilterSpec> }>("GET", "/settings/filters");
   return r.filter ?? [];
 }
 
 export async function createFilter(userId: string, accountId: string, spec: FilterSpec) {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+  const gm = gmailClient(await getOwnedAccount(userId, accountId));
   return gm.request<{ id: string } & FilterSpec>("POST", "/settings/filters", { body: spec });
 }
 
 export async function deleteFilter(userId: string, accountId: string, filterId: string) {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
+  const gm = gmailClient(await getOwnedAccount(userId, accountId));
   await gm.request("DELETE", `/settings/filters/${assertGmailId(filterId, "filter")}`);
 }
 
 export async function getAttachment(userId: string, accountId: string, messageId: string, attachmentId: string): Promise<Buffer> {
-  const gm = new GmailClient(await getOwnedAccount(userId, accountId));
-  const r = await gm.request<{ data?: string }>("GET", `/messages/${assertGmailId(messageId)}/attachments/${assertGmailId(attachmentId.slice(0, 128), "attachment")}`);
-  return decodeB64Url(r.data ?? "");
+  return providerFor(await getOwnedAccount(userId, accountId)).getAttachment(messageId, attachmentId);
 }
 
-/** Incremental change detection via history.list; first call stores a baseline historyId. */
+/** Incremental change detection per account (Gmail: history.list). */
 export async function syncChanges(userId: string): Promise<{ changed: boolean; newInbox: number; accounts: Array<{ accountId: string; changed: boolean; newInbox: number; error?: string }> }> {
   const accs = (await listAccounts(userId)).filter((a) => a.status === "active");
   const results = await Promise.all(accs.map(async (a) => {
-    const gm = new GmailClient(a);
     try {
-      if (!a.historyId) {
-        const p = await gm.request<{ historyId: string }>("GET", "/profile");
-        await getDb().update(accounts).set({ historyId: p.historyId, lastSyncedAt: new Date() }).where(eq(accounts.id, a.id));
-        return { accountId: a.id, changed: false, newInbox: 0 };
-      }
-      let changed = false;
-      let newInbox = 0;
-      let pageToken: string | undefined;
-      let latest = a.historyId;
-      let pages = 0;
-      do {
-        const h = await gm.request<{ history?: Array<{ messagesAdded?: Array<{ message: { labelIds?: string[] } }> }>; historyId: string; nextPageToken?: string }>("GET", "/history", {
-          query: { startHistoryId: a.historyId, pageToken, maxResults: 200 },
-        });
-        latest = h.historyId;
-        if (h.history?.length) changed = true;
-        for (const rec of h.history ?? []) {
-          for (const added of rec.messagesAdded ?? []) if (added.message.labelIds?.includes("INBOX")) newInbox++;
-        }
-        pageToken = h.nextPageToken;
-      } while (pageToken && ++pages < 5);
-      await getDb().update(accounts).set({ historyId: latest, lastSyncedAt: new Date() }).where(eq(accounts.id, a.id));
-      return { accountId: a.id, changed, newInbox };
+      return { accountId: a.id, ...(await providerFor(a).sync()) };
     } catch (err) {
-      if (err instanceof HttpError && err.status === 404) {
-        // History too old: reset baseline and ask the client to refresh everything.
-        const p = await gm.request<{ historyId: string }>("GET", "/profile");
-        await getDb().update(accounts).set({ historyId: p.historyId, lastSyncedAt: new Date() }).where(eq(accounts.id, a.id));
-        return { accountId: a.id, changed: true, newInbox: 0 };
-      }
       return { accountId: a.id, changed: false, newInbox: 0, error: err instanceof HttpError ? err.code : "error" };
     }
   }));
@@ -343,18 +203,6 @@ export async function syncChanges(userId: string): Promise<{ changed: boolean; n
 
 export async function listDrafts(userId: string, accountParam?: string): Promise<DraftSummary[]> {
   const accs = await resolveAccounts(userId, accountParam);
-  const all = await Promise.all(accs.map(async (a) => {
-    const gm = new GmailClient(a);
-    try {
-      const r = await gm.request<{ drafts?: Array<{ id: string; message: { id: string; threadId: string } }> }>("GET", "/drafts", { query: { maxResults: 50 } });
-      const full = await mapLimit(r.drafts ?? [], 8, (d) => gm.request<{ id: string; message: GmailMessage }>("GET", `/drafts/${d.id}`, { query: { format: "full" } }).catch(() => null));
-      return full.filter((d): d is { id: string; message: GmailMessage } => d !== null).map((d) => {
-        const m = parseMessage(d.message, a.email);
-        return { draftId: d.id, messageId: m.id, threadId: m.threadId, accountId: a.id, to: m.to, subject: m.subject, snippet: (m.bodyText ?? "").slice(0, 140), date: m.date };
-      });
-    } catch {
-      return [];
-    }
-  }));
+  const all = await Promise.all(accs.map((a) => providerFor(a).listDrafts().catch(() => [] as DraftSummary[])));
   return all.flat().sort((x, y) => y.date.localeCompare(x.date));
 }
