@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { AlarmClock, AlertCircle, Clock, Hourglass, Inbox, Menu, MessageSquareReply, RefreshCw, Sparkles, Star } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { AlarmClock, AlertCircle, Clock, FilePen, HelpCircle, Hourglass, Inbox, Menu, MessageSquareReply, Radar, RefreshCw, Sparkles, Star } from "lucide-react";
+import type { CopilotReply, PlanPreview } from "@shared/copilot";
+import { Dialog } from "@/components/ui/Dialog";
+import { PlanCard } from "./copilot/Copilot";
 import type { ThreadSummary } from "@shared/mail";
 import { api, errorMessage } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -17,6 +21,7 @@ interface OverviewData {
   stats: { unread: number; needsReply: number; waiting: number; important: number; total: number };
   needsReply: ThreadSummary[];
   waiting: ThreadSummary[];
+  questions?: ThreadSummary[];
   important: ThreadSummary[];
   ai: { headline: string; items: Array<{ thread: ThreadSummary; category: string; reason: string; due: string | null }> } | null;
   aiStatus: "ok" | "not_configured" | "disabled" | "error";
@@ -77,6 +82,7 @@ export function OverviewPage() {
                 <Stat icon={<Hourglass className="size-4" />} label="Waiting on others" value={d.stats.waiting} to="/app/sent" />
                 <Stat icon={<Star className="size-4" />} label="Important & starred" value={d.stats.important} to="/app/important" />
               </div>
+              <FollowUpRadar waiting={d.waiting} questions={d.questions ?? []} aiOn={d.aiStatus !== "not_configured" && d.aiStatus !== "disabled"} />
               <div className="grid gap-4 lg:grid-cols-2">
                 <ThreadSection title="Needs your reply" icon={<MessageSquareReply className="size-4" />} threads={d.needsReply} empty="You're all caught up — nothing is waiting on you." />
                 <ThreadSection title="Waiting on others" icon={<Clock className="size-4" />} threads={d.waiting} folder="sent" empty="No sent emails are waiting for an answer." note="You sent the last message more than 2 days ago." />
@@ -185,5 +191,62 @@ function OverviewSkeleton() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-[var(--radius-card)]" />)}</div>
       <div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-64 rounded-[var(--radius-card)]" /><Skeleton className="h-64 rounded-[var(--radius-card)]" /></div>
     </div>
+  );
+}
+
+/** Follow-up radar: sent mail still waiting on an answer, and questions you haven't answered, with one-click nudges. */
+function FollowUpRadar({ waiting, questions, aiOn }: { waiting: ThreadSummary[]; questions: ThreadSummary[]; aiOn: boolean }) {
+  const [plan, setPlan] = useState<PlanPreview | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const nudge = useMutation({
+    mutationFn: (p: { t: ThreadSummary; kind: "followup" | "reply" }) => api.post<CopilotReply>("/copilot/nudge", { accountId: p.t.accountId, threadId: p.t.id, kind: p.kind }),
+    onMutate: (p) => setBusy(`${p.t.accountId}:${p.t.id}`),
+    onSettled: () => setBusy(null),
+    onSuccess: (r) => {
+      if (r.kind === "plan") setPlan(r.plan);
+    },
+  });
+  if (!waiting.length && !questions.length) return null;
+  const row = (t: ThreadSummary, kind: "followup" | "reply") => {
+    const who = kind === "followup" ? t.to[0] ?? t.from : t.from;
+    const days = Math.max(1, Math.round((Date.now() - Date.parse(t.lastDate)) / 86400_000));
+    const key = `${t.accountId}:${t.id}`;
+    return (
+      <li key={key} className="flex items-center gap-3 px-4 py-2.5">
+        <Avatar name={who?.name ?? ""} email={who?.email ?? ""} size={28} />
+        <Link to={threadHref(t, kind === "followup" ? "sent" : "inbox")} className="min-w-0 flex-1 hover:underline">
+          <span className="block truncate text-[13px] text-fg">{who ? displayName(who) : "Unknown"} <span className="text-fg-3">· {days}d</span></span>
+          <span className="block truncate text-[12.5px] text-fg-2">{t.subject || "(no subject)"}</span>
+        </Link>
+        {aiOn && (
+          <Button size="sm" variant="ai" loading={busy === key} disabled={busy !== null} icon={<FilePen className="size-3.5" />} onClick={() => nudge.mutate({ t, kind })} aria-label={`${kind === "followup" ? "Draft nudge" : "Draft reply"}: ${t.subject}`}>
+            {kind === "followup" ? "Nudge" : "Reply"}
+          </Button>
+        )}
+      </li>
+    );
+  };
+  return (
+    <section aria-labelledby="radar" className="rounded-[var(--radius-card)] border border-[var(--ai-border)] bg-surface">
+      <h3 id="radar" className="flex items-center gap-2 border-b border-line px-4 py-3 text-[13.5px] font-semibold text-fg">
+        <Radar className="size-4 text-accent-400" /> Follow-up radar
+        <span className="ml-auto text-xs font-normal text-fg-3">{waiting.length + questions.length}</span>
+      </h3>
+      <div className="grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+        <div>
+          <p className="flex items-center gap-1.5 px-4 pt-3 text-[11.5px] font-medium uppercase tracking-wide text-fg-3"><Hourglass className="size-3" /> Waiting on a reply</p>
+          {waiting.length ? <ul className="divide-y divide-line">{waiting.slice(0, 5).map((t) => row(t, "followup"))}</ul> : <p className="px-4 py-4 text-[12.5px] text-fg-3">Nobody owes you an answer right now.</p>}
+        </div>
+        <div>
+          <p className="flex items-center gap-1.5 px-4 pt-3 text-[11.5px] font-medium uppercase tracking-wide text-fg-3"><HelpCircle className="size-3" /> Questions you haven’t answered</p>
+          {questions.length ? <ul className="divide-y divide-line">{questions.slice(0, 5).map((t) => row(t, "reply"))}</ul> : <p className="px-4 py-4 text-[12.5px] text-fg-3">No open questions. Nice.</p>}
+        </div>
+      </div>
+      {nudge.isError && <p role="alert" className="border-t border-line px-4 py-2 text-[12.5px] text-danger">{errorMessage(nudge.error)}</p>}
+      <p className="border-t border-line px-4 py-2 text-[11.5px] text-fg-3">Nudges are drafted by AI and shown to you first. Nothing is saved or sent until you confirm.</p>
+      <Dialog open={plan !== null} onOpenChange={(o) => !o && setPlan(null)} title="Review the draft" description="Confirm to save it as a Gmail draft." wide>
+        {plan && <PlanCard key={plan.planId ?? "x"} plan={plan} />}
+      </Dialog>
+    </section>
   );
 }

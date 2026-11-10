@@ -247,6 +247,24 @@ describe("Copilot actions: plan → confirm → execute", () => {
     }
   });
 
+  it("follow-up radar: overview lists waiting and open questions; a nudge goes through the confirm flow", async () => {
+    const ov = await c.json<{ waiting: Array<{ id: string }>; questions: Array<{ id: string }> }>("/api/ai/overview");
+    expect(ov.body.waiting.map((t) => t.id)).toContain("t-waiting");
+    expect(ov.body.questions.map((t) => t.id)).toContain("t-team"); // t-canary was answered earlier in this file
+    expect(ov.body.questions.map((t) => t.id)).not.toContain("t-news");
+    const drafts0 = box().drafts.size;
+    const r = await c.json<CopilotReply>("/api/copilot/nudge", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-waiting", kind: "followup" }) });
+    expect(r.status).toBe(200);
+    const p = (r.body as Extract<CopilotReply, { kind: "plan" }>).plan;
+    expect(p.actions[0]).toMatchObject({ type: "draft_reply", risk: "normal" });
+    // I wrote last, so the nudge goes to the original recipient.
+    expect(p.actions[0]!.drafts[0]!.to).toEqual(["jonas@fjordlabs.example"]);
+    expect(box().drafts.size).toBe(drafts0);
+    expect((await exec(c, p.planId!, { selections: allSelections(p) })).status).toBe(200);
+    expect(box().drafts.size).toBe(drafts0 + 1);
+    expect((await c.json("/api/copilot/nudge", { method: "POST", body: JSON.stringify({ accountId, threadId: "t-waiting", kind: "send" }) })).status).toBe(400);
+  });
+
   it("rate-limits planning", async () => {
     let limited = false;
     for (let i = 0; i < 12 && !limited; i++) limited = (await plan(c, "Star everything from nobody")).status === 429;

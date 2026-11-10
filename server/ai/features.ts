@@ -203,6 +203,8 @@ export interface OverviewResult {
   stats: { unread: number; needsReply: number; waiting: number; important: number; total: number };
   needsReply: ThreadSummary[];
   waiting: ThreadSummary[];
+  /** Received questions you haven't answered (Gmail signals only: last message from them and it asks something). */
+  questions: ThreadSummary[];
   important: ThreadSummary[];
   ai: { headline: string; items: Array<{ thread: ThreadSummary; category: string; reason: string; due: string | null }> } | null;
   aiStatus: "ok" | "not_configured" | "disabled" | "error";
@@ -211,6 +213,16 @@ export interface OverviewResult {
 }
 
 /** Deterministic triage from Gmail metadata (works without AI), optionally ranked/explained by AI. */
+const BULK_CATEGORIES = /^CATEGORY_(PROMOTIONS|SOCIAL|FORUMS)$/;
+const NO_REPLY = /(^|[._-])(no-?reply|do-?not-?reply|notifications?|mailer-daemon)@/i;
+
+/** Follow-up radar: an inbox thread whose last message is from someone else and asks a question. */
+export function isOpenQuestion(t: ThreadSummary, now = Date.now()): boolean {
+  if (t.lastFromMe || t.labelIds.some((l) => BULK_CATEGORIES.test(l)) || NO_REPLY.test(t.from.email)) return false;
+  if (now - Date.parse(t.lastDate) > 14 * 86400_000) return false;
+  return /\?/.test(`${t.subject} ${t.snippet}`) || /\b(can|could|would|will) you\b|\bplease (confirm|let me know|reply|advise)\b|\blet me know\b/i.test(t.snippet);
+}
+
 export async function buildOverview(userId: string, account: string | undefined, useAi: () => Promise<AiPolicy | null>): Promise<OverviewResult> {
   const [inbox, sent] = await Promise.all([
     listThreads(userId, { account, folder: "inbox", q: "newer_than:14d", limit: 40 }),
@@ -221,11 +233,13 @@ export async function buildOverview(userId: string, account: string | undefined,
   const needsReply = inboxT.filter((t) => !t.lastFromMe && (t.unread || t.important || t.starred) && !t.labelIds.some((l) => /^CATEGORY_(PROMOTIONS|SOCIAL|FORUMS)$/.test(l)));
   const waiting = sent.threads.filter((t) => t.lastFromMe && now - Date.parse(t.lastDate) > 2 * 86400_000);
   const important = inboxT.filter((t) => t.important || t.starred);
+  const questions = inboxT.filter((t) => isOpenQuestion(t, now));
   const base: OverviewResult = {
     generatedAt: new Date().toISOString(),
     stats: { unread: inboxT.filter((t) => t.unread).length, needsReply: needsReply.length, waiting: waiting.length, important: important.length, total: inboxT.length },
     needsReply: needsReply.slice(0, 10),
     waiting: waiting.slice(0, 10),
+    questions: questions.slice(0, 10),
     important: important.slice(0, 10),
     ai: null,
     aiStatus: "not_configured",

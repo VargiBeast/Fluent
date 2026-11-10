@@ -109,15 +109,31 @@ export async function createPlan(userId: string, sessionId: string, req: PlanReq
   const v = validatePlan(raw, { instruction: req.instruction, hasCurrentThread: Boolean(req.context) });
   if (!v.ok) return { kind: "clarify", message: CLARIFY[v.reason] ?? CLARIFY.default! };
 
-  const accountParam = req.context ? req.context.accountId : req.account;
+  return finalizePlan(userId, sessionId, policy, v.actions, v.notes, raw.summary, {
+    accountParam: req.context ? req.context.accountId : req.account,
+    context: req.context,
+    accs,
+    labelMaps,
+  });
+}
+
+async function finalizePlan(
+  userId: string,
+  sessionId: string,
+  policy: AiPolicy,
+  actions: ValidAction[],
+  notes: string[],
+  summary: string,
+  ctx: { accountParam?: string; context?: { accountId: string; threadId: string }; accs: AccountRow[]; labelMaps: LabelMap[] },
+): Promise<CopilotReply> {
   const stored: StoredAction[] = [];
   const preview: PlanAction[] = [];
-  for (const [i, a] of v.actions.entries()) {
-    const r = await resolveAction(userId, policy, i, a, { accountParam, context: req.context, accs, labelMaps });
+  for (const [i, a] of actions.entries()) {
+    const r = await resolveAction(userId, policy, i, a, ctx);
     stored.push(r.stored);
     preview.push(r.preview);
   }
-  if (v.notes.length && preview[0]) preview[0].note = [preview[0].note, ...v.notes].filter(Boolean).join(" ");
+  if (notes.length && preview[0]) preview[0].note = [preview[0].note, ...notes].filter(Boolean).join(" ");
 
   const touched = stored.flatMap((s) => s.threads.map((t) => ({ accountId: t.accountId, threadId: t.threadId, subject: t.subject })));
   await recordAudit(userId, policy, "copilot_plan", touched.slice(0, 100), preview.reduce((n, p) => n + p.excluded, 0));
@@ -139,8 +155,29 @@ export async function createPlan(userId: string, sessionId: string, req: PlanReq
     // Expired or used plans (any user) are deleted, so subjects and draft text don't linger.
     await getDb().delete(copilotPlans).where(sql`${copilotPlans.expiresAt} < now() OR ${copilotPlans.usedAt} IS NOT NULL`);
   }
-  const plan: PlanPreview = { planId, expiresAt, summary: raw.summary.slice(0, 300), actions: preview };
+  const plan: PlanPreview = { planId, expiresAt, summary: summary.slice(0, 300), actions: preview };
   return { kind: "plan", plan };
+}
+
+const NUDGE_INSTRUCTIONS = {
+  followup: "Write a short, friendly follow-up nudge on my last message, asking whether they had a chance to look at it. Two or three sentences.",
+  reply: "Write a short reply that answers the open question in their last message. Where you don't know a fact, leave a clear [placeholder] instead of inventing it.",
+} as const;
+
+/**
+ * One-click nudge from the follow-up radar: a fixed draft_reply plan on one conversation (no planner call).
+ * It goes through the same preview → confirm → execute flow as any Copilot plan.
+ */
+export async function createNudgePlan(userId: string, sessionId: string, p: { accountId: string; threadId: string; kind: keyof typeof NUDGE_INSTRUCTIONS }): Promise<CopilotReply> {
+  const policy = await loadPolicy(userId);
+  const acc = await getOwnedAccount(userId, p.accountId);
+  const action: ValidAction = { type: "draft_reply", target: "current_thread", gmailQuery: null, label: null, instruction: NUDGE_INSTRUCTIONS[p.kind], to: null };
+  return finalizePlan(userId, sessionId, policy, [action], [], p.kind === "followup" ? "Draft a follow-up nudge." : "Draft a reply to their question.", {
+    accountParam: acc.id,
+    context: { accountId: acc.id, threadId: p.threadId },
+    accs: [acc],
+    labelMaps: [],
+  });
 }
 
 const CLARIFY: Record<string, string> = {

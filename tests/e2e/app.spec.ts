@@ -103,6 +103,19 @@ test("AI Overview shows a briefing grounded in real threads", async () => {
   await shot(page, "06-overview");
 });
 
+test("follow-up radar drafts a nudge through the confirm flow", async () => {
+  await page.goto("/app/overview");
+  const radar = page.getByRole("region", { name: "Follow-up radar" });
+  await expect(radar).toBeVisible();
+  await radar.getByRole("button", { name: "Draft nudge: Contract draft for the Fjord Labs pilot" }).click();
+  const dialog = page.getByRole("dialog", { name: "Review the draft" });
+  await expect(dialog.getByText("To: jonas@fjordlabs.example")).toBeVisible();
+  await shot(page, "20-radar-nudge");
+  await dialog.getByRole("button", { name: /Confirm/ }).click();
+  await expect(dialog.getByTestId("plan-result")).toContainText("saved 1 draft");
+  await page.keyboard.press("Escape");
+});
+
 test("Copilot answers with sources and opens the cited email", async () => {
   await page.getByRole("button", { name: "Ask Copilot" }).click();
   const panel = page.getByRole("dialog", { name: "FLUENT Copilot" });

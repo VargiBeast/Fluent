@@ -5,7 +5,7 @@ import { requireUser } from "../auth/session.js";
 import { rateLimit } from "../lib/rateLimit.js";
 import { HttpError } from "../lib/errors.js";
 import { COPILOT_LIMITS } from "../../shared/copilot.js";
-import { cancelPlan, createPlan, executePlan, executeUndo } from "../copilot/service.js";
+import { cancelPlan, createNudgePlan, createPlan, executePlan, executeUndo } from "../copilot/service.js";
 
 const uuid = z.string().uuid();
 const gid = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
@@ -32,6 +32,12 @@ copilotRoutes.post("/plan", rateLimit("copilot_plan", 10), async (c) => {
     account: z.union([z.literal("all"), uuid]).optional(),
   }).strict().parse(await c.req.json());
   return c.json(await createPlan(user.id, sessionOf(c), b));
+});
+
+copilotRoutes.post("/nudge", rateLimit("copilot_plan", 10), async (c) => {
+  const user = requireUser(c);
+  const b = z.object({ accountId: uuid, threadId: gid, kind: z.enum(["followup", "reply"]) }).strict().parse(await c.req.json());
+  return c.json(await createNudgePlan(user.id, sessionOf(c), b));
 });
 
 copilotRoutes.post("/plans/:id/execute", rateLimit("copilot_exec", 20), async (c) => {
