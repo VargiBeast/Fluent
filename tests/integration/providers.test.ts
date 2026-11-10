@@ -34,7 +34,7 @@ describe("Mail providers", () => {
     expect(r.status).toBe(200);
     expect(r.body.threads.length).toBeGreaterThan(0);
     expect(r.body.threads.every((t) => t.accountId === gmailId)).toBe(true);
-    expect(r.body.errors).toEqual([expect.objectContaining({ accountId: otherId, code: "provider_unavailable" })]);
+    expect(r.body.errors).toEqual([expect.objectContaining({ accountId: otherId, code: "account_reauth" })]);
     // Gmail categories simply show nothing for the other account rather than failing.
     const cat = await c.json<{ errors: unknown[] }>("/api/mail/threads?folder=inbox&account=all&category=social");
     expect(cat.body.errors).toEqual([]);
@@ -46,7 +46,7 @@ describe("Mail providers", () => {
     expect(JSON.stringify(f.body)).toContain("not_supported_for_provider");
     const sync = await c.json<{ accounts: Array<{ accountId: string; error?: string }> }>("/api/mail/sync");
     expect(sync.status).toBe(200);
-    expect(sync.body.accounts.find((a) => a.accountId === otherId)?.error).toBe("provider_unavailable");
+    expect(sync.body.accounts.find((a) => a.accountId === otherId)?.error).toBe("account_reauth");
   });
 
   it("rejects unknown provider kinds at the database", async () => {

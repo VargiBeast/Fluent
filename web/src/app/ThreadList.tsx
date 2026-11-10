@@ -65,6 +65,8 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
   const { folder = "inbox" } = useParams();
   const [params, setParams] = useSearchParams();
   const { session, config } = useSession();
+  // Gmail categories only exist on Gmail accounts; hide the section switcher when none in view has them.
+  const categoriesAvailable = (session?.accounts ?? []).filter((a) => !args.account || a.id === args.account).some((a) => a.capabilities?.categories !== false);
   const qc = useQueryClient();
   const isDrafts = folder === "drafts";
   const threads = useThreads(args, !isDrafts);
@@ -231,7 +233,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
           onAsk={(text) => { copilot.open(text || undefined, Boolean(text)); if (text) setSearchText(""); }}
         />
         <div className="flex h-9 items-center gap-1 px-1">
-          {folder === "inbox" ? (
+          {folder === "inbox" && categoriesAvailable ? (
             <Menu>
               <MenuTrigger asChild>
                 <button type="button" aria-label={`Inbox section: ${sectionLabel}. Change section`} className="-ml-1 flex items-center gap-1 rounded-lg px-2 py-1 text-[12.5px] font-medium text-fg-3 hover:bg-surface-2 hover:text-fg focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]">

@@ -13,6 +13,10 @@ export interface Account {
   color: string | null;
   createdAt: string;
   lastSyncedAt: string | null;
+  /** gmail | imap | outlook; older servers omit it (Gmail). */
+  provider?: "gmail" | "imap" | "outlook";
+  /** Gmail-only features are hidden where this says false. */
+  capabilities?: { categories: boolean; labels: boolean; filters: boolean; sendAs: boolean; importance: boolean };
 }
 
 export interface SessionData {

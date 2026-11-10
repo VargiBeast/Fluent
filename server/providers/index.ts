@@ -1,6 +1,7 @@
 import { HttpError } from "../lib/errors.js";
 import type { AccountRow } from "../services/accounts.js";
 import { GmailProvider } from "./gmail.js";
+import { ImapProvider } from "./imap.js";
 import type { MailProvider, ProviderCapabilities, ProviderKind } from "./types.js";
 
 export * from "./types.js";
@@ -15,6 +16,7 @@ export function providerKind(a: Pick<AccountRow, "provider">): ProviderKind {
 export function providerFor(a: AccountRow): MailProvider {
   const kind = providerKind(a);
   if (kind === "gmail") return new GmailProvider(a);
+  if (kind === "imap") return new ImapProvider(a);
   throw new HttpError(501, "provider_unavailable", "This kind of account isn't supported in this version of FLUENT yet.");
 }
 

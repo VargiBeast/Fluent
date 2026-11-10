@@ -23,6 +23,8 @@ const schema = z.object({
   // Test-only endpoint overrides. Ignored when NODE_ENV=production.
   FLUENT_TEST_GOOGLE_BASE: z.string().url().optional(),
   FLUENT_TEST_AI_BASE: z.string().url().optional(),
+  /** Routes *.fluent.test IMAP/SMTP hosts to plaintext fakes on 127.0.0.1, e.g. "993=14993,465=14465". Ignored when NODE_ENV=production. */
+  FLUENT_TEST_MAIL_PORTS: z.string().regex(/^\d+=\d+(,\d+=\d+)*$/).optional(),
 });
 
 export type Env = z.infer<typeof schema>;

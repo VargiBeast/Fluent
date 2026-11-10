@@ -19,6 +19,7 @@ import { noteRoutes } from "./routes/notes.js";
 import { unsubscribeRoutes } from "./routes/unsubscribe.js";
 import { sendAsRoutes } from "./routes/sendas.js";
 import { statsRoutes } from "./routes/stats.js";
+import { mailAccountRoutes } from "./routes/mailAccounts.js";
 import { sql } from "drizzle-orm";
 import { getDb, hasDatabase } from "./db/client.js";
 import { clientIp, hit } from "./lib/rateLimit.js";
@@ -96,6 +97,7 @@ export function createApp() {
   app.route("/newsletters", unsubscribeRoutes);
   app.route("/send-as", sendAsRoutes);
   app.route("/stats", statsRoutes);
+  app.route("/mail-accounts", mailAccountRoutes);
   app.route("/", settingsRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404));
