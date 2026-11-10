@@ -26,6 +26,7 @@ import { RecipientInput } from "./RecipientInput";
 import { TemplateEditorDialog, TemplatePicker } from "./TemplatePicker";
 import { isTemplateShortcut, TEMPLATE_SHORTCUT_LABEL, templateToHtml } from "@/lib/templates";
 import type { Template } from "@shared/templates";
+import { MicButton } from "../voice/MicButton";
 
 const MAX_TOTAL = 3_500_000;
 
@@ -49,11 +50,13 @@ interface Initial {
   draftId?: string;
   aiGenerated: boolean;
   thread?: ThreadDetail;
+  /** Opened from a voice command: saved to Gmail Drafts right away, never sent automatically. */
+  voice?: boolean;
 }
 
 function initialFrom(r: ComposeRequest, defaultAccount: string): Initial | null {
   if (r.mode === "new") {
-    return { accountId: r.accountId ?? defaultAccount, to: r.to ? [r.to] : [], cc: [], bcc: [], subject: r.subject ?? "", bodyHtml: r.bodyText ? textToParagraphs(r.bodyText) : "", quote: "", attachments: [], aiGenerated: Boolean(r.aiGenerated) };
+    return { accountId: r.accountId ?? defaultAccount, to: r.to ? [r.to] : [], cc: [], bcc: [], subject: r.subject ?? "", bodyHtml: r.bodyText ? textToParagraphs(r.bodyText) : "", quote: "", attachments: [], aiGenerated: Boolean(r.aiGenerated), voice: r.voice };
   }
   if (r.mode === "draft") return null;
   const { thread, message } = r;
@@ -70,7 +73,7 @@ function initialFrom(r: ComposeRequest, defaultAccount: string): Initial | null 
   return {
     accountId: thread.accountId, to: rec.to, cc: rec.cc, bcc: [], subject: replySubject(message.subject || thread.subject),
     bodyHtml: r.bodyText ? textToParagraphs(r.bodyText) : "", quote: quoteHtml(message), threadId: thread.id,
-    inReplyTo: message.messageIdHeader || undefined, references: refs, attachments: [], aiGenerated: Boolean(r.aiGenerated), thread,
+    inReplyTo: message.messageIdHeader || undefined, references: refs, attachments: [], aiGenerated: Boolean(r.aiGenerated), thread, voice: r.voice,
   };
 }
 
@@ -183,6 +186,13 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
       return false;
     }
   }, [editor, payload, qc]);
+
+  // A voice command only ever produces a draft: save it to Gmail straight away so it exists even if the window is closed.
+  useEffect(() => {
+    if (!init.voice) return;
+    void saveDraft(true).then((ok) => { if (ok) toast.success("Draft saved to Gmail", { description: "Nothing was sent. Review it and press Send when you're ready." }); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Autosave 3s after the last change.
   useEffect(() => {
@@ -384,6 +394,11 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
             )}
           </div>
         )}
+        {init.voice && (
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-[12px] text-fg-2" data-voice-draft="">
+            <span className="flex-1">Drafted from your voice command. It's saved in Drafts and won't be sent unless you press Send.</span>
+          </div>
+        )}
         <EditorContent editor={editor} />
         {init.quote && (
           <div className="px-4 pb-3">
@@ -411,6 +426,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
         <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => { void addFiles(e.target.files); e.target.value = ""; }} aria-label="Attach files" />
         <IconButton label="Attach files" onClick={() => fileRef.current?.click()}><Paperclip className="size-[18px]" /></IconButton>
         <IconButton label={`Insert template (${TEMPLATE_SHORTCUT_LABEL})`} onClick={() => setTemplatesOpen(true)}><FileStack className="size-[18px]" /></IconButton>
+        <MicButton onText={(t) => editor?.chain().focus().insertContent({ type: "text", text: `${t} ` }).run()} />
         {aiOn && (
           <>
             <Button variant="ai" size="md" icon={<Sparkles className="size-3.5" />} onClick={() => setAiOpen(true)} disabled={aiBusy}>Write with AI</Button>

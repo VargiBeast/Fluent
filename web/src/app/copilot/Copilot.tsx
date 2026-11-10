@@ -15,6 +15,7 @@ import { displayName, listDate } from "@/lib/format";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Kbd } from "@/components/ui/misc";
 import { useCopilot } from "./context";
+import { CopilotMic } from "../voice/CopilotMic";
 
 type Msg =
   | { id: number; role: "user"; text: string }
@@ -239,6 +240,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
                 placeholder={scoped ? "Try: draft a reply saying Thursday works" : "Try: archive all newsletters from last week"}
                 className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-[13.5px] text-fg outline-none placeholder:text-fg-3"
               />
+              {aiReady && <CopilotMic setInput={setInput} />}
               <button type="submit" disabled={!input.trim() || ask.isPending || !aiReady} aria-label="Send to Copilot" className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-fg disabled:opacity-40">
                 <ArrowUp className="size-4" />
               </button>

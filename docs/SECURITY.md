@@ -40,6 +40,10 @@ Bulk actions (`POST /api/mail/bulk`) accept at most 100 conversations and one al
 - **SSRF protection for one-click (RFC 8058).** `server/lib/oneClick.ts` sends a single `POST List-Unsubscribe=One-Click` with no cookies or credentials, a 10 s timeout, no redirects, and discards the response body. It only allows `https` on port 443, with no userinfo and no IP-literal private hosts or local names. Every resolved address is checked against private, loopback, link-local, CGNAT, multicast, documentation, ULA, IPv4-mapped/compatible, 6to4 and Teredo ranges in the socket's `lookup` hook, so DNS rebinding can't reach an internal address. The local HTTP fake is allowed only outside production.
 - Unsubscribes are logged in the security log as `newsletter_unsubscribed` with the method and sender domain only.
 
+## Voice dictation
+
+Dictation uses the browser's Web Speech API. FLUENT doesn't capture, upload or store audio, and the server never sees it. The browser may use its own speech service unless on-device recognition is available. FLUENT uses on-device recognition when Chrome reports it available. Recognised text is handled like typed text. Spoken commands can only create a draft in the composer, which is saved to Gmail Drafts; sending always needs the user's own click on Send.
+
 ## Installable app and service worker
 
 The service worker (`public/sw.js`) caches only the static app shell (`index.html`, hashed JS/CSS, icons, manifest). It never intercepts `/api/*`, `/_vercel/*` or cross-origin requests, so no email data, tokens or API responses are written to the browser cache, and the OAuth redirect flow always goes to the network. `sw.js` is served with `no-cache` so updates aren't held back.

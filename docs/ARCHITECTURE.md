@@ -107,3 +107,12 @@ Saved replies live in `templates` (name, subject and text, each AES-GCM encrypte
 - `POST /api/newsletters/unsubscribe {accountId, messageId, method, confirm: true}` re-reads the header from Gmail. It then sends the one-click POST (`server/lib/oneClick.ts`, SSRF-guarded) or, after the confirm dialog, one unsubscribe email from the user's account.
 - `POST /api/newsletters/archive {senders[], confirm: true}` archives every Inbox message from those senders (`from:<addr> in:inbox` + `messages.batchModify`) and returns the ids. `POST /api/newsletters/archive/undo` puts them back.
 - See SECURITY.md for the threat model.
+
+## Voice dictation
+
+`web/src/lib/speech.ts` wraps the browser's Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) in `useDictation`. It uses on-device recognition when Chrome reports the language model as available, and maps the API's errors to readable messages. `MicButton` (`web/src/app/voice/`) adds a mic to the composer, which inserts the text at the cursor as plain text, and to the Copilot input (`CopilotMic`, the only change inside Copilot). Where the API is missing, the button explains that dictation isn't available. FLUENT never records, uploads or stores audio; only the recognised text is used, like typed text.
+
+Voice commands (`web/src/lib/voiceCommand.ts`, English and Norwegian) only work from the Copilot mic: "reply to Ola that I'll come at 3", "email Priya saying QA is done", "svar Ola at …". They only ever produce a draft.
+- **Reply:** finds the latest conversation from that person with an ordinary quoted `from:"Name"` search and opens the normal reply composer with "Hi Ola,\n\nI'll come at 3.".
+- **New email:** looks up the address from recent mail.
+- The composer saves the result to Gmail Drafts right away (`voice: true`) and says it won't be sent unless the user presses Send. There is no code path from a voice command to sending, even if the user says "send".
