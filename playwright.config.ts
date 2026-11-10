@@ -12,7 +12,7 @@ export default defineConfig({
   reporter: [["list"]],
   outputDir: "test-results",
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: `http://localhost:${process.env.E2E_PORT ?? 4173}`,
     trace: "retain-on-failure",
     launchOptions: chrome ? { executablePath: chrome } : {},
   },
@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "pnpm build && tsx tests/e2e/serve.ts",
-    url: "http://localhost:4173/api/health",
+    url: `http://localhost:${process.env.E2E_PORT ?? 4173}/api/health`,
     reuseExistingServer: false,
     timeout: 120_000,
     stdout: "pipe",
