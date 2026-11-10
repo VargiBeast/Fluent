@@ -17,6 +17,16 @@ import { useCopilot } from "./copilot/context";
 import { BulkBar } from "./BulkBar";
 import { toast } from "sonner";
 
+const EMPTY_HINT: Record<string, string> = {
+  search: "Try different words, or toggle Ask AI to describe what you're looking for.",
+  inbox: "You're all caught up.",
+  snoozed: "Snooze a conversation (z) and it waits here until it's time to come back to your Inbox.",
+  starred: "Star a conversation (s) to keep it close at hand.",
+  drafts: "Drafts you start in FLUENT or Gmail show up here.",
+  spam: "No spam. Nice.",
+  trash: "Trash is empty. Gmail deletes items here after 30 days.",
+};
+
 const CATEGORY_CHIPS: Array<{ id: Category | "all"; label: string }> = [
   { id: "all", label: "All" },
   { id: "primary", label: "Primary" },
@@ -219,7 +229,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
         {config?.ai && <AskCopilotBar />}
 
         <form onSubmit={submitSearch} role="search" className="relative">
-          {aiMode ? <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-400" aria-hidden /> : <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden />}
+          {aiMode ? <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-ink" aria-hidden /> : <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden />}
           <input
             ref={searchRef}
             id="mail-search"
@@ -259,7 +269,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
         {folder === "search" && (args.nl || args.q) && (
           <div className="ai-block rounded-xl px-3 py-2 text-[12.5px]">
             <div className="flex items-start gap-2">
-              {args.nl ? <Sparkles className="mt-0.5 size-3.5 shrink-0 text-accent-400" aria-hidden /> : <Search className="mt-0.5 size-3.5 shrink-0 text-fg-3" aria-hidden />}
+              {args.nl ? <Sparkles className="mt-0.5 size-3.5 shrink-0 text-accent-ink" aria-hidden /> : <Search className="mt-0.5 size-3.5 shrink-0 text-fg-3" aria-hidden />}
               <div className="min-w-0 flex-1 text-fg-2">
                 {args.nl && <p className="text-fg">“{args.nl}”</p>}
                 {args.explanation && <p>{args.explanation}</p>}
@@ -275,7 +285,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
         <div role="alert" className="mx-3 mt-3 flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-fg-2">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
           <span className="flex-1">{accountErrors.map((e) => e.message).join(" ")}</span>
-          <Link to="/app/settings/accounts" className="shrink-0 font-medium text-accent-400 hover:underline">Fix</Link>
+          <Link to="/app/settings/accounts" className="shrink-0 font-medium text-accent-ink hover:underline">Fix</Link>
         </div>
       )}
 
@@ -295,7 +305,7 @@ export function ThreadList({ onOpenSidebar, selectedKey, onThreadsChange }: { on
           <EmptyState
             icon={<Inbox className="size-5" />}
             title={folder === "search" ? "No matching email" : `Nothing in ${title}`}
-            description={folder === "search" ? "Try different words, or toggle Ask AI to describe what you're looking for." : folder === "inbox" ? "You're all caught up." : "When there's mail here, it will show up instantly."}
+            description={EMPTY_HINT[folder] ?? "When there's mail here, it will show up instantly."}
           />
         ) : (
           <>
@@ -507,7 +517,7 @@ function AskCopilotBar() {
       }}
       className="group relative"
     >
-      <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-400" aria-hidden />
+      <Sparkles className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-ink" aria-hidden />
       <label htmlFor="ask-copilot-bar" className="sr-only">Ask Copilot</label>
       <input
         id="ask-copilot-bar"

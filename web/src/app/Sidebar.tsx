@@ -108,13 +108,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         onClick={() => { onNavigate?.(); copilot.open(); }}
         className="mb-2 -mt-1 flex h-9 w-full items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] text-fg-2 hover:bg-surface-2 hover:text-fg"
       >
-        <Sparkles className="size-4 text-accent-400" aria-hidden />
+        <Sparkles className="size-4 text-accent-ink" aria-hidden />
         <span className="flex-1 text-left">Copilot</span>
         <kbd className="text-[11px] text-fg-3">⌘J</kbd>
       </button>
 
       <NavLink to={withAccount("/app/overview")} onClick={onNavigate} className={({ isActive }) => item(isActive)}>
-        <OverviewIcon className="size-4 text-accent-400" aria-hidden />
+        <OverviewIcon className="size-4 text-accent-ink" aria-hidden />
         <span className="flex-1">AI Overview</span>
       </NavLink>
 

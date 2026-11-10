@@ -111,7 +111,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-400"><Sparkles className="size-4" /></span>
+              <span className="flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-ink"><Sparkles className="size-4" /></span>
               <div>
                 <RD.Title className="text-[14.5px] font-semibold text-fg">FLUENT Copilot</RD.Title>
                 <RD.Description className="text-[11.5px] text-fg-3">Ask or tell it what to do. Nothing changes until you confirm.</RD.Description>
@@ -178,7 +178,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
                               }}
                               className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-left hover:border-[var(--ai-border)]"
                             >
-                              <Mail className="size-3.5 shrink-0 text-accent-400" />
+                              <Mail className="size-3.5 shrink-0 text-accent-ink" />
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-[12.5px] font-medium text-fg">{t.subject || "(no subject)"}</span>
                                 <span className="block truncate text-[11px] text-fg-3">{displayName(t.from)} · {listDate(t.lastDate)}</span>
@@ -340,7 +340,7 @@ export function PlanCard({ plan, onOpenThread }: { plan: PlanPreview; onOpenThre
   return (
     <section aria-label="Copilot plan" data-testid="plan-card" className="rounded-2xl border border-[var(--ai-border)] bg-surface-2 p-3 animate-in">
       <div className="mb-2 flex items-start gap-2">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-400" />
+        <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-ink" />
         <div className="min-w-0">
           <p className="text-[13.5px] font-medium text-fg">{plan.summary || "Here’s the plan"}</p>
           {plan.planId && phase === "review" && <p className="text-[11.5px] text-fg-3">Review and untick anything you don’t want. Nothing has changed yet.</p>}
@@ -471,7 +471,7 @@ function ActionItem({ action: a, selected, locked, onToggle, onToggleAll, result
         ) : (
           <span className="mt-0.5 size-4 shrink-0" />
         )}
-        <span className={cn("mt-0.5 shrink-0 [&>svg]:size-4", a.risk === "trash" || a.risk === "send" ? "text-danger" : "text-accent-400")}>{ICONS[a.type]}</span>
+        <span className={cn("mt-0.5 shrink-0 [&>svg]:size-4", a.risk === "trash" || a.risk === "send" ? "text-danger" : "text-accent-ink")}>{ICONS[a.type]}</span>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-fg">{a.title}</p>
           {a.query && <p className="truncate font-mono text-[11px] text-fg-3" title={a.query}>{a.query}</p>}
@@ -515,7 +515,7 @@ function ActionItem({ action: a, selected, locked, onToggle, onToggleAll, result
           ))}
           {a.threads.length > 5 && (
             <li>
-              <button type="button" onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 text-[12px] text-accent-400 hover:underline">
+              <button type="button" onClick={() => setExpanded((v) => !v)} className="inline-flex items-center gap-1 text-[12px] text-accent-ink hover:underline">
                 <ChevronDown className={cn("size-3", expanded && "rotate-180")} /> {expanded ? "Show fewer" : `Show all ${a.threads.length}`}
               </button>
             </li>

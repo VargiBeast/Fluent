@@ -99,7 +99,7 @@ export function LandingPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <div key={f.title} className="rounded-2xl border border-line bg-surface/70 p-5 transition-colors hover:border-[var(--ai-border)]">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent-400"><f.icon className="size-5" /></span>
+                <span className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent-ink"><f.icon className="size-5" /></span>
                 <h3 className="mt-4 text-[15.5px] font-semibold text-fg">{f.title}</h3>
                 <p className="mt-1.5 text-[13.5px] leading-relaxed text-fg-2">{f.text}</p>
               </div>
@@ -111,7 +111,7 @@ export function LandingPage() {
               { icon: Tags, text: "Labels, folders and Gmail filters — every action syncs to Gmail." },
               { icon: EyeOff, text: "Tracking pixels and remote images blocked until you allow them." },
             ].map((x) => (
-              <div key={x.text} className="flex items-start gap-3 rounded-xl border border-line bg-surface/50 p-4 text-[13px] text-fg-2"><x.icon className="mt-0.5 size-4 shrink-0 text-accent-400" />{x.text}</div>
+              <div key={x.text} className="flex items-start gap-3 rounded-xl border border-line bg-surface/50 p-4 text-[13px] text-fg-2"><x.icon className="mt-0.5 size-4 shrink-0 text-accent-ink" />{x.text}</div>
             ))}
           </div>
         </section>
@@ -119,11 +119,11 @@ export function LandingPage() {
         <section id="privacy" className="mx-auto max-w-6xl px-5 py-16">
           <div className="ai-block grid gap-8 rounded-3xl p-8 sm:p-10 lg:grid-cols-[1.1fr_1fr]">
             <div>
-              <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight"><Lock className="size-5 text-accent-400" /> Your mail stays yours</h2>
+              <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight"><Lock className="size-5 text-accent-ink" /> Your mail stays yours</h2>
               <p className="mt-3 text-[15px] leading-relaxed text-fg-2">FLUENT uses Google's official Gmail API with your permission. It fetches mail live and does not keep copies of your messages. AI only sees the emails needed for the request you make, and the AI can't send, delete or forward anything by itself.</p>
               <div className="mt-5 flex flex-wrap gap-4 text-[13.5px]">
-                <Link to="/privacy" className="text-accent-400 hover:underline">Read the privacy policy</Link>
-                <Link to="/terms" className="text-accent-400 hover:underline">Terms of service</Link>
+                <Link to="/privacy" className="text-accent-ink hover:underline">Read the privacy policy</Link>
+                <Link to="/terms" className="text-accent-ink hover:underline">Terms of service</Link>
               </div>
             </div>
             <ul className="space-y-3 text-[14px] text-fg-2">
@@ -135,7 +135,7 @@ export function LandingPage() {
                 "Export or delete your FLUENT data in one click",
                 "Gmail data is never used for ads or to train AI models",
               ].map((t) => (
-                <li key={t} className="flex items-start gap-2.5"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent-400" />{t}</li>
+                <li key={t} className="flex items-start gap-2.5"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent-ink" />{t}</li>
               ))}
             </ul>
           </div>

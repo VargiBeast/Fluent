@@ -53,7 +53,7 @@ export function OverviewPage() {
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center gap-2 border-b border-line px-4 py-3 lg:px-8">
         <IconButton label="Open navigation" className="lg:hidden" onClick={() => SidebarContext.open()}><Menu className="size-5" /></IconButton>
-        <h1 className="flex items-center gap-2 text-[17px] font-semibold text-fg"><Sparkles className="size-4 text-accent-400" /> AI Overview</h1>
+        <h1 className="flex items-center gap-2 text-[17px] font-semibold text-fg"><Sparkles className="size-4 text-accent-ink" /> AI Overview</h1>
         <div className="ml-auto flex items-center gap-2">
           {d && <span className="hidden text-xs text-fg-3 sm:inline">Updated {relative(d.generatedAt)}</span>}
           <IconButton label="Refresh overview" onClick={() => void q.refetch()} disabled={q.isFetching}>
@@ -106,16 +106,16 @@ function AiBriefing({ d }: { d: OverviewData }) {
     }[d.aiStatus];
     return (
       <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5 text-[13.5px] text-fg-2">
-        <p className="flex items-center gap-2 font-medium text-fg"><Sparkles className="size-4 text-accent-400" /> AI briefing unavailable</p>
+        <p className="flex items-center gap-2 font-medium text-fg"><Sparkles className="size-4 text-accent-ink" /> AI briefing unavailable</p>
         <p className="mt-1.5">{msg}</p>
-        {d.aiStatus === "disabled" && <Link to="/app/settings/ai" className="mt-2 inline-block text-accent-400 hover:underline">Open AI settings</Link>}
+        {d.aiStatus === "disabled" && <Link to="/app/settings/ai" className="mt-2 inline-block text-accent-ink hover:underline">Open AI settings</Link>}
       </div>
     );
   }
   return (
     <section className="ai-block rounded-[var(--radius-card)] p-5" aria-labelledby="briefing">
       <h3 id="briefing" className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-ai-title"><Sparkles className="size-4" /> Your briefing</h3>
-      <p className="mt-2 text-[16px] leading-relaxed text-fg">{d.ai.headline}</p>
+      <p className="mt-2 max-w-[68ch] text-[16px] leading-relaxed text-fg">{d.ai.headline}</p>
       {d.ai.items.length > 0 && (
         <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface/60">
           {d.ai.items.map((it) => {
@@ -155,7 +155,7 @@ function Stat({ icon, label, value, to }: { icon: React.ReactNode; label: string
 function ThreadSection({ title, icon, threads, empty, folder = "inbox", note }: { title: string; icon: React.ReactNode; threads: ThreadSummary[]; empty: string; folder?: string; note?: string }) {
   return (
     <section className="rounded-[var(--radius-card)] border border-line bg-surface">
-      <h3 className="flex items-center gap-2 border-b border-line px-4 py-3 text-[13.5px] font-semibold text-fg"><span className="text-accent-400">{icon}</span>{title}<span className="ml-auto text-xs font-normal text-fg-3">{threads.length}</span></h3>
+      <h3 className="flex items-center gap-2 border-b border-line px-4 py-3 text-[13.5px] font-semibold text-fg"><span className="text-accent-ink">{icon}</span>{title}<span className="ml-auto text-xs font-normal text-fg-3">{threads.length}</span></h3>
       {threads.length === 0 ? (
         <p className="px-4 py-6 text-[13px] text-fg-3">{empty}</p>
       ) : (
@@ -229,7 +229,7 @@ function FollowUpRadar({ waiting, questions, aiOn }: { waiting: ThreadSummary[];
   return (
     <section aria-labelledby="radar" className="rounded-[var(--radius-card)] border border-[var(--ai-border)] bg-surface">
       <h3 id="radar" className="flex items-center gap-2 border-b border-line px-4 py-3 text-[13.5px] font-semibold text-fg">
-        <Radar className="size-4 text-accent-400" /> Follow-up radar
+        <Radar className="size-4 text-accent-ink" /> Follow-up radar
         <span className="ml-auto text-xs font-normal text-fg-3">{waiting.length + questions.length}</span>
       </h3>
       <div className="grid divide-y divide-line lg:grid-cols-2 lg:divide-x lg:divide-y-0">

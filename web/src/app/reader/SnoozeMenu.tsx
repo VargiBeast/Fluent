@@ -61,7 +61,7 @@ export function SnoozeBanner({ thread }: { thread: ThreadDetail }) {
   if (!row) return null;
   return (
     <div role="status" className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-fg-2 animate-in">
-      {row.kind === "snooze" ? <Clock className="size-3.5 text-accent-400" /> : <BellRing className="size-3.5 text-accent-400" />}
+      {row.kind === "snooze" ? <Clock className="size-3.5 text-accent-ink" /> : <BellRing className="size-3.5 text-accent-ink" />}
       <span className="flex-1">{row.kind === "snooze" ? `Snoozed until ${formatDue(row.dueAt)}` : `Reminder ${formatDue(row.dueAt)} if nobody replies`}</span>
       <button type="button" onClick={() => cancel.mutate()} className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-fg-3 hover:bg-surface-3 hover:text-fg">
         <X className="size-3" /> {row.kind === "snooze" ? "Unsnooze" : "Cancel reminder"}

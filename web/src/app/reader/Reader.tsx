@@ -354,7 +354,7 @@ function AttachmentList({ accountId, files }: { accountId: string; files: Messag
               className="group flex w-56 items-center gap-2.5 rounded-xl border border-line bg-surface-2 px-3 py-2 hover:border-line-strong"
               aria-label={`Download ${a.filename} (${formatBytes(a.size)})`}
             >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-400">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-ink">
                 {a.mimeType.startsWith("image/") ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}
               </span>
               <span className="min-w-0 flex-1">
