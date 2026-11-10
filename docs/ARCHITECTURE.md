@@ -122,3 +122,15 @@ Voice commands (`web/src/lib/voiceCommand.ts`, English and Norwegian) only work 
 
 ## Focus mode
 `focus.until` (an ISO instant, or null) lives in the per-user settings. The choices are 30 minutes, 1 hour, or until 08:00 tomorrow in the browser's time zone (`shared/focus.ts`, which handles DST). The server only accepts null or a future instant within 36 hours. While focus is active, the inbox list adds `is:important` to its Gmail query, new-mail alerts are paused, and a banner above every page shows the end time with an "Exit focus mode" button. Focus ends on its own when the time passes. Other folders stay reachable when you open them directly.
+
+## Mail providers
+Every mailbox sits behind `MailProvider` (`server/providers/types.ts`). It covers listing and searching threads, reading a thread, actions and flags, bulk actions, labels, attachments, sending, drafts, and change sync. `providerFor(account)` picks the implementation from `accounts.provider` (migration 0010).
+- **Gmail** (`providers/gmail.ts`) is the earlier Gmail REST code moved behind the interface, with no change in behaviour.
+- **IMAP/SMTP** (`providers/imap.ts`, imapflow + nodemailer + mailparser):
+  - Opens one short-lived connection per request, because serverless functions can't hold IMAP sessions.
+  - A FLUENT "thread" is one message, with id = mailbox code + UID (e.g. `in42`). Folders map via SPECIAL-USE flags, falling back to common names.
+  - Search maps a small, safe subset of Gmail syntax to IMAP SEARCH; `is:important` maps to flagged.
+  - Sending goes over SMTP (Bcc only in the envelope). A copy is appended to Sent, and drafts are kept in the Drafts folder.
+  - Sync compares INBOX UIDNEXT.
+- **Capabilities** (`categories`, `labels`, `filters`, `sendAs`, `importance`) come with each account in the session. The UI hides Gmail categories when no account in view has them. Gmail-only endpoints (filters, labels CRUD, send-as, unsubscribe, stats) return 400 `not_supported_for_provider`. The All inboxes list leaves categories and Gmail labels empty for other providers rather than failing.
+- `pnpm check:serverless-mail` bundles `api/index.ts` and an IMAP/SMTP probe for node20 with every dependency inlined, then runs them from a folder without node_modules against local fakes. That shows the stack works as a Vercel Function and closes its connections after each invocation.

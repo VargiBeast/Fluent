@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 /**
  * FLUENT stores no email bodies. Mail stays in Gmail and is fetched on demand.
@@ -19,7 +19,12 @@ export const users = pgTable("users", {
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Provider-scoped account id: the Google `sub` for Gmail; "imap:<user>@<host>" / "ms:<oid>" for others. */
   googleSub: text("google_sub").notNull(),
+  /** gmail | imap | outlook */
+  provider: text("provider").notNull().default("gmail"),
+  /** AES-GCM encrypted JSON with non-OAuth connection details (IMAP host/port/username/app password). */
+  credentialsEnc: text("credentials_enc"),
   email: text("email").notNull(),
   name: text("name").notNull().default(""),
   picture: text("picture"),
@@ -36,6 +41,7 @@ export const accounts = pgTable("accounts", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("accounts_user_sub_uq").on(t.userId, t.googleSub),
+  check("accounts_provider_ck", sql`${t.provider} in ('gmail', 'imap', 'outlook')`),
   index("accounts_user_idx").on(t.userId),
 ]);
 

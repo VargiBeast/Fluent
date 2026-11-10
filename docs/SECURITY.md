@@ -103,3 +103,11 @@ Until then, keep the app in **Testing** with named test users.
 ## Reporting
 
 Security contact: to be added by the owner (see the placeholders in `web/src/pages/Legal.tsx`).
+
+## IMAP/SMTP accounts (app passwords and outbound connections)
+- **App passwords:** the password, username and server names are stored as one AES-GCM blob in `accounts.credentials_enc`. The purpose is `mail-credentials` and the AAD is `userId:providerAccountId`. They're never returned by the API or logged. Connection errors log only an error code.
+- **Server checks:** server names must be DNS names; IP literals, ports and userinfo are rejected by zod. Ports are limited to 993 (IMAP/TLS), 465 (SMTP/TLS) and 587 (SMTP with required STARTTLS). TLS 1.2+ is required, with certificate checks against the server name.
+- **SSRF and DNS rebinding:** `pinMailServer` resolves the name once and refuses the server if *any* address is private, loopback, link-local, CGNAT, multicast, documentation or reserved. This uses the same BlockList as the unsubscribe fetch, including IPv4-mapped, 6to4, Teredo and NAT64 forms. The socket then connects to that exact IP (SNI = the name), so a second DNS answer can't redirect it.
+- **Test fakes:** `FLUENT_TEST_MAIL_PORTS` routes `*.fluent.test` to plaintext fakes on 127.0.0.1. It is ignored when `NODE_ENV=production`.
+- **Rate limits:** connecting an account is limited to 5 attempts a minute per user, since each attempt logs in to two servers. Accounts are capped at 10 per user. Every query is still scoped by `getOwnedAccount` (404 for other users' accounts).
+- **No automatic sending:** nothing is sent without the existing send endpoint and its AI-confirmation rule.

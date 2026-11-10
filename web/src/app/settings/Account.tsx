@@ -14,6 +14,7 @@ import { Field, Input } from "@/components/ui/Field";
 import { ConfirmDialog, Dialog } from "@/components/ui/Dialog";
 import { Badge, Skeleton } from "@/components/ui/misc";
 import { PageHeader, Panel, useSettingsData } from "./Settings";
+import { AddAccountDialog } from "./AddAccount";
 
 /** Plain-language descriptions of the Google permissions an account granted. */
 const SCOPE_TEXT: Array<[RegExp, string]> = [
@@ -87,6 +88,7 @@ function AccountsSection() {
   const { session, refresh } = useSession();
   const [params, setParams] = useSearchParams();
   const [remove, setRemove] = useState<Account | null>(null);
+  const [adding, setAdding] = useState(false);
   const qc = useQueryClient();
   useEffect(() => {
     if (params.get("connected")) toast.success("Gmail account connected");
@@ -144,12 +146,13 @@ function AccountsSection() {
             ))}
           </ul>
         )}
-        <button type="button" onClick={() => { window.location.href = "/api/auth/google/start?mode=link"; }} className="flex w-full items-center gap-3 border-t border-line py-3 text-left text-[14px] text-fg hover:text-accent-ink" data-add-account="">
+        <button type="button" onClick={() => setAdding(true)} className="flex w-full items-center gap-3 border-t border-line py-3 text-left text-[14px] text-fg hover:text-accent-ink" data-add-account="">
           <span className="flex size-10 items-center justify-center rounded-full bg-surface-2"><Plus className="size-4" aria-hidden /></span>
-          <span className="flex-1">Add account<span className="block text-[12px] text-fg-3">Connect another Gmail account</span></span>
+          <span className="flex-1">Add account<span className="block text-[12px] text-fg-3">Gmail, iCloud, Yahoo, Fastmail or other IMAP mail</span></span>
           <ChevronRight className="size-4 text-fg-3" aria-hidden />
         </button>
       </Panel>
+      <AddAccountDialog open={adding} onOpenChange={setAdding} />
       <ConfirmDialog
         open={Boolean(remove)}
         onOpenChange={(o) => !o && setRemove(null)}
