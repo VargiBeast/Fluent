@@ -40,7 +40,7 @@ export function OnboardingPage() {
         <div className="rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow)] animate-in">
           {step === 0 && (
             <>
-              <h1 className="text-xl font-semibold text-fg">Welcome to FLUENT{session?.user?.name ? `, ${session.user.name.split(" ")[0]}` : ""}</h1>
+              <h1 className="text-xl font-semibold text-fg">Welcome to MailIQ{session?.user?.name ? `, ${session.user.name.split(" ")[0]}` : ""}</h1>
               <p className="mt-1 text-[13.5px] text-fg-3">Let's get your inbox set up. This takes less than a minute.</p>
               <ul className="mt-5 space-y-2">
                 {accounts.map((a) => (
@@ -53,7 +53,7 @@ export function OnboardingPage() {
               </ul>
               {scopeError && (
                 <div className="mt-4 rounded-xl border border-danger/40 bg-danger/10 p-3 text-[13px] text-fg-2">
-                  FLUENT needs permission to read and organise your Gmail. On Google's consent screen, make sure the Gmail checkbox is ticked.
+                  MailIQ needs permission to read and organise your Gmail. On Google's consent screen, make sure the Gmail checkbox is ticked.
                   <Button className="mt-3" size="sm" variant="primary" onClick={() => { window.location.href = `/api/auth/google/start?mode=link${accounts[0] ? `&account=${accounts[0].id}` : ""}`; }}>Grant Gmail access</Button>
                 </div>
               )}
@@ -76,7 +76,7 @@ export function OnboardingPage() {
           {step === 2 && (
             <>
               <h1 className="text-xl font-semibold text-fg">Your AI assistant</h1>
-              <p className="mt-1 text-[13.5px] text-fg-3">FLUENT can summarize threads, draft replies, and answer questions about your mail. It never sends, deletes or forwards anything on its own.</p>
+              <p className="mt-1 text-[13.5px] text-fg-3">MailIQ can summarize threads, draft replies, and answer questions about your mail. It never sends, deletes or forwards anything on its own.</p>
               {!config?.ai && <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-[12.5px] text-fg-2">AI isn't configured on this server yet, so these preferences take effect later.</p>}
               <div className="mt-3 divide-y divide-line">
                 <Switch label="Enable AI features" checked={s.ai.enabled} onChange={(enabled) => update.mutate({ ai: { enabled } })} />
@@ -88,10 +88,10 @@ export function OnboardingPage() {
             <>
               <h1 className="flex items-center gap-2 text-xl font-semibold text-fg"><ShieldCheck className="size-5 text-accent-ink" /> Your privacy</h1>
               <ul className="mt-4 space-y-2.5 text-[13.5px] text-fg-2">
-                <li>• Email bodies are never stored by FLUENT — they're read live from Gmail.</li>
+                <li>• Email bodies are never stored by MailIQ — they're read live from Gmail.</li>
                 <li>• Remote images are blocked by default so senders can't track when you open mail.</li>
                 <li>• Every AI request is listed in Settings → Privacy, and you can exclude senders and labels from AI.</li>
-                <li>• You can export or delete your FLUENT data at any time.</li>
+                <li>• You can export or delete your MailIQ data at any time.</li>
               </ul>
             </>
           )}
