@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 
-const apiPort = process.env.FLUENT_API_PORT ?? "8787";
+const apiPort = process.env.MAILIQ_API_PORT ?? "8787";
 
 export default defineConfig({
   root: "web",
@@ -23,12 +23,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: Number(process.env.FLUENT_WEB_PORT ?? 5173),
+    port: Number(process.env.MAILIQ_WEB_PORT ?? 5173),
     strictPort: true,
     proxy: { "/api": { target: `http://127.0.0.1:${apiPort}`, changeOrigin: false } },
   },
   preview: {
-    port: Number(process.env.FLUENT_WEB_PORT ?? 4173),
+    port: Number(process.env.MAILIQ_WEB_PORT ?? 4173),
     proxy: { "/api": { target: `http://127.0.0.1:${apiPort}`, changeOrigin: false } },
   },
   build: {
@@ -37,7 +37,6 @@ export default defineConfig({
     sourcemap: false,
     rolldownOptions: {
       output: {
-        // Long-lived vendor chunks: they change far less often than app code, so they stay cached across deploys.
         advancedChunks: {
           groups: [
             { name: "react", test: /node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/, priority: 30 },
