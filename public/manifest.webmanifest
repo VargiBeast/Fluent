@@ -1,6 +1,6 @@
 {
-  "name": "FLUENT — AI email for Gmail",
-  "short_name": "FLUENT",
+  "name": "MailIQ — AI email for Gmail",
+  "short_name": "MailIQ",
   "description": "An AI-powered email client for Gmail.",
   "id": "/app/inbox",
   "start_url": "/app/inbox",
