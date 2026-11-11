@@ -123,7 +123,7 @@ export function Logo({ className, withText = true }: { className?: string; withT
           <LogoMark variant="light" id={lightId} />
         </g>
       </svg>
-      {withText && <span className="text-[15px] font-semibold tracking-[0.18em] text-fg">FLUENT</span>}
+      {withText && <span className="text-[15px] font-semibold tracking-[0.18em] text-fg">MailIQ</span>}
     </span>
   );
 }
