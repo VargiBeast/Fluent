@@ -9,7 +9,7 @@ import { getEnv, secureCookies } from "../env.js";
 import { unauthorized } from "../lib/errors.js";
 
 export function sessionCookieName(): string {
-  return secureCookies() ? "__Host-fluent_session" : "fluent_session";
+  return secureCookies() ? "__Host-mailiq_session" : "mailiq_session";
 }
 
 const TOUCH_INTERVAL_MS = 10 * 60 * 1000;
