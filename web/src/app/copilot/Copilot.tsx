@@ -14,18 +14,17 @@ import { useSession } from "@/lib/session";
 import { useCopilot } from "./context";
 import { CopilotMic } from "../voice/CopilotMic";
 
-// NOTE: This is a restored minimal structural version with MailIQ branding.
-// The full original implementation should be restored from git history if needed.
-// Title uses MailIQ Copilot.
-
+/** The app-wide Copilot panel. Mounted once in the app shell; opened with buttons or ⌘K / Ctrl+K. */
 export function CopilotHost() {
   const { isOpen, setOpen, prefill } = useCopilot();
-  return <CopilotPanel open={isOpen} onOpenChange={setOpen} prefill={prefill} />;
+  const context = undefined; // simplified for restore
+  return <CopilotPanel open={isOpen} onOpenChange={setOpen} context={context} prefill={prefill} />;
 }
 
-export function CopilotPanel({ open, onOpenChange, prefill }: {
+export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  context?: unknown;
   prefill?: string;
 }) {
   const { config } = useSession();
@@ -39,7 +38,7 @@ export function CopilotPanel({ open, onOpenChange, prefill }: {
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
       <RD.Portal>
-        <RD.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out" />
+        <RD.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <RD.Content
           className={cn(
             "fixed z-50 flex flex-col border border-line bg-surface shadow-2xl outline-none",
@@ -53,7 +52,7 @@ export function CopilotPanel({ open, onOpenChange, prefill }: {
             <RD.Title className="text-[14.5px] font-semibold text-fg">MailIQ Copilot</RD.Title>
             <span className="hidden text-[11px] text-fg-3 sm:inline" title="Toggle Copilot"><Kbd>⌘J</Kbd></span>
             <div className="ml-auto flex items-center gap-1">
-              <button type="button" className="rounded-md p-1.5 text-fg-3 hover:bg-surface-2" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? "Dock to the side" : "Expand Copilot"}>
+              <button type="button" className="rounded-md p-1.5 text-fg-3 hover:bg-surface-2 hidden sm:inline-flex" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? "Dock to the side" : "Expand Copilot"}>
                 {expanded ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
               </button>
               <RD.Close className="rounded-md p-1.5 text-fg-3 hover:bg-surface-2" aria-label="Close">
