@@ -10,9 +10,8 @@ CREATE TABLE "snoozes" (
 --> statement-breakpoint
 ALTER TABLE "snoozes" ADD CONSTRAINT "snoozes_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "snoozes" ADD CONSTRAINT "snoozes_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "snoozes_thread_uq" ON "snoozes" USING btree ("account_id","thread_id");--> statement-breakpoint
-CREATE INDEX "snoozes_due_idx" ON "snoozes" USING btree ("user_id","due_at");--> statement-breakpoint
--- Same lockdown as 0001-0003: RLS on, no access for Supabase API roles, DML + policy for fluent_app.
+CREATE INDEX "snoozes_due_idx" ON "snoozes" USING btree ("due_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "snoozes_thread_uq" ON "snoozes" USING btree ("user_id","account_id","thread_id","kind");--> statement-breakpoint
 ALTER TABLE "snoozes" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 DO $$
 BEGIN
@@ -22,9 +21,9 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
     EXECUTE 'REVOKE ALL ON TABLE public.snoozes FROM authenticated';
   END IF;
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fluent_app') THEN
-    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.snoozes TO fluent_app';
-    EXECUTE 'DROP POLICY IF EXISTS fluent_app_all ON public.snoozes';
-    EXECUTE 'CREATE POLICY fluent_app_all ON public.snoozes AS PERMISSIVE FOR ALL TO fluent_app USING (true) WITH CHECK (true)';
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mailiq_app') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.snoozes TO mailiq_app';
+    EXECUTE 'DROP POLICY IF EXISTS mailiq_app_all ON public.snoozes';
+    EXECUTE 'CREATE POLICY mailiq_app_all ON public.snoozes AS PERMISSIVE FOR ALL TO mailiq_app USING (true) WITH CHECK (true)';
   END IF;
 END $$;

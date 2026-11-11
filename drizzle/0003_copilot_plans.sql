@@ -12,7 +12,7 @@ CREATE TABLE "copilot_plans" (
 ALTER TABLE "copilot_plans" ADD CONSTRAINT "copilot_plans_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "copilot_plans" ADD CONSTRAINT "copilot_plans_session_id_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "copilot_plans_user_idx" ON "copilot_plans" USING btree ("user_id","created_at");--> statement-breakpoint
--- Same lockdown as 0001/0002: RLS on, no access for Supabase API roles, DML + policy for fluent_app.
+-- Same lockdown as 0001/0002: RLS on, no access for Supabase API roles, DML + policy for mailiq_app.
 ALTER TABLE "copilot_plans" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 DO $$
 BEGIN
@@ -22,9 +22,9 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
     EXECUTE 'REVOKE ALL ON TABLE public.copilot_plans FROM authenticated';
   END IF;
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fluent_app') THEN
-    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.copilot_plans TO fluent_app';
-    EXECUTE 'DROP POLICY IF EXISTS fluent_app_all ON public.copilot_plans';
-    EXECUTE 'CREATE POLICY fluent_app_all ON public.copilot_plans AS PERMISSIVE FOR ALL TO fluent_app USING (true) WITH CHECK (true)';
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mailiq_app') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.copilot_plans TO mailiq_app';
+    EXECUTE 'DROP POLICY IF EXISTS mailiq_app_all ON public.copilot_plans';
+    EXECUTE 'CREATE POLICY mailiq_app_all ON public.copilot_plans AS PERMISSIVE FOR ALL TO mailiq_app USING (true) WITH CHECK (true)';
   END IF;
 END $$;
