@@ -1,7 +1,7 @@
 import { getEnv, microsoftEndpoints, microsoftRedirectUri } from "../env.js";
 import { HttpError } from "../lib/errors.js";
 
-/** Delegated Microsoft Graph permissions FLUENT asks for. */
+/** Delegated Microsoft Graph permissions MailIQ asks for. */
 export const MS_SCOPES = ["offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send"];
 
 export interface MsTokenResponse {
