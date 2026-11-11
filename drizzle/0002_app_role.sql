@@ -1,21 +1,16 @@
--- Grants for the dedicated MailIQ application role (mailiq_app).
--- The role itself is created outside the repo.
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO mailiq_app;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO mailiq_app;
-
--- Default privileges for future tables
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO mailiq_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO mailiq_app;
-
--- RLS policy that allows the app role full access (app enforces user isolation in code)
+-- Optional least-privilege runtime role. When a "mailiq_app" login role exists (created out of band
+-- with its own password, never in this repo), give it DML on the app tables plus an RLS policy so it
+-- can use them, while anon/authenticated stay locked out by 0001. No-op when the role is absent.
 DO $$
-DECLARE
-  r RECORD;
+DECLARE t text;
 BEGIN
-  FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public'
-  LOOP
-    EXECUTE format('DROP POLICY IF EXISTS mailiq_app_all ON %I', r.tablename);
-    EXECUTE format('CREATE POLICY mailiq_app_all ON %I FOR ALL TO mailiq_app USING (true) WITH CHECK (true)', r.tablename);
-  END LOOP;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mailiq_app') THEN
+    EXECUTE 'GRANT USAGE ON SCHEMA public TO mailiq_app';
+    FOREACH t IN ARRAY ARRAY['users','accounts','sessions','user_settings','ai_audit','security_events','rate_limits'] LOOP
+      EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO mailiq_app', t);
+      EXECUTE format('DROP POLICY IF EXISTS mailiq_app_all ON public.%I', t);
+      EXECUTE format('CREATE POLICY mailiq_app_all ON public.%I AS PERMISSIVE FOR ALL TO mailiq_app USING (true) WITH CHECK (true)', t);
+    END LOOP;
+    EXECUTE 'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO mailiq_app';
+  END IF;
 END $$;
