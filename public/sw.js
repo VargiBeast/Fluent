@@ -1,7 +1,7 @@
 /* global self, caches, fetch, URL */
-/* FLUENT service worker: static app shell only.
+/* MailIQ service worker: static app shell only.
  * Never touches /api (sessions, OAuth, email content) and never caches anything but same-origin static files. */
-const VERSION = "fluent-shell-v1";
+const VERSION = "mailiq-shell-v1";
 const SHELL = ["/", "/index.html", "/favicon.svg", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
