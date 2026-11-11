@@ -6,7 +6,7 @@ import { Splash } from "@/components/Splash";
 import { PublicFooter } from "./Legal";
 
 const ERRORS: Record<string, string> = {
-  access_denied: "You cancelled Google sign-in. FLUENT needs your permission to show your mail.",
+  access_denied: "You cancelled Google sign-in. MailIQ needs your permission to show your mail.",
   not_configured: "Google sign-in isn't configured on this server yet.",
   state_invalid: "Your sign-in link expired or was tampered with. Please try again.",
   state_missing: "Your sign-in session expired (cookies may be blocked). Please try again.",
@@ -76,13 +76,13 @@ export function LandingPage() {
             Your inbox, <span className="bg-gradient-to-r from-accent-300 to-accent-600 bg-clip-text text-transparent">understood.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-[16px] leading-relaxed text-fg-2 sm:text-[17px]">
-            FLUENT reads your Gmail with you — summarizing threads, drafting replies and answering questions — while keeping you in control of every send.
+            MailIQ reads your Gmail with you — summarizing threads, drafting replies and answering questions — while keeping you in control of every send.
           </p>
           {(error || deleted || !googleReady) && (
             <div role={error ? "alert" : "status"} className={`mx-auto mt-6 flex max-w-md items-start gap-2 rounded-xl border px-4 py-3 text-left text-[13.5px] ${error || !googleReady ? "border-warning/40 bg-warning/10" : "border-success/40 bg-success/10"}`}>
               {error || !googleReady ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />}
               <span className="text-fg-2">
-                {deleted ? "Your FLUENT data was deleted and Google access revoked." : error ? (ERRORS[error] ?? "Sign-in didn't complete. Please try again.") : "Google sign-in isn't configured on this server. The owner needs to add Google OAuth credentials (see docs/SETUP.md)."}
+                {deleted ? "Your MailIQ data was deleted and Google access revoked." : error ? (ERRORS[error] ?? "Sign-in didn't complete. Please try again.") : "Google sign-in isn't configured on this server. The owner needs to add Google OAuth credentials (see docs/SETUP.md)."}
               </span>
             </div>
           )}
@@ -120,7 +120,7 @@ export function LandingPage() {
           <div className="ai-block grid gap-8 rounded-3xl p-8 sm:p-10 lg:grid-cols-[1.1fr_1fr]">
             <div>
               <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight"><Lock className="size-5 text-accent-ink" /> Your mail stays yours</h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-fg-2">FLUENT uses Google's official Gmail API with your permission. It fetches mail live and does not keep copies of your messages. AI only sees the emails needed for the request you make, and the AI can't send, delete or forward anything by itself.</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-fg-2">MailIQ uses Google's official Gmail API with your permission. It fetches mail live and does not keep copies of your messages. AI only sees the emails needed for the request you make, and the AI can't send, delete or forward anything by itself.</p>
               <div className="mt-5 flex flex-wrap gap-4 text-[13.5px]">
                 <Link to="/privacy" className="text-accent-ink hover:underline">Read the privacy policy</Link>
                 <Link to="/terms" className="text-accent-ink hover:underline">Terms of service</Link>
@@ -128,11 +128,11 @@ export function LandingPage() {
             </div>
             <ul className="space-y-3 text-[14px] text-fg-2">
               {[
-                "Email bodies and attachments are never stored in FLUENT's database",
+                "Email bodies and attachments are never stored in MailIQ's database",
                 "OAuth tokens encrypted at rest with AES-256-GCM",
                 "Exclude senders and labels from AI — enforced on the server",
                 "See every AI request in your privacy dashboard, and clear it any time",
-                "Export or delete your FLUENT data in one click",
+                "Export or delete your MailIQ data in one click",
                 "Gmail data is never used for ads or to train AI models",
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2.5"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent-ink" />{t}</li>
@@ -161,7 +161,7 @@ function ProductPreview() {
     { w: "w-24", s: "w-40" },
   ];
   return (
-    <figure className="relative mx-auto mt-14 max-w-5xl" aria-label="Illustration of the FLUENT interface">
+    <figure className="relative mx-auto mt-14 max-w-5xl" aria-label="Illustration of the MailIQ interface">
       <div aria-hidden className="absolute -inset-6 rounded-[32px] bg-[radial-gradient(50%_50%_at_50%_50%,rgba(139,92,246,0.25),transparent_70%)] blur-2xl" />
       <div aria-hidden className="relative grid h-[340px] grid-cols-[150px_1fr] overflow-hidden rounded-2xl border border-line-strong bg-[#0e0e12] text-left shadow-2xl sm:h-[420px] sm:grid-cols-[180px_280px_1fr]">
         <div className="space-y-2 border-r border-line p-4">
