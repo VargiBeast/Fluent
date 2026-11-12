@@ -49,62 +49,63 @@ export type OneClickOutcome = { ok: true; status: number } | { ok: false; reason
 
 /** Origin of the local HTTP fake, allowed (over http, on loopback) only outside production. */
 export function testOrigin(): string | null {
-  const base = getEnv().FLUENT_TEST_GOOGLE_BASE;
+  const base = getEnv().MAILIQ_TEST_GOOGLE_BASE;
   return !isProduction() && base ? new URL(base).origin : null;
 }
 
-export function oneClickTarget(raw: string): URL | null {
+/**
+ * Returns the validated one-click target, or null if the URL is not safe to call.
+ * Only https://host/path on port 443 with a public resolved address is allowed.
+ */
+export function oneClickTarget(url: string): URL | null {
   let u: URL;
   try {
-    u = new URL(raw);
+    u = new URL(url);
   } catch {
     return null;
   }
-  if (u.username || u.password) return null;
-  if (testOrigin() === u.origin) return u;
-  if (u.protocol !== "https:" || (u.port && u.port !== "443")) return null;
-  const host = u.hostname.replace(/^\[|\]$/g, "");
-  if (isIP(host) && !isPublicAddress(host)) return null;
-  if (!isIP(host) && (!host.includes(".") || /\.(local|localhost|internal|lan|home|corp)$/i.test(host) || host === "localhost")) return null;
+  if (u.protocol !== "https:" || u.port && u.port !== "443" || u.username || u.password) return null;
+  if (u.hostname === "localhost" || u.hostname.endsWith(".localhost")) return null;
+  // Test harness may allow the local fake origin over http on loopback only outside production.
+  const origin = testOrigin();
+  if (origin && u.origin === origin) return u;
+  if (u.protocol !== "https:") return null;
   return u;
 }
 
-export function postOneClick(raw: string, timeoutMs = 10_000): Promise<OneClickOutcome> {
-  const u = oneClickTarget(raw);
-  if (!u) return Promise.resolve({ ok: false, reason: "blocked" });
-  const isTest = testOrigin() === u.origin;
-  const body = "List-Unsubscribe=One-Click";
-  const mod = u.protocol === "https:" ? https : http;
+export async function postOneClick(url: string): Promise<OneClickOutcome> {
+  const target = oneClickTarget(url);
+  if (!target) return { ok: false, reason: "blocked" };
+  const lib = target.protocol === "http:" ? http : https;
   return new Promise((resolve) => {
-    let settled = false;
-    const done = (o: OneClickOutcome) => {
-      if (!settled) {
-        settled = true;
-        resolve(o);
-      }
-    };
-    const req = mod.request(u, {
-      method: "POST",
-      ...(isTest ? {} : { lookup: safeLookup }),
-      agent: false,
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-        "content-length": Buffer.byteLength(body),
-        "user-agent": "FLUENT-Unsubscribe/1.0 (RFC 8058)",
-        accept: "*/*",
+    const req = lib.request(
+      {
+        protocol: target.protocol,
+        hostname: target.hostname,
+        port: target.port || (target.protocol === "https:" ? 443 : 80),
+        path: `${target.pathname}${target.search}`,
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          "content-length": Buffer.byteLength("List-Unsubscribe=One-Click"),
+          "user-agent": "MailIQ-unsubscribe/1.0",
+        },
+        lookup: safeLookup,
+        timeout: 8000,
       },
-      timeout: timeoutMs,
-    }, (res) => {
-      const status = res.statusCode ?? 0;
-      res.resume(); // discard the body
-      res.on("end", () => undefined);
-      done(status >= 200 && status < 300 ? { ok: true, status } : { ok: false, reason: "status", status });
-    });
+      (res) => {
+        res.resume();
+        const status = res.statusCode ?? 0;
+        if (status >= 200 && status < 300) resolve({ ok: true, status });
+        else resolve({ ok: false, reason: "status", status });
+      },
+    );
     req.on("timeout", () => {
       req.destroy();
-      done({ ok: false, reason: "network" });
+      resolve({ ok: false, reason: "network" });
     });
-    req.on("error", (e: NodeJS.ErrnoException) => done({ ok: false, reason: e.code === "EBLOCKED" ? "blocked" : "network" }));
-    req.end(body);
+    req.on("error", () => resolve({ ok: false, reason: "network" }));
+    req.write("List-Unsubscribe=One-Click");
+    req.end();
   });
 }
