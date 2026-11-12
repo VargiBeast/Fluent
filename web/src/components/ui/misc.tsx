@@ -71,26 +71,18 @@ export function Card({ children, className }: { children: ReactNode; className?:
   return <div className={cn("rounded-[var(--radius-card)] border border-line bg-surface p-5", className)}>{children}</div>;
 }
 
-const LOGO_BODY = "M 30 45 H 98 Q 112 45 112 59 V 89 Q 112 103 98 103 H 30 Q 16 103 16 89 V 59 Q 16 45 30 45 Z";
-const LOGO_FLAP = "M 16 49 L 64 85 L 112 49 V 35 C 112 28 107 25 100 25 H 28 C 21 25 16 28 16 35 Z";
-const LOGO_SPARK = "M 102.00 10.00 L 107.66 24.34 L 122.00 30.00 L 107.66 35.66 L 102.00 50.00 L 96.34 35.66 L 82.00 30.00 L 96.34 24.34 Z";
-const LOGO_HALO_LIGHT = "M 102.00 7.60 L 108.34 23.66 L 124.40 30.00 L 108.34 36.34 L 102.00 52.40 L 95.66 36.34 L 79.60 30.00 L 95.66 23.66 Z";
-
+/** MailIQ lettermark: bold M on purple tile + IQ accent. Not a generic envelope. */
 function LogoMark({ variant, id }: { variant: "dark" | "light"; id: string }) {
-  const tile = variant === "dark" ? "#141418" : "#FFFFFF";
-  const flap = variant === "dark" ? "#E4DCFF" : "#C9B8FF";
   const gId = `${id}-g`;
   return (
     <>
-      <rect width="128" height="128" rx="28" fill={tile} stroke={variant === "light" ? "#E6E0F5" : undefined} strokeWidth={variant === "light" ? 2 : undefined} />
-      <g clipPath={`url(#${id}-clip)`}>
-        <path d={LOGO_BODY} fill={`url(#${gId})`} />
-        <path d={LOGO_FLAP} fill={flap} />
-        {variant === "light" && <path d={LOGO_HALO_LIGHT} fill="#FFFFFF" />}
-        {variant === "dark"
-          ? <path d={LOGO_SPARK} fill="#F3EEFF" />
-          : <path d={LOGO_SPARK} fill="#F7F3FF" stroke="#A78BFA" strokeWidth="1.8" strokeLinejoin="round" />}
-      </g>
+      <rect width="128" height="128" rx="28" fill={`url(#${gId})`} />
+      <path
+        d="M28 92 V36 H44 L64 68 L84 36 H100 V92 H86 V56 L68 84 H60 L42 56 V92 H28 Z"
+        fill="#FFFFFF"
+      />
+      <circle cx="100" cy="30" r="10" fill={variant === "dark" ? "#F5F3FF" : "#FFFFFF"} />
+      <circle cx="100" cy="30" r="5.5" fill={variant === "dark" ? "#7C5CFF" : "#6D28D9"} />
     </>
   );
 }
@@ -103,17 +95,15 @@ export function Logo({ className, withText = true }: { className?: string; withT
     <span className={cn("inline-flex items-center gap-2", className)}>
       <svg viewBox="0 0 128 128" className="size-7" aria-hidden>
         <defs>
-          <clipPath id={`${darkId}-clip`}><rect width="128" height="128" rx="28" /></clipPath>
-          <clipPath id={`${lightId}-clip`}><rect width="128" height="128" rx="28" /></clipPath>
-          <linearGradient id={`${darkId}-g`} x1="16" y1="24" x2="112" y2="102" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#C4B5FD" />
-            <stop offset="0.45" stopColor="#7C5CFF" />
-            <stop offset="1" stopColor="#5B21B6" />
+          <linearGradient id={`${darkId}-g`} x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#A78BFA" />
+            <stop offset="0.55" stopColor="#7C5CFF" />
+            <stop offset="1" stopColor="#4C1D95" />
           </linearGradient>
-          <linearGradient id={`${lightId}-g`} x1="16" y1="24" x2="112" y2="102" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#C4B5FD" />
-            <stop offset="0.45" stopColor="#7C5CFF" />
-            <stop offset="1" stopColor="#5B21B6" />
+          <linearGradient id={`${lightId}-g`} x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#A78BFA" />
+            <stop offset="0.55" stopColor="#7C5CFF" />
+            <stop offset="1" stopColor="#4C1D95" />
           </linearGradient>
         </defs>
         <g className="hidden dark:block">
