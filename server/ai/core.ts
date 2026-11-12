@@ -5,7 +5,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { z } from "zod";
 import { aiApiKey, aiBaseUrl, aiConfigured, aiProvider, getEnv } from "../env.js";
 import { HttpError, notConfigured } from "../lib/errors.js";
-import { logger } from "../logger.js";
+import { log as logger } from "../logger.js";
 
 export const DEFAULT_MODELS = { google: "gemini-3.5-flash-lite", xai: "grok-4.7", openai: "gpt-4.1-mini" } as const;
 
