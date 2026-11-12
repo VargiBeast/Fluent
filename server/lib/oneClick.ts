@@ -53,29 +53,26 @@ export function testOrigin(): string | null {
   return !isProduction() && base ? new URL(base).origin : null;
 }
 
-/**
- * Returns the validated one-click target, or null if the URL is not safe to call.
- * Only https://host/path on port 443 with a public resolved address is allowed.
- */
-export function oneClickTarget(url: string): URL | null {
+export function oneClickTarget(raw: string): URL | null {
   let u: URL;
   try {
-    u = new URL(url);
+    u = new URL(raw);
   } catch {
     return null;
   }
-  if (u.protocol !== "https:" || u.port && u.port !== "443" || u.username || u.password) return null;
-  if (u.hostname === "localhost" || u.hostname.endsWith(".localhost")) return null;
-  // Test harness may allow the local fake origin over http on loopback only outside production.
-  const origin = testOrigin();
-  if (origin && u.origin === origin) return u;
-  if (u.protocol !== "https:") return null;
+  if (u.username || u.password) return null;
+  if (testOrigin() === u.origin) return u;
+  if (u.protocol !== "https:" || (u.port && u.port !== "443")) return null;
+  const host = u.hostname.replace(/^\[|\]$/g, "");
+  if (isIP(host) && !isPublicAddress(host)) return null;
+  if (!isIP(host) && (!host.includes(".") || /\.(local|localhost|internal|lan|home|corp)$/i.test(host) || host === "localhost")) return null;
   return u;
 }
 
-export async function postOneClick(url: string): Promise<OneClickOutcome> {
-  const target = oneClickTarget(url);
-  if (!target) return { ok: false, reason: "blocked" };
+export function postOneClick(raw: string, timeoutMs = 10_000): Promise<OneClickOutcome> {
+  const target = oneClickTarget(raw);
+  if (!target) return Promise.resolve({ ok: false, reason: "blocked" });
+  const body = "List-Unsubscribe=One-Click";
   const lib = target.protocol === "http:" ? http : https;
   return new Promise((resolve) => {
     const req = lib.request(
@@ -87,11 +84,12 @@ export async function postOneClick(url: string): Promise<OneClickOutcome> {
         method: "POST",
         headers: {
           "content-type": "application/x-www-form-urlencoded",
-          "content-length": Buffer.byteLength("List-Unsubscribe=One-Click"),
-          "user-agent": "MailIQ-unsubscribe/1.0",
+          "content-length": Buffer.byteLength(body),
+          // No cookies, no auth, no custom headers that could amplify SSRF impact.
+          "user-agent": "MailIQ-one-click/1.0",
         },
         lookup: safeLookup,
-        timeout: 8000,
+        timeout: timeoutMs,
       },
       (res) => {
         res.resume();
@@ -105,7 +103,7 @@ export async function postOneClick(url: string): Promise<OneClickOutcome> {
       resolve({ ok: false, reason: "network" });
     });
     req.on("error", () => resolve({ ok: false, reason: "network" }));
-    req.write("List-Unsubscribe=One-Click");
+    req.write(body);
     req.end();
   });
 }

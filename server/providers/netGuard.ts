@@ -24,12 +24,12 @@ function testPorts(): Map<number, number> | null {
 const blocked = () => new HttpError(400, "mail_server_blocked", "That mail server address isn't allowed. Use your provider's public IMAP/SMTP server name.");
 
 /**
- * Resolve and pin a mail server: DNS names only, ports 993/465/587 only, every address must be public.
- * In non-production tests, `*.fluent.test` can be mapped to loopback ports via MAILIQ_TEST_MAIL_PORTS.
+ * Resolve a mail server name once, refuse private/loopback/link-local/reserved addresses, and return the IP to
+ * connect to. The caller connects to that exact IP (with SNI = the name), so a DNS answer that changes between
+ * this check and the connection (rebinding) can't redirect it. Only ports 993, 465 and 587.
  */
 export async function pinMailServer(host: string, port: number): Promise<PinnedTarget> {
-  host = host.trim().toLowerCase();
-  if (!host || host.length > 253 || !ALLOWED_PORTS.has(port)) throw blocked();
+  if (!ALLOWED_PORTS.has(port)) throw blocked();
   if (isIP(host)) throw blocked(); // names only, so TLS certificates can be verified
   const test = testPorts();
   if (test && host.endsWith(".fluent.test")) {
