@@ -46,7 +46,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   context?: { accountId: string; threadId: string };
   prefill?: Prefill;
 }) {
-  const { config, session } = useSession();
+  const { config } = useSession();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -66,7 +66,6 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
     } else {
       setInput(prefill.text);
     }
-    // Only when a new prefill arrives (n bumps).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, prefill?.n]);
 
@@ -92,7 +91,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
     onSuccess: (res) => {
       if (res.kind === "plan") push({ role: "plan", plan: res.plan });
       else if (res.kind === "answer") push({ role: "assistant", text: res.text, citations: res.citations });
-      else push({ role: "assistant", text: res.text ?? "Done." });
+      else push({ role: "assistant", text: (res as { text?: string }).text ?? "Done." });
     },
     onError: (err) => push({ role: "error", text: errorMessage(err) }),
   });
@@ -234,7 +233,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
 }
 
 /** Plan preview card used by Copilot and Overview. */
-export function PlanCard({ plan, onOpenThread }: { plan: PlanPreview; onOpenThread?: (accountId: string; threadId: string) => void }) {
+export function PlanCard({ plan, onOpenThread }: { plan: PlanPreview; onOpenThread?: (accountId: string, threadId: string) => void }) {
   return (
     <div className="space-y-3 p-1">
       <p className="text-[13.5px] text-fg">{plan.summary}</p>
