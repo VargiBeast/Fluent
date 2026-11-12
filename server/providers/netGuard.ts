@@ -43,5 +43,6 @@ export async function pinMailServer(host: string, port: number): Promise<PinnedT
   } catch {
     throw new HttpError(400, "mail_server_unknown", `Couldn't find the mail server ${host}.`);
   }
-  if (!addrs.length || addrs.some((a) => !isPublicAddress(a.address))) throw blocked();\n  return { address: addrs[0]!.address, port, servername: host, plaintext: false };
+  if (!addrs.length || addrs.some((a) => !isPublicAddress(a.address))) throw blocked();
+  return { address: addrs[0]!.address, port, servername: host, plaintext: false };
 }
