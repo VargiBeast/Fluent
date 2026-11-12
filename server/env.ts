@@ -47,6 +47,11 @@ export function resetEnv(): void {
   cached = null;
 }
 
+/** True when NODE_ENV is production. Prefer this over reading process.env directly. */
+export function isProduction(): boolean {
+  return getEnv().NODE_ENV === "production";
+}
+
 export function googleConfigured(): boolean {
   const e = getEnv();
   return Boolean(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET);

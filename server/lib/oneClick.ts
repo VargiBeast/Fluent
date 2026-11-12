@@ -49,7 +49,7 @@ export type OneClickOutcome = { ok: true; status: number } | { ok: false; reason
 
 /** Origin of the local HTTP fake, allowed (over http, on loopback) only outside production. */
 export function testOrigin(): string | null {
-  const base = getEnv().FLUENT_TEST_GOOGLE_BASE;
+  const base = getEnv().MAILIQ_TEST_GOOGLE_BASE;
   return !isProduction() && base ? new URL(base).origin : null;
 }
 

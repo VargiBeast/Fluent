@@ -16,7 +16,7 @@ export interface PinnedTarget {
 const ALLOWED_PORTS = new Set([993, 465, 587]);
 
 function testPorts(): Map<number, number> | null {
-  const raw = getEnv().FLUENT_TEST_MAIL_PORTS;
+  const raw = getEnv().MAILIQ_TEST_MAIL_PORTS;
   if (isProduction() || !raw) return null;
   return new Map(raw.split(",").map((p) => p.split("=").map(Number) as [number, number]));
 }
