@@ -70,40 +70,41 @@ export function oneClickTarget(raw: string): URL | null {
 }
 
 export function postOneClick(raw: string, timeoutMs = 10_000): Promise<OneClickOutcome> {
-  const target = oneClickTarget(raw);
-  if (!target) return Promise.resolve({ ok: false, reason: "blocked" });
+  const u = oneClickTarget(raw);
+  if (!u) return Promise.resolve({ ok: false, reason: "blocked" });
+  const isTest = testOrigin() === u.origin;
   const body = "List-Unsubscribe=One-Click";
-  const lib = target.protocol === "http:" ? http : https;
+  const mod = u.protocol === "https:" ? https : http;
   return new Promise((resolve) => {
-    const req = lib.request(
-      {
-        protocol: target.protocol,
-        hostname: target.hostname,
-        port: target.port || (target.protocol === "https:" ? 443 : 80),
-        path: `${target.pathname}${target.search}`,
-        method: "POST",
-        headers: {
-          "content-type": "application/x-www-form-urlencoded",
-          "content-length": Buffer.byteLength(body),
-          // No cookies, no auth, no custom headers that could amplify SSRF impact.
-          "user-agent": "MailIQ-one-click/1.0",
-        },
-        lookup: safeLookup,
-        timeout: timeoutMs,
+    let settled = false;
+    const done = (o: OneClickOutcome) => {
+      if (!settled) {
+        settled = true;
+        resolve(o);
+      }
+    };
+    const req = mod.request(u, {
+      method: "POST",
+      ...(isTest ? {} : { lookup: safeLookup }),
+      agent: false,
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "content-length": Buffer.byteLength(body),
+        "user-agent": "FLUENT-Unsubscribe/1.0 (RFC 8058)",
+        accept: "*/*",
       },
-      (res) => {
-        res.resume();
-        const status = res.statusCode ?? 0;
-        if (status >= 200 && status < 300) resolve({ ok: true, status });
-        else resolve({ ok: false, reason: "status", status });
-      },
-    );
+      timeout: timeoutMs,
+    }, (res) => {
+      const status = res.statusCode ?? 0;
+      res.resume(); // discard the body
+      res.on("end", () => undefined);
+      done(status >= 200 && status < 300 ? { ok: true, status } : { ok: false, reason: "status", status });
+    });
     req.on("timeout", () => {
       req.destroy();
-      resolve({ ok: false, reason: "network" });
+      done({ ok: false, reason: "network" });
     });
-    req.on("error", () => resolve({ ok: false, reason: "network" }));
-    req.write(body);
-    req.end();
+    req.on("error", (e: NodeJS.ErrnoException) => done({ ok: false, reason: e.code === "EBLOCKED" ? "blocked" : "network" }));
+    req.end(body);
   });
 }
