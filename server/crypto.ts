@@ -6,7 +6,9 @@ const VERSION = "v1";
 function masterKey(): Buffer {
   const raw = getEnv().TOKEN_ENCRYPTION_KEY;
   if (!raw) throw new Error("TOKEN_ENCRYPTION_KEY is not set");
-  return Buffer.from(raw, "base64");
+  const key = Buffer.from(raw, "base64");
+  if (key.length !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be 32 bytes (base64-encoded)");
+  return key;
 }
 
 function deriveKey(purpose: string, salt: Buffer): Buffer {
@@ -51,4 +53,17 @@ export function safeEqual(a: string, b: string): boolean {
   const bb = Buffer.from(b);
   if (ba.length !== bb.length) return false;
   return timingSafeEqual(ba, bb);
+}
+
+/** SHA-256 hex digest (64 chars). Used for session ids. */
+export function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/**
+ * RFC 7636 S256 code_challenge: BASE64URL(SHA256(code_verifier)).
+ * Test vector: verifier "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk" → "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+ */
+export function pkceChallenge(verifier: string): string {
+  return createHash("sha256").update(verifier).digest("base64url");
 }
