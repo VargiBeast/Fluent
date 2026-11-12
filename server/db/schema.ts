@@ -158,7 +158,7 @@ export const snoozes = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
-    uniqueIndex("snoozes_thread_uq").on(t.userId, t.accountId, t.threadId, t.kind),
+    uniqueIndex("snoozes_thread_uq").on(t.accountId, t.threadId),
     index("snoozes_due_idx").on(t.dueAt),
   ],
 );
@@ -192,7 +192,10 @@ export const readLater = pgTable(
     threadId: text("thread_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [uniqueIndex("read_later_uq").on(t.userId, t.accountId, t.threadId)],
+  (t) => [
+    uniqueIndex("read_later_thread_uq").on(t.accountId, t.threadId),
+    index("read_later_user_idx").on(t.userId, t.createdAt),
+  ],
 );
 
 export const threadNotes = pgTable(
@@ -211,7 +214,7 @@ export const threadNotes = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
-    uniqueIndex("thread_notes_uq").on(t.userId, t.accountId, t.threadId),
+    uniqueIndex("thread_notes_thread_uq").on(t.accountId, t.threadId),
     index("thread_notes_user_idx").on(t.userId, t.updatedAt),
   ],
 );
