@@ -1,24 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <style>
-    .light { display: none; }
-    @media (prefers-color-scheme: light) {
-      .dark { display: none; }
-      .light { display: inline; }
-    }
-  </style>
-  <defs><clipPath id="fav-clip"><rect width="128" height="128" rx="28"/></clipPath></defs>
-  <g class="dark"><rect width="128" height="128" rx="28" fill="#141418"/><g clip-path="url(#fav-clip)"><defs><linearGradient id="fav-d-g" x1="16" y1="24" x2="112" y2="102" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#C4B5FD"/><stop offset="0.45" stop-color="#7C5CFF"/><stop offset="1" stop-color="#5B21B6"/>
-  </linearGradient></defs>
-    <path d="M 30 45 H 98 Q 112 45 112 59 V 89 Q 112 103 98 103 H 30 Q 16 103 16 89 V 59 Q 16 45 30 45 Z" fill="url(#fav-d-g)"/>
-    <path d="M 16 49 L 64 85 L 112 49 V 35 C 112 28 107 25 100 25 H 28 C 21 25 16 28 16 35 Z" fill="#E4DCFF"/>
-    <path d="M 102.00 10.00 L 107.66 24.34 L 122.00 30.00 L 107.66 35.66 L 102.00 50.00 L 96.34 35.66 L 82.00 30.00 L 96.34 24.34 Z" fill="#F3EEFF"/></g></g>
-  <g class="light"><rect width="128" height="128" rx="28" fill="#FFFFFF" stroke="#E6E0F5" stroke-width="2"/><g clip-path="url(#fav-clip)"><defs><linearGradient id="fav-l-g" x1="16" y1="24" x2="112" y2="102" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#C4B5FD"/><stop offset="0.45" stop-color="#7C5CFF"/><stop offset="1" stop-color="#5B21B6"/>
-  </linearGradient></defs>
-    <path d="M 30 45 H 98 Q 112 45 112 59 V 89 Q 112 103 98 103 H 30 Q 16 103 16 89 V 59 Q 16 45 30 45 Z" fill="url(#fav-l-g)"/>
-    <path d="M 16 49 L 64 85 L 112 49 V 35 C 112 28 107 25 100 25 H 28 C 21 25 16 28 16 35 Z" fill="#C9B8FF"/>
-    <path d="M 102.00 8.60 L 108.05 23.95 L 123.40 30.00 L 108.05 36.05 L 102.00 51.40 L 95.95 36.05 L 80.60 30.00 L 95.95 23.95 Z" fill="#FFFFFF"/>
-       <path d="M 102.00 10.00 L 107.66 24.34 L 122.00 30.00 L 107.66 35.66 L 102.00 50.00 L 96.34 35.66 L 82.00 30.00 L 96.34 24.34 Z" fill="#F7F3FF" stroke="#A78BFA" stroke-width="1.8" stroke-linejoin="round"/></g></g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="g" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A78BFA"/>
+      <stop offset="0.55" stop-color="#7C5CFF"/>
+      <stop offset="1" stop-color="#4C1D95"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#g)"/>
+  <!-- Stylized M (unique lettermark, not an envelope) -->
+  <path d="M28 92 V36 H44 L64 68 L84 36 H100 V92 H86 V56 L68 84 H60 L42 56 V92 H28 Z" fill="#FFFFFF"/>
+  <!-- IQ dot accent -->
+  <circle cx="100" cy="30" r="10" fill="#F5F3FF"/>
+  <circle cx="100" cy="30" r="5.5" fill="#7C5CFF"/>
 </svg>
