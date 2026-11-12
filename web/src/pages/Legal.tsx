@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Compass } from "lucide-react";
 import { Logo } from "@/components/ui/misc";
 
-/** Operator identity shown on Privacy and Terms. Update CONTACT_EMAIL before Google OAuth verification. */
+/** Operator identity shown on Privacy and Terms. and Terms. Update CONTACT_EMAIL before Google OAuth verification. */
 export const OPERATOR = "Varg Rodal Kjønø";
 export const CONTACT_EMAIL = "[contact email — to be filled in by the owner]";
 export const LAST_UPDATED = "November 12, 2026";
@@ -112,7 +112,7 @@ export function PrivacyPage() {
       <p>We do not sell your information. We share it only with service providers that process it on our behalf to run MailIQ:</p>
       <UL>
         <li>Google (authentication and the Gmail API).</li>
-        <li>Vercel Web Analytics, which counts page views without cookies. It only ever receives a generic page path such as “/app/inbox” or “/app/inbox/thread”, never email content, addresses, search terms, label names names or thread ids.</li>
+        <li>Vercel Web Analytics, which counts page views without cookies. It only ever receives a generic page path such as “/app/inbox” or “/app/inbox/thread”, never email content, addresses, search terms, label names or thread ids.</li>
         <li>Our hosting provider (Vercel) and database provider (managed PostgreSQL, e.g. Supabase), which store the data listed in section 2.</li>
         <li>The AI provider (Google, through the Gemini API, by default; or xAI or OpenAI if the operator configures them), only for AI requests you make.</li>
         <li>Microsoft (only if you connect an Outlook / Microsoft 365 mailbox), for that mailbox's mail API.</li>
