@@ -86,3 +86,29 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
     </RD.Root>
   );
 }
+
+/** Minimal plan preview card used by Overview (and eventually the full Copilot flow). */
+export function PlanCard({ plan }: { plan: PlanPreview }) {
+  return (
+    <div className="space-y-3 p-1">
+      <p className="text-[13.5px] text-fg">{plan.summary}</p>
+      <ul className="space-y-2">
+        {plan.actions.map((a) => (
+          <li key={a.index} className="rounded-xl border border-line bg-surface-2 px-3 py-2">
+            <p className="text-[13px] font-medium text-fg">{a.title}</p>
+            {a.note && <p className="mt-0.5 text-[12px] text-fg-3">{a.note}</p>}
+            {a.threads.length > 0 && (
+              <p className="mt-1 text-[11.5px] text-fg-3">{a.threads.length} conversation{a.threads.length === 1 ? "" : "s"}</p>
+            )}
+            {a.drafts.length > 0 && (
+              <p className="mt-1 text-[11.5px] text-fg-3">{a.drafts.length} draft{a.drafts.length === 1 ? "" : "s"}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+      {!plan.planId && (
+        <p className="text-[12px] text-fg-3">This is a preview. Confirm to continue.</p>
+      )}
+    </div>
+  );
+}
