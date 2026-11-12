@@ -71,47 +71,25 @@ export function Card({ children, className }: { children: ReactNode; className?:
   return <div className={cn("rounded-[var(--radius-card)] border border-line bg-surface p-5", className)}>{children}</div>;
 }
 
-/** MailIQ lettermark: bold M on purple tile + IQ accent. Not a generic envelope. */
-function LogoMark({ variant, id }: { variant: "dark" | "light"; id: string }) {
-  const gId = `${id}-g`;
+/** MailIQ lettermark: bold M on purple tile (OAuth + app icon). */
+function LogoMark({ id }: { id: string }) {
   return (
     <>
-      <rect width="128" height="128" rx="28" fill={`url(#${gId})`} />
+      <rect width="128" height="128" rx="32" fill="#7C3AED" />
       <path
-        d="M28 92 V36 H44 L64 68 L84 36 H100 V92 H86 V56 L68 84 H60 L42 56 V92 H28 Z"
+        d="M22 98V30h18.5l23.5 48.5L87.5 30H106v68H91.5V52.5L72 92H56L36.5 52.5V98H22z"
         fill="#FFFFFF"
       />
-      <circle cx="100" cy="30" r="10" fill={variant === "dark" ? "#F5F3FF" : "#FFFFFF"} />
-      <circle cx="100" cy="30" r="5.5" fill={variant === "dark" ? "#7C5CFF" : "#6D28D9"} />
     </>
   );
 }
 
 export function Logo({ className, withText = true }: { className?: string; withText?: boolean }) {
   const rawId = useId().replace(/:/g, "");
-  const darkId = `${rawId}d`;
-  const lightId = `${rawId}l`;
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <svg viewBox="0 0 128 128" className="size-7" aria-hidden>
-        <defs>
-          <linearGradient id={`${darkId}-g`} x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#A78BFA" />
-            <stop offset="0.55" stopColor="#7C5CFF" />
-            <stop offset="1" stopColor="#4C1D95" />
-          </linearGradient>
-          <linearGradient id={`${lightId}-g`} x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#A78BFA" />
-            <stop offset="0.55" stopColor="#7C5CFF" />
-            <stop offset="1" stopColor="#4C1D95" />
-          </linearGradient>
-        </defs>
-        <g className="hidden dark:block">
-          <LogoMark variant="dark" id={darkId} />
-        </g>
-        <g className="dark:hidden">
-          <LogoMark variant="light" id={lightId} />
-        </g>
+        <LogoMark id={rawId} />
       </svg>
       {withText && <span className="text-[15px] font-semibold tracking-[0.18em] text-fg">MailIQ</span>}
     </span>
