@@ -20,3 +20,6 @@ export const log = pino({
     remove: true,
   },
 });
+
+/** Alias for modules that import { logger } */
+export const logger = log;
