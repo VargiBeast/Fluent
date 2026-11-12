@@ -3,13 +3,10 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Compass } from "lucide-react";
 import { Logo } from "@/components/ui/misc";
 
-/**
- * OWNER ACTION: replace these placeholders before publishing or submitting for Google OAuth verification.
- * They are rendered visibly so an unfilled policy is obvious.
- */
-export const OPERATOR = "[Operator name — to be filled in by the owner]";
+/** Operator identity shown on Privacy and Terms. Update CONTACT_EMAIL before Google OAuth verification. */
+export const OPERATOR = "Varg Rodal Kjønø";
 export const CONTACT_EMAIL = "[contact email — to be filled in by the owner]";
-export const LAST_UPDATED = "November 10, 2026";
+export const LAST_UPDATED = "November 12, 2026";
 
 export function PublicFooter() {
   return (
@@ -56,7 +53,7 @@ export function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy">
       <p>
-        This policy explains how MailIQ (“MailIQ”, “we”), operated by <Placeholder>{OPERATOR}</Placeholder>, accesses, uses, stores and shares your information when you use the MailIQ email client. MailIQ is an interface for your own Gmail account: it reads and changes your mail only to show it to you and to carry out the actions you take.
+        This policy explains how MailIQ (“MailIQ”, “we”), operated by <strong className="text-fg">{OPERATOR}</strong>, accesses, uses, stores and shares your information when you use the MailIQ email client. MailIQ is an interface for your own Gmail account: it reads and changes your mail only to show it to you and to carry out the actions you take.
       </p>
 
       <H>1. Information we access from Google</H>
@@ -77,8 +74,10 @@ export function PrivacyPage() {
         <li>An AI access log (if enabled): the time, the AI feature used, and the Gmail thread IDs and subjects (encrypted) of the emails the AI read. Email bodies are never logged.</li>
         <li>A security log of sign-ins, account connections and sensitive setting changes, without email content.</li>
         <li>Short-lived rate-limit counters used to prevent abuse.</li>
+        <li>Optional private thread notes and email templates you create, stored encrypted with AES-256-GCM.</li>
+        <li>Optional IMAP account credentials you add yourself, stored encrypted; not used for Google sign-in.</li>
       </UL>
-      <p><strong className="text-fg">MailIQ does not store your email messages, bodies, attachments or contacts.</strong> They are fetched from Gmail when you view them and are held only in memory while a request is processed. Drafts you save are stored in your Gmail account, not by MailIQ.</p>
+      <p><strong className="text-fg">MailIQ does not store your email messages, bodies, attachments or contacts by default.</strong> They are fetched from Gmail when you view them and are held only in memory while a request is processed. Drafts you save are stored in your Gmail account, not by MailIQ.</p>
 
       <H>3. How we use your information</H>
       <p>We use Google user data only to provide and improve the user-facing features of MailIQ that you see and use: displaying, searching, organising, composing and sending your email, and the AI features described below. We do not use it for anything else.</p>
@@ -113,24 +112,25 @@ export function PrivacyPage() {
       <p>We do not sell your information. We share it only with service providers that process it on our behalf to run MailIQ:</p>
       <UL>
         <li>Google (authentication and the Gmail API).</li>
-        <li>Vercel Web Analytics, which counts page views without cookies. It only ever receives a generic page path such as “/app/inbox” or “/app/inbox/thread”, never email content, addresses, search terms, label names or thread ids.</li>
+        <li>Vercel Web Analytics, which counts page views without cookies. It only ever receives a generic page path such as “/app/inbox” or “/app/inbox/thread”, never email content, addresses, search terms, label names names or thread ids.</li>
         <li>Our hosting provider (Vercel) and database provider (managed PostgreSQL, e.g. Supabase), which store the data listed in section 2.</li>
         <li>The AI provider (Google, through the Gemini API, by default; or xAI or OpenAI if the operator configures them), only for AI requests you make.</li>
+        <li>Microsoft (only if you connect an Outlook / Microsoft 365 mailbox), for that mailbox's mail API.</li>
       </UL>
       <p>We may disclose information if required by law or to protect the security of MailIQ and its users.</p>
 
       <H>7. Retention and deletion</H>
       <UL>
-        <li>OAuth tokens are kept until you disconnect the account or delete your data. Disconnecting revokes MailIQ's token at Google and deletes it.</li>
+        <li>OAuth tokens are kept until you disconnect the account or delete your data. Disconnecting revokes MailIQ's token at Google (or Microsoft) and deletes it.</li>
         <li>The AI access log is kept for the period you choose (default 30 days; “Off” records nothing).</li>
         <li>Sessions expire 30 days after sign-in, or earlier when you sign out or revoke them.</li>
         <li>Your profile, settings and security log are kept until you delete your data.</li>
-        <li>Settings → Your data lets you export everything MailIQ stores as JSON and permanently delete it. Deletion revokes Google access for every connected account and removes all records immediately. Encrypted database backups held by our providers expire on their normal schedule.</li>
+        <li>Settings → Your data lets you export everything MailIQ stores as JSON and permanently delete it. Deletion revokes provider access for every connected account and removes all records immediately. Encrypted database backups held by our providers expire on their normal schedule.</li>
         <li>Application logs never contain email bodies and are retained according to our hosting provider's log retention.</li>
       </UL>
 
       <H>8. Security</H>
-      <p>MailIQ uses HTTPS, encrypts OAuth tokens at rest, uses httpOnly secure cookies with CSRF protection, isolates each user's data, sanitises email HTML in a sandbox, and blocks remote images by default. No method of transmission or storage is completely secure, but we work to protect your data.</p>
+      <p>MailIQ uses HTTPS, encrypts OAuth tokens and optional notes, templates and IMAP credentials at rest (AES-256-GCM), uses httpOnly secure cookies with CSRF protection, isolates each user's data, sanitises email HTML in a sandbox, and blocks remote images by default. No method of transmission or storage is completely secure, but we work to protect your data.</p>
 
       <H>9. Your rights</H>
       <p>Depending on where you live (for example under the GDPR), you may have the right to access, correct, export, delete or restrict processing of your personal data, and to complain to a data-protection authority. You can exercise most of these directly in Settings, or contact us.</p>
@@ -142,7 +142,7 @@ export function PrivacyPage() {
       <p>We will post any changes to this policy on this page and update the date above. Material changes will be highlighted in the app.</p>
 
       <H>12. Contact</H>
-      <p>Questions or requests: <Placeholder>{CONTACT_EMAIL}</Placeholder>.</p>
+      <p>Questions or requests: <Placeholder>{CONTACT_EMAIL}</Placeholder> (operator: {OPERATOR}).</p>
     </LegalLayout>
   );
 }
@@ -150,9 +150,9 @@ export function PrivacyPage() {
 export function TermsPage() {
   return (
     <LegalLayout title="Terms of Service">
-      <p>These terms govern your use of MailIQ, operated by <Placeholder>{OPERATOR}</Placeholder>. By using MailIQ you agree to them.</p>
+      <p>These terms govern your use of MailIQ, operated by <strong className="text-fg">{OPERATOR}</strong>. By using MailIQ you agree to them.</p>
       <H>1. The service</H>
-      <p>MailIQ is an email client that connects to your Gmail account through Google's APIs. MailIQ is currently in preview: features may change, and the service may be interrupted.</p>
+      <p>MailIQ is an email client that connects to your Gmail account through Google's APIs (and optionally other mailboxes you connect). MailIQ is currently in preview: features may change, and the service may be interrupted.</p>
       <H>2. Your account</H>
       <p>You must have the right to use the Google accounts you connect. You are responsible for activity in your MailIQ account and for keeping access to your Google account secure. Our use of your data is described in the <Link to="/privacy" className="text-accent-ink hover:underline">Privacy Policy</Link>.</p>
       <H>3. Your email and AI output</H>
@@ -170,7 +170,7 @@ export function TermsPage() {
       <H>7. Changes</H>
       <p>We may update these terms and will post changes here with a new date.</p>
       <H>8. Contact</H>
-      <p><Placeholder>{CONTACT_EMAIL}</Placeholder></p>
+      <p><Placeholder>{CONTACT_EMAIL}</Placeholder> (operator: {OPERATOR})</p>
     </LegalLayout>
   );
 }
