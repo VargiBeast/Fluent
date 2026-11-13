@@ -146,7 +146,7 @@ settingsRoutes.get("/privacy/data", async (c) => {
     profile: { email: user.email, name: user.name },
     stored: [
       { key: "profile", label: "Profile", detail: "Google account id, email, name and profile photo URL", count: 1 },
-      { key: "accounts", label: "Connected Gmail accounts", detail: "Email, granted scopes, and OAuth tokens encrypted with AES-256-GCM", count: accs.length },
+      { key: "accounts", label: "Connected accounts", detail: "Email, provider, granted scopes, and OAuth tokens encrypted with AES-256-GCM", count: accs.length },
       { key: "sessions", label: "Sign-in sessions", detail: "Hashed session ids, browser user-agent, timestamps", count: sess.length },
       { key: "settings", label: "Preferences", detail: "Appearance, notifications, AI and privacy settings", count: settingsRow.length },
       { key: "ai_audit", label: "AI access log", detail: "Feature, timestamp, Gmail thread ids and encrypted subjects (never bodies)", count: audit.length },
@@ -191,7 +191,7 @@ settingsRoutes.get("/privacy/export", async (c) => {
   return new Response(JSON.stringify(data, null, 2), {
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "content-disposition": `attachment; filename="fluent-export-${new Date().toISOString().slice(0, 10)}.json"`,
+      "content-disposition": `attachment; filename="mailiq-export-${new Date().toISOString().slice(0, 10)}.json"`,
       "cache-control": "no-store",
     },
   });
