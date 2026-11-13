@@ -173,7 +173,7 @@ function ReaderBody({ thread, position, onClose, onOpenCopilot, folder }: { thre
 
       <div className="min-h-0 flex-1 overflow-y-auto scroll-thin">
         <SnoozeBanner thread={thread} />
-        <div className="mx-auto max-w-[860px] space-y-5 px-4 pb-8 pt-5 sm:px-8">
+        <div className="mx-auto max-w-[760px] space-y-5 px-4 pb-8 pt-5 sm:px-8">
           <div className="flex items-start gap-3">
             <span className={cn("mt-2 size-2.5 shrink-0 rounded-full", thread.important ? "bg-accent" : "bg-surface-3")} aria-hidden />
             <h1 className="text-[20px] font-semibold leading-snug text-fg">{thread.subject}</h1>

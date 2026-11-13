@@ -38,7 +38,9 @@ export function AiSummary({ thread, insights, autoEnabled, onRequest }: {
   onRequest: () => void;
 }) {
   const { config, session } = useSession();
-  const [expanded, setExpanded] = useState(false);
+  // Collapsed by default on small screens; desktop can auto-show body when data exists.
+  const [expanded, setExpanded] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches);
+
   const lastOther = [...thread.messages].reverse().find((m) => !m.isFromMe) ?? thread.messages[thread.messages.length - 1];
   const title = `Summary of ${lastOther ? displayName(lastOther.from) : "this"}’s email`;
 
