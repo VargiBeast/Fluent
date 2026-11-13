@@ -13,7 +13,7 @@ import { mimeDetail } from "./imap.js";
 import type { BulkActionSpec, DraftContents, LabelsInfo, ListOptions, MailProvider, OutgoingMessage, SavedDraft, SyncResult } from "./types.js";
 
 /**
- * Graph ids are base64 ("+", "/", "=") and up to ~200 chars. FLUENT ids use "." and "~" for "+" and "/"
+ * Graph ids are base64 ("+", "/", "=") and up to ~200 chars. MailIQ ids use "." and "~" for "+" and "/"
  * so they stay URL-path safe; the original is restored (and percent-encoded) before every Graph call.
  */
 export const GRAPH_ID = /^[A-Za-z0-9_=.~-]{1,256}$/;
@@ -41,7 +41,7 @@ export class GraphClient {
 
   private async accessToken(force = false): Promise<string> {
     const a = this.account;
-    if (a.status === "insufficient_scopes") throw new HttpError(403, "insufficient_scopes", `FLUENT doesn't have mail access for ${a.email}. Reconnect and allow the mail permissions.`);
+    if (a.status === "insufficient_scopes") throw new HttpError(403, "insufficient_scopes", `MailIQ doesn't have mail access for ${a.email}. Reconnect and allow the mail permissions.`);
     if (!force && this.token) return this.token;
     if (!force && a.accessTokenEnc && a.accessTokenExpiresAt && a.accessTokenExpiresAt.getTime() > Date.now() + 30_000) {
       this.token = decrypt(a.accessTokenEnc, "token", this.aad());
@@ -138,7 +138,7 @@ const MAX_MIME = 25 * 1024 * 1024;
 
 const addr = (r: GraphRecipient | undefined): Address => ({ name: r?.emailAddress?.name || r?.emailAddress?.address || "", email: (r?.emailAddress?.address ?? "").toLowerCase() });
 
-/** FLUENT search syntax mapped onto Graph: is:/from: become OData filters; other text is a KQL $search. */
+/** MailIQ search syntax mapped onto Graph: is:/from: become OData filters; other text is a KQL $search. */
 export function graphQuery(q: string | undefined, folder: ListOptions["folder"]): { filter: string[]; search: string | null } {
   const filter: string[] = [];
   const text: string[] = [];
@@ -237,7 +237,7 @@ export class GraphProvider implements MailProvider {
       this.g.request<Buffer>("GET", `/me/messages/${gid}/$value`, { raw: true }),
       this.wellKnownIds(),
     ]);
-    if (mime.length > MAX_MIME) throw new HttpError(413, "message_too_large", "This email is too large to open in FLUENT.");
+    if (mime.length > MAX_MIME) throw new HttpError(413, "message_too_large", "This email is too large to open in MailIQ.");
     const wk = ids.get(meta.parentFolderId ?? "");
     const parsed = await simpleParser(mime, { skipImageLinks: true });
     const msg = mimeDetail(this.account, toFluentId(meta.id), { labelIds: this.labels_(meta, wk), unread: !meta.isRead, sent: wk === "sentitems", draft: Boolean(meta.isDraft) || wk === "drafts" }, parsed);
