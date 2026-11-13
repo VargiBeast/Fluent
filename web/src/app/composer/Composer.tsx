@@ -474,7 +474,7 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
         open={confirmAi}
         onOpenChange={setConfirmAi}
         title="Send AI-assisted message?"
-        description="This message contains text written by AI. FLUENT never sends AI content without your explicit confirmation."
+        description="This message contains text written by AI. MailIQ never sends AI content without your explicit confirmation."
         confirmLabel="Yes, send it"
         loading={sending}
         onConfirm={() => void send(true)}
