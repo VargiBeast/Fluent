@@ -340,12 +340,14 @@ function ComposerForm({ init, mode, onClose }: { init: Initial; mode: ComposeReq
       hidden={hidden}
       onKeyDown={onKeyDown}
       className={cn(
-        "fixed z-40 flex flex-col overflow-hidden border border-line-strong bg-surface shadow-[var(--shadow)] animate-in",
+        "fixed z-40 flex flex-col overflow-hidden border border-line-strong bg-surface shadow-[var(--shadow-lg)] animate-scale-in",
         "inset-0 sm:inset-auto",
-        maximized ? "sm:inset-6 sm:rounded-2xl" : "sm:bottom-4 sm:right-4 sm:h-[min(640px,calc(100dvh-32px))] sm:w-[620px] sm:rounded-2xl",
+        maximized
+          ? "sm:inset-6 sm:rounded-[var(--radius-xl)]"
+          : "sm:bottom-4 sm:right-4 sm:h-[min(640px,calc(100dvh-32px))] sm:w-[min(640px,calc(100vw-2rem))] sm:rounded-[var(--radius-xl)]",
       )}
     >
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface-2 px-4">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-4">
         <h2 className="flex-1 text-[14px] font-semibold text-fg">{subject || title}</h2>
         <span className="text-[11.5px] text-fg-3" aria-live="polite">
           {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved to Drafts" : saveState === "error" ? "Not saved" : ""}
