@@ -65,7 +65,7 @@ export function buildMime(m: MimeMessage): string {
     ...(m.inReplyTo ? [`In-Reply-To: ${assertHeaderSafe(m.inReplyTo, "In-Reply-To")}`] : []),
     ...(m.references ? [`References: ${assertHeaderSafe(m.references, "References")}`] : []),
     "MIME-Version: 1.0",
-    "X-Mailer: FLUENT",
+    "X-Mailer: MailIQ",
   ];
   const alt = `fluent-alt-${randomBytes(9).toString("hex")}`;
   const altBody = [

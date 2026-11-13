@@ -90,7 +90,7 @@ export function postOneClick(raw: string, timeoutMs = 10_000): Promise<OneClickO
       headers: {
         "content-type": "application/x-www-form-urlencoded",
         "content-length": Buffer.byteLength(body),
-        "user-agent": "FLUENT-Unsubscribe/1.0 (RFC 8058)",
+        "user-agent": "MailIQ-Unsubscribe/1.0 (RFC 8058)",
         accept: "*/*",
       },
       timeout: timeoutMs,

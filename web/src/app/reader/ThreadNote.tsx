@@ -20,7 +20,7 @@ export function NoteButton({ thread, onClick }: { thread: ThreadDetail; onClick:
 }
 
 /**
- * A private note pinned to the conversation: only visible to you in FLUENT, encrypted at rest,
+ * A private note pinned to the conversation: only visible to you in MailIQ, encrypted at rest,
  * never added to the email, sent to Gmail or shared with the AI.
  */
 export function ThreadNotePanel({ thread, editing, onEditingChange }: { thread: ThreadDetail; editing: boolean; onEditingChange: (v: boolean) => void }) {

@@ -170,7 +170,7 @@ function useMailSync() {
           const msg = r.newInbox === 1 ? "1 new email" : `${r.newInbox} new emails`;
           if (notif?.inApp !== false) toast(msg, { description: "Your inbox was updated." });
           if (notif?.desktop && "Notification" in window && Notification.permission === "granted" && document.hidden === false) {
-            new Notification("FLUENT", { body: msg, silent: false });
+            new Notification("MailIQ", { body: msg, silent: false });
           }
         }
       } catch {

@@ -11,7 +11,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   runMigrations()
     .then(async () => {
       await closeDb();
-      process.stdout.write("FLUENT migrations applied\n");
+      process.stdout.write("MailIQ migrations applied\n");
     })
     .catch(async (err: unknown) => {
       await closeDb();

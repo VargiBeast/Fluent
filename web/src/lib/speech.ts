@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Voice dictation with the browser's Web Speech API. FLUENT never records, uploads or stores audio: recognition
+ * Voice dictation with the browser's Web Speech API. MailIQ never records, uploads or stores audio: recognition
  * happens in the browser (which may use its own speech service), and only the resulting text is used.
  */
 interface SpeechAlternative { transcript: string }

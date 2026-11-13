@@ -22,7 +22,7 @@ export function AddAccountDialog({ open, onOpenChange }: { open: boolean; onOpen
   };
   const option = "flex w-full items-center gap-3 disabled:cursor-not-allowed disabled:opacity-60 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-left text-[13.5px] text-fg hover:border-line-strong";
   return (
-    <Dialog open={open} onOpenChange={close} title={choice ? choiceTitle(choice) : "Add an account"} description={choice ? undefined : "FLUENT shows every account in one inbox, and you can switch between them in the sidebar."}>
+    <Dialog open={open} onOpenChange={close} title={choice ? choiceTitle(choice) : "Add an account"} description={choice ? undefined : "MailIQ shows every account in one inbox, and you can switch between them in the sidebar."}>
       {!choice ? (
         <div className="space-y-2">
           <button type="button" className={option} onClick={() => { window.location.href = "/api/auth/google/start?mode=link"; }}>

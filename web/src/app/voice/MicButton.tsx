@@ -5,7 +5,7 @@ import { IconButton } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { useDictation } from "@/lib/speech";
 
-export const DICTATION_PRIVACY = "Speech is turned into text by your browser. FLUENT never receives or stores audio.";
+export const DICTATION_PRIVACY = "Speech is turned into text by your browser. MailIQ never receives or stores audio.";
 
 /**
  * Microphone toggle for dictation. Final phrases go to `onText`; when `onPhrase` returns true it has handled the phrase

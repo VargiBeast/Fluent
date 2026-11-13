@@ -1,7 +1,7 @@
 {
-  "name": "MailIQ — AI email for Gmail",
+  "name": "MailIQ — AI-assisted email",
   "short_name": "MailIQ",
-  "description": "An AI-powered email client for Gmail.",
+  "description": "A private, AI-assisted email client for mailboxes you connect.",
   "id": "/app/inbox",
   "start_url": "/app/inbox",
   "scope": "/",
