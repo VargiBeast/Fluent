@@ -39,13 +39,15 @@ settingsRoutes.patch("/settings", async (c) => {
     ...current,
     ...Object.fromEntries(Object.entries(sections).map(([k, v]) => [k, { ...(current as Record<string, object>)[k], ...v }])),
   });
+  const nextOnboarded = onboarded !== undefined ? onboarded : (rows[0]?.onboarded ?? false);
   await db.insert(userSettings)
-    .values({ userId: user.id, data: next, onboarded: onboarded ?? rows[0]?.onboarded ?? false })
+    .values({ userId: user.id, data: next, onboarded: nextOnboarded })
     .onConflictDoUpdate({ target: userSettings.userId, set: { data: next, updatedAt: new Date(), ...(onboarded !== undefined ? { onboarded } : {}) } });
   if (patch.ai?.excludedLabels || patch.ai?.excludedSenders) await logSecurityEvent(user.id, "ai_exclusions_updated");
   if (patch.privacy?.keepAiHistoryDays !== undefined) await purgeAudit(user.id, next.privacy.keepAiHistoryDays);
   if (patch.ai?.enabled !== undefined) await logSecurityEvent(user.id, patch.ai.enabled ? "ai_enabled" : "ai_disabled");
-  return c.json({ settings: next });
+  // Include onboarded so clients can refresh the session gate without a full /auth/session refetch.
+  return c.json({ settings: next, onboarded: nextOnboarded });
 });
 
 // ---- Sessions & security ----
