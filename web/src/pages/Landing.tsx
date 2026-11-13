@@ -16,10 +16,10 @@ const ERRORS: Record<string, string> = {
 };
 
 const FEATURES = [
-  { icon: Inbox, title: "One calm inbox", text: "All your Gmail accounts in one unified, fast inbox with categories, labels, filters and keyboard shortcuts." },
+  { icon: Inbox, title: "One calm inbox", text: "Your connected accounts in one unified, fast inbox with folders, labels, filters and keyboard shortcuts." },
   { icon: Sparkles, title: "Summaries that get to the point", text: "Open a thread and see a short summary, key points, action items and deadlines." },
   { icon: PenLine, title: "Replies in your voice", text: "Draft, shorten or change the tone of an email. You always review AI text before it's sent." },
-  { icon: Search, title: "Search the way you think", text: "“Find the invoice I got last month” becomes a precise Gmail search you can see and edit." },
+  { icon: Search, title: "Search the way you think", text: "“Find the invoice I got last month” becomes a precise mailbox search you can see and edit." },
   { icon: MessageSquareText, title: "Ask your inbox", text: "Ask questions about your mail and get answers that link to the exact emails they came from." },
   { icon: ShieldCheck, title: "Private by design", text: "No email bodies stored, remote images blocked, AI exclusions for senders and labels, and a full AI access log." },
 ];
@@ -71,12 +71,12 @@ export function LandingPage() {
 
       <main className="relative">
         <section className="mx-auto max-w-6xl px-5 pb-16 pt-12 text-center sm:pt-20">
-          <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-[var(--ai-border)] bg-accent-soft px-3 py-1 text-[12.5px] text-ai-title"><Sparkles className="size-3.5" /> AI email client for Gmail</p>
+          <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-[var(--ai-border)] bg-accent-soft px-3 py-1 text-[12.5px] text-ai-title"><Sparkles className="size-3.5" /> Private AI-assisted email</p>
           <h1 className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl">
             Your inbox, <span className="bg-gradient-to-r from-accent-300 to-accent-600 bg-clip-text text-transparent">understood.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-[16px] leading-relaxed text-fg-2 sm:text-[17px]">
-            MailIQ reads your Gmail with you — summarizing threads, drafting replies and answering questions — while keeping you in control of every send.
+            MailIQ reads your mail with you — summarizing threads, drafting replies and answering questions — while keeping you in control of every send. Start with Google; connect more accounts when enabled.
           </p>
           {(error || deleted || !googleReady) && (
             <div role={error ? "alert" : "status"} className={`mx-auto mt-6 flex max-w-md items-start gap-2 rounded-xl border px-4 py-3 text-left text-[13.5px] ${error || !googleReady ? "border-warning/40 bg-warning/10" : "border-success/40 bg-success/10"}`}>
@@ -108,7 +108,7 @@ export function LandingPage() {
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {[
               { icon: Keyboard, text: "Keyboard-first: j/k, e to archive, r to reply, / to search." },
-              { icon: Tags, text: "Labels, folders and Gmail filters — every action syncs to Gmail." },
+              { icon: Tags, text: "Labels, folders and filters — actions sync back to your mail provider." },
               { icon: EyeOff, text: "Tracking pixels and remote images blocked until you allow them." },
             ].map((x) => (
               <div key={x.text} className="flex items-start gap-3 rounded-xl border border-line bg-surface/50 p-4 text-[13px] text-fg-2"><x.icon className="mt-0.5 size-4 shrink-0 text-accent-ink" />{x.text}</div>
@@ -120,7 +120,7 @@ export function LandingPage() {
           <div className="ai-block grid gap-8 rounded-3xl p-8 sm:p-10 lg:grid-cols-[1.1fr_1fr]">
             <div>
               <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight"><Lock className="size-5 text-accent-ink" /> Your mail stays yours</h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-fg-2">MailIQ uses Google's official Gmail API with your permission. It fetches mail live and does not keep copies of your messages. AI only sees the emails needed for the request you make, and the AI can't send, delete or forward anything by itself.</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-fg-2">MailIQ connects through official provider APIs (starting with Google) with your permission. It fetches mail live and does not keep copies of your messages. AI only sees the emails needed for the request you make, and the AI can't send, delete or forward anything by itself.</p>
               <div className="mt-5 flex flex-wrap gap-4 text-[13.5px]">
                 <Link to="/privacy" className="text-accent-ink hover:underline">Read the privacy policy</Link>
                 <Link to="/terms" className="text-accent-ink hover:underline">Terms of service</Link>
@@ -133,7 +133,7 @@ export function LandingPage() {
                 "Exclude senders and labels from AI — enforced on the server",
                 "See every AI request in your privacy dashboard, and clear it any time",
                 "Export or delete your MailIQ data in one click",
-                "Gmail data is never used for ads or to train AI models",
+                "Your mail data is never used for ads or to train MailIQ models",
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2.5"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent-ink" />{t}</li>
               ))}
