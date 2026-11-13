@@ -1,23 +1,21 @@
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { closeDb, getDb } from "./index.js";
-
-const here = path.dirname(fileURLToPath(import.meta.url));
+import { closeDb, getDb } from "./client.js";
 
 export async function runMigrations(): Promise<void> {
-  await migrate(getDb(), { migrationsFolder: path.join(here, "../../drizzle") });
+  const folder = fileURLToPath(new URL("../../drizzle", import.meta.url));
+  await migrate(getDb(), { migrationsFolder: folder });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   runMigrations()
-    .then(() => {
+    .then(async () => {
+      await closeDb();
       process.stdout.write("MailIQ migrations applied\n");
-      return closeDb();
     })
-    .then(() => process.exit(0))
-    .catch((e) => {
-      console.error(e);
+    .catch(async (err: unknown) => {
+      await closeDb();
+      process.stderr.write(`Migration failed: ${err instanceof Error ? err.message : String(err)}\n`);
       process.exit(1);
     });
 }
