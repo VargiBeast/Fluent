@@ -104,13 +104,13 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
   return (
     <RD.Root open={open} onOpenChange={onOpenChange}>
       <RD.Portal>
-        <RD.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in" />
+        <RD.Overlay className="fixed inset-0 z-50 bg-[var(--overlay)] data-[state=open]:animate-in" />
         <RD.Content
           className={cn(
-            "fixed z-50 flex flex-col border border-line bg-surface shadow-2xl outline-none",
+            "fixed z-50 flex flex-col border border-line-strong bg-surface shadow-[var(--shadow-lg)] outline-none animate-scale-in",
             expanded
-              ? "inset-4 max-h-[calc(100%-2rem)] rounded-2xl sm:inset-x-[12%] sm:inset-y-8"
-              : "bottom-0 right-0 top-0 w-full max-w-md border-l sm:rounded-l-2xl",
+              ? "inset-3 max-h-[calc(100%-1.5rem)] rounded-[var(--radius-xl)] sm:inset-x-[12%] sm:inset-y-8"
+              : "bottom-0 right-0 top-0 w-full max-w-md border-l sm:rounded-l-[var(--radius-xl)]",
           )}
         >
           <div className="flex items-center gap-2 border-b border-line px-4 py-3">
@@ -120,13 +120,13 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
             <div className="ml-auto flex items-center gap-1">
               <button
                 type="button"
-                className="hidden rounded-md p-1.5 text-fg-3 hover:bg-surface-2 sm:inline-flex"
+                className="hidden rounded-[var(--radius-sm)] p-1.5 text-fg-3 transition-colors hover:bg-surface-2 hover:text-fg sm:inline-flex focus-visible:outline-2 focus-visible:outline-[var(--accent-ring)]"
                 onClick={() => setExpanded((v) => !v)}
                 aria-label={expanded ? "Dock to the side" : "Expand Copilot"}
               >
                 {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
               </button>
-              <RD.Close className="rounded-md p-1.5 text-fg-3 hover:bg-surface-2" aria-label="Close">
+              <RD.Close className="rounded-[var(--radius-sm)] p-1.5 text-fg-3 transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-[var(--accent-ring)]" aria-label="Close">
                 <X className="size-4" />
               </RD.Close>
             </div>
@@ -146,7 +146,7 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
                     <button
                       key={p}
                       type="button"
-                      className="rounded-full border border-line bg-surface-2 px-3 py-1.5 text-left text-[12.5px] text-fg-2 hover:border-accent hover:text-fg"
+                      className="rounded-full border border-line bg-surface-2 px-3 py-1.5 text-left text-[12.5px] text-fg-2 transition-colors duration-[var(--duration-fast)] hover:border-accent hover:bg-accent-soft hover:text-fg focus-visible:outline-2 focus-visible:outline-[var(--accent-ring)]"
                       onClick={() => void send(p)}
                     >
                       {p}
