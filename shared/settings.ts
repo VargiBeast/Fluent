@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { FOCUS_CHOICES, focusUntilSchema } from "./focus.js";
 
-/** Accent colours. Purple is FLUENT's brand default; each one has light and dark tokens in index.css. */
+/** Accent colours. Purple is MailIQ's brand default; each one has light and dark tokens in index.css. */
 export const ACCENTS = ["purple", "blue", "teal", "rose", "orange"] as const;
 export type Accent = (typeof ACCENTS)[number];
 
@@ -55,7 +55,7 @@ export const settingsSchema = z.object({
     displayName: z.string().max(120).default(""),
   }).prefault({}),
   compose: z.object({
-    /** Seconds FLUENT waits before actually sending, so you can undo. */
+    /** Seconds MailIQ waits before actually sending, so you can undo. */
     undoSendSeconds: z.enum(["0", "5", "10", "20"]).default("5"),
   }).prefault({}),
   /** Focus mode: while `until` is in the future the inbox shows only important mail. */
@@ -108,5 +108,5 @@ export function parseSettings(raw: unknown): Settings {
   return r.success ? r.data : settingsSchema.parse({});
 }
 
-/** Typed confirmation for deleting a FLUENT account. */
+/** Typed confirmation for deleting a MailIQ account. */
 export const DELETE_ACCOUNT_PHRASE = "Delete my account";
