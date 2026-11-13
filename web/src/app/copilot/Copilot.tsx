@@ -15,6 +15,7 @@ import { displayName, listDate } from "@/lib/format";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Kbd } from "@/components/ui/misc";
 import { useCopilot } from "./context";
+import { buildCopilotPlanBody, mapCopilotReply } from "./planRequest";
 
 type Prefill = { text: string; autoSend: boolean; n: number; mode?: "ask" };
 
@@ -81,17 +82,11 @@ export function CopilotPanel({ open, onOpenChange, context, prefill }: {
 
   const ask = useMutation({
     mutationFn: async (text: string) => {
-      const body: Record<string, unknown> = { message: text };
-      if (scoped && context) {
-        body.accountId = context.accountId;
-        body.threadId = context.threadId;
-      }
-      return api.post<CopilotReply>("/copilot/ask", body);
+      const body = buildCopilotPlanBody(text, scoped && context ? context : null);
+      return api.post<CopilotReply>("/copilot/plan", body);
     },
     onSuccess: (res) => {
-      if (res.kind === "plan") push({ role: "plan", plan: res.plan });
-      else if (res.kind === "answer") push({ role: "assistant", text: res.text, citations: res.citations });
-      else push({ role: "assistant", text: (res as { text?: string }).text ?? "Done." });
+      push(mapCopilotReply(res));
     },
     onError: (err) => push({ role: "error", text: errorMessage(err) }),
   });
