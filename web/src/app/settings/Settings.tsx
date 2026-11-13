@@ -65,7 +65,7 @@ export function SettingsPage() {
         <h2 className="px-3 pb-2 text-[20px] font-semibold text-fg">Settings</h2>
         <AccountLink compact />
         {sections.map((s) => (
-          <NavLink key={s.id} to={`/app/settings/${s.id}`} className={({ isActive }) => cn("flex h-9 items-center gap-3 rounded-full px-3 text-[13.5px] transition-colors", isActive ? "bg-accent-soft font-medium text-fg" : "text-fg-2 hover:bg-surface-2 hover:text-fg")}>
+          <NavLink key={s.id} to={`/app/settings/${s.id}`} className={({ isActive }) => cn("flex h-9 items-center gap-3 rounded-[var(--radius-md)] px-3 text-[13.5px] transition-colors duration-[var(--duration-fast)]", isActive ? "bg-accent-soft font-medium text-fg ring-1 ring-inset ring-[var(--ai-border)]" : "text-fg-2 hover:bg-surface-2 hover:text-fg")}>
             <s.icon className="size-4 text-fg-3" aria-hidden />{s.label}
           </NavLink>
         ))}
