@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { singleKeysOff } from "@/lib/prefs";
 import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
-import { PenSquare } from "lucide-react";
 import * as RD from "@radix-ui/react-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { Sidebar } from "./Sidebar";
+import { MobileNav } from "./MobileNav";
 import { ComposerProvider, useComposer } from "./composer/context";
 import { ShortcutsProvider } from "./Shortcuts";
 import { Splash } from "@/components/Splash";
@@ -54,54 +54,58 @@ function Shell() {
 
   if (onboarding) return <Outlet />;
   return (
-    <div className={cn("flex h-full overflow-hidden bg-bg", density === "compact" ? "density-compact" : "density-comfortable")}>
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-accent focus:px-3 focus:py-2 focus:text-white">Skip to content</a>
-      <aside className="hidden w-[256px] shrink-0 border-r border-line bg-surface lg:block">
+    <div
+      className={cn(
+        "flex h-full overflow-hidden bg-bg",
+        density === "compact" ? "density-compact" : "density-comfortable",
+      )}
+    >
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-[var(--radius-sm)] focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-fg"
+      >
+        Skip to content
+      </a>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden w-[260px] shrink-0 border-r border-line bg-surface lg:block xl:w-[280px]">
         <Sidebar />
       </aside>
+
+      {/* Mobile folder drawer */}
       <RD.Root open={drawer} onOpenChange={setDrawer}>
         <RD.Portal>
-          <RD.Overlay data-drawer-overlay="" className="fixed inset-x-0 top-0 z-40 h-[100dvh] min-h-full bg-black/55 lg:hidden" />
-          <RD.Content className="fixed left-0 top-0 z-50 box-border flex h-[100dvh] min-h-full w-[290px] max-w-[85vw] flex-col border-r border-line bg-surface pb-[var(--sab)] pt-[var(--sat)] shadow-[var(--shadow)] animate-in lg:hidden" aria-describedby={undefined}>
+          <RD.Overlay
+            data-drawer-overlay=""
+            className="fixed inset-x-0 top-0 z-40 h-[100dvh] min-h-full bg-[var(--overlay)] lg:hidden"
+          />
+          <RD.Content
+            className={cn(
+              "fixed left-0 top-0 z-50 box-border flex h-[100dvh] min-h-full w-[min(300px,88vw)] flex-col",
+              "border-r border-line bg-surface pb-[var(--sab)] pt-[var(--sat)] shadow-[var(--shadow-lg)] animate-in lg:hidden",
+            )}
+            aria-describedby={undefined}
+          >
             <RD.Title className="sr-only">Navigation</RD.Title>
             <Sidebar onNavigate={() => setDrawer(false)} />
           </RD.Content>
         </RD.Portal>
       </RD.Root>
+
       <main id="main" className="flex min-w-0 flex-1 flex-col">
         <FocusBanner />
-        <div className="min-h-0 flex-1">
+        {/* Bottom padding reserves space for mobile tab bar */}
+        <div className="min-h-0 flex-1 pb-14 lg:pb-0">
           <Outlet />
         </div>
       </main>
+
       <LazyComposer />
       <CopilotHost />
       <PaletteHost />
-      <ComposeFab />
+      <MobileNav />
       <InstallHint />
     </div>
-  );
-}
-
-/** Mobile: the one floating action on list screens, a Compose pill. Copilot lives in the search pill and ⌘J. */
-function ComposeFab() {
-  const composer = useComposer();
-  const { isOpen } = useCopilot();
-  const inThread = useMatch("/app/:folder/:accountId/:threadId");
-  const inSettings = useMatch("/app/settings/*");
-  const inOnboarding = useMatch("/app/onboarding/*");
-  const inAccount = useMatch("/app/account");
-  if (isOpen || composer.requests.length > 0 || inThread || inSettings || inOnboarding || inAccount) return null;
-  return (
-    <button
-      type="button"
-      onClick={() => composer.open({ mode: "new" })}
-      aria-label="Compose"
-      data-fab=""
-      className="fixed bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 items-center gap-2.5 rounded-2xl bg-accent px-5 text-[15px] font-semibold text-accent-fg shadow-[0_4px_14px_-4px_rgba(0,0,0,0.4)] animate-in active:scale-95 lg:hidden"
-    >
-      <PenSquare className="size-[18px]" aria-hidden /> Compose
-    </button>
   );
 }
 
@@ -145,7 +149,7 @@ function useGlobalShortcuts() {
   }, [navigate, composer]);
 }
 
-/** Poll Gmail history for changes while the tab is visible; refresh views and notify about new mail. */
+/** Poll mail history for changes while the tab is visible; refresh views and notify about new mail. */
 function useMailSync() {
   const qc = useQueryClient();
   const { session } = useSession();
@@ -164,7 +168,10 @@ function useMailSync() {
         const back = (r.snoozeReturned ?? 0) + (r.remindersDue ?? 0);
         if (back > 0) {
           void qc.invalidateQueries({ queryKey: ["snoozes"] });
-          if (notif?.inApp !== false) toast(back === 1 ? "1 conversation is back in your Inbox" : `${back} conversations are back in your Inbox`, { description: r.remindersDue ? "Including a reminder: nobody replied yet." : "Your snooze ended." });
+          if (notif?.inApp !== false)
+            toast(back === 1 ? "1 conversation is back in your Inbox" : `${back} conversations are back in your Inbox`, {
+              description: r.remindersDue ? "Including a reminder: nobody replied yet." : "Your snooze ended.",
+            });
         }
         if (r.newInbox > 0 && !focusing) {
           const msg = r.newInbox === 1 ? "1 new email" : `${r.newInbox} new emails`;
@@ -201,5 +208,9 @@ function LazyComposer() {
     idle(() => void loadComposer());
   }, []);
   if (!requests.length) return null;
-  return <Suspense fallback={null}><ComposerHost /></Suspense>;
+  return (
+    <Suspense fallback={null}>
+      <ComposerHost />
+    </Suspense>
+  );
 }
