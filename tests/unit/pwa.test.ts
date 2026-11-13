@@ -21,7 +21,7 @@ function loadWorker() {
 
 describe("PWA", () => {
   it("manifest is installable", () => {
-    expect(manifest).toMatchObject({ short_name: "FLUENT", display: "standalone", start_url: "/app/inbox", scope: "/" });
+    expect(manifest).toMatchObject({ short_name: "MailIQ", display: "standalone", start_url: "/app/inbox", scope: "/" });
     expect(manifest.theme_color).toBe("#0b0b0e");
     const sizes = manifest.icons.map((i: { sizes: string; purpose: string }) => `${i.sizes}:${i.purpose}`);
     expect(sizes).toEqual(expect.arrayContaining(["192x192:any", "512x512:any", "512x512:maskable"]));

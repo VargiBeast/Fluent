@@ -19,7 +19,7 @@ async function request<T>(method: string, path: string, body?: unknown, signal?:
     res = await fetch(`/api${path}`, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, credentials: "same-origin", signal });
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError(0, "network", "Can't reach FLUENT. Check your connection.");
+    throw new ApiError(0, "network", "Can't reach MailIQ. Check your connection.");
   }
   const text = await res.text();
   let data: unknown;
