@@ -1,7 +1,7 @@
 import type { NewsletterSender } from "@shared/unsubscribe";
 
 /**
- * Senders you've unsubscribed from, remembered in this browser only (FLUENT stores nothing server-side for this),
+ * Senders you've unsubscribed from, remembered in this browser only (MailIQ stores nothing server-side for this),
  * so they move to the bottom with a badge until their old mail ages out of the scan.
  */
 export type UnsubscribedMap = Record<string, string>;

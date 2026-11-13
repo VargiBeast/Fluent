@@ -19,7 +19,7 @@ export function providerFor(a: AccountRow): MailProvider {
   if (kind === "gmail") return new GmailProvider(a);
   if (kind === "imap") return new ImapProvider(a);
   if (kind === "outlook") return new GraphProvider(a);
-  throw new HttpError(501, "provider_unavailable", "This kind of account isn't supported in this version of FLUENT yet.");
+  throw new HttpError(501, "provider_unavailable", "This kind of account isn't supported in this version of MailIQ yet.");
 }
 
 /** Capabilities without constructing a client (for account listings). */

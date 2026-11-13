@@ -4,7 +4,7 @@ import type { BeforeSendEvent } from "@vercel/analytics/react";
  * Privacy filter for Vercel Web Analytics. Only coarse, allow-listed page paths ever leave the
  * browser: query strings and fragments (search terms, label names, account ids) are dropped,
  * thread URLs collapse to `/app/<folder>/thread`, and anything unrecognised becomes a generic path.
- * FLUENT sends no custom events.
+ * MailIQ sends no custom events.
  */
 const PUBLIC = new Set(["/", "/privacy", "/terms"]);
 const APP_SECTIONS = new Set([
