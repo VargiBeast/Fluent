@@ -48,7 +48,7 @@ export function sanitizeEmailHtml(dirty: string, opts: SanitizeOptions): Sanitiz
     if (node.tagName === "A") {
       const href = node.getAttribute("href") ?? "";
       if (href && !/^(https?:|mailto:|tel:|#)/i.test(href)) node.removeAttribute("href");
-      // Root-relative or anchor links would resolve against FLUENT; neutralise them.
+      // Root-relative or anchor links would resolve against MailIQ; neutralise them.
       if (href.startsWith("/") || href.startsWith("#")) node.removeAttribute("href");
       node.setAttribute("target", "_blank");
       node.setAttribute("rel", "noopener noreferrer nofollow");
