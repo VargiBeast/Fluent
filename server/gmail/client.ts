@@ -66,7 +66,10 @@ export class GmailClient {
   }
 
   async request<T>(method: string, path: string, opts: { query?: Query; body?: unknown } = {}): Promise<T> {
-    const url = new URL(`${googleEndpoints().gmail}${path}`);
+    // Gmail REST resources live under /users/{userId}/... ("me" = the authorized user).
+    // Call sites pass resource paths like /threads or /labels; scope them here once.
+    const scopedPath = gmailResourcePath(path);
+    const url = new URL(`${googleEndpoints().gmail}${scopedPath}`);
     for (const [k, v] of Object.entries(opts.query ?? {})) {
       if (v === undefined) continue;
       if (Array.isArray(v)) v.forEach((x) => url.searchParams.append(k, x));
@@ -99,7 +102,7 @@ export class GmailClient {
           const j = (await res.json()) as { error?: { message?: string; status?: string } };
           reason = j.error?.status ?? "";
         } catch { /* ignore */ }
-        logger.warn({ gmailStatus: res.status, reason, method, path: path.replace(/\/[A-Za-z0-9_-]{6,}/g, "/:id") }, "gmail_error");
+        logger.warn({ gmailStatus: res.status, reason, method, path: scopedPath.replace(/\/[A-Za-z0-9_-]{6,}/g, "/:id") }, "gmail_error");
         if (res.status === 404) throw notFound("That email no longer exists in Gmail.");
         if (res.status === 401) throw this.reauth();
         if (res.status === 403) throw new HttpError(403, "gmail_forbidden", "Gmail refused this action for the connected account.");
@@ -110,6 +113,18 @@ export class GmailClient {
       return (await res.json()) as T;
     }
   }
+}
+
+/**
+ * Map a Gmail resource path onto the official user-scoped form.
+ * Base URL is https://gmail.googleapis.com/gmail/v1 — resources require /users/{userId}/...
+ * @see https://developers.google.com/gmail/api/reference/rest
+ */
+export function gmailResourcePath(path: string): string {
+  if (!path || path === "/") return "/users/me";
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (p === "/users" || p.startsWith("/users/")) return p;
+  return `/users/me${p}`;
 }
 
 /** Run async tasks with bounded concurrency (keeps Gmail quota usage polite). */
