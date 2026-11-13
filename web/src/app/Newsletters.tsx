@@ -159,7 +159,7 @@ export function NewslettersPage() {
         open={Boolean(mailtoFor)}
         onOpenChange={(o) => !o && setMailtoFor(null)}
         title="Send an unsubscribe email?"
-        description="This sender unsubscribes by email. FLUENT will send this one message from your account:"
+        description="This sender unsubscribes by email. MailIQ will send this one message from your account:"
         confirmLabel="Send unsubscribe email"
         loading={unsub.isPending}
         onConfirm={() => mailtoFor && unsub.mutate({ s: mailtoFor, method: "mailto" })}

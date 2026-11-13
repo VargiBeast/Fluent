@@ -29,7 +29,7 @@ const EMPTY_HINT: Record<string, string> = {
   inbox: "You're all caught up.",
   snoozed: "Snooze a conversation (z) and it waits here until it's time to come back to your Inbox.",
   starred: "Star a conversation (s) to keep it close at hand.",
-  drafts: "Drafts you start in FLUENT or Gmail show up here.",
+  drafts: "Drafts you start in MailIQ or Gmail show up here.",
   spam: "No spam. Nice.",
   trash: "Trash is empty. Gmail deletes items here after 30 days.",
 };
@@ -517,7 +517,7 @@ function DraftsList({ drafts, onOpen }: { drafts: ReturnType<typeof useDrafts>; 
   if (drafts.isLoading) return <ListSkeleton />;
   if (drafts.isError) return <EmptyState icon={<AlertTriangle className="size-5" />} title="Couldn't load drafts" description={errorMessage(drafts.error)} action={<Button onClick={() => void drafts.refetch()}>Try again</Button>} />;
   const list = drafts.data?.drafts ?? [];
-  if (list.length === 0) return <EmptyState icon={<Inbox className="size-5" />} title="No drafts" description="Drafts you save in FLUENT or Gmail appear here." />;
+  if (list.length === 0) return <EmptyState icon={<Inbox className="size-5" />} title="No drafts" description="Drafts you save in MailIQ or Gmail appear here." />;
   return (
     <ul className="py-2" aria-label="Drafts">
       {list.map((d) => (
