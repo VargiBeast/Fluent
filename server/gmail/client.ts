@@ -29,7 +29,7 @@ export class GmailClient {
 
   private async accessToken(force = false): Promise<string> {
     const a = this.account;
-    if (a.status === "insufficient_scopes") throw new HttpError(403, "insufficient_scopes", `FLUENT doesn't have Gmail access for ${a.email}. Reconnect and allow Gmail permissions.`);
+    if (a.status === "insufficient_scopes") throw new HttpError(403, "insufficient_scopes", `MailIQ doesn't have Gmail access for ${a.email}. Reconnect and allow Gmail permissions.`);
     if (!force && this.token) return this.token;
     if (!force && a.accessTokenEnc && a.accessTokenExpiresAt && a.accessTokenExpiresAt.getTime() > Date.now() + 30_000) {
       this.token = decrypt(a.accessTokenEnc, "token", this.aad());
