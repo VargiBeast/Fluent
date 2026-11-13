@@ -55,7 +55,7 @@ export function MailView() {
     <div className="flex h-full min-h-0">
       <div
         className={cn(
-          "h-full min-h-0 w-full shrink-0 border-r border-line bg-surface lg:w-[372px] xl:w-[400px]",
+          "h-full min-h-0 w-full shrink-0 border-r border-line bg-surface lg:w-[380px] xl:w-[420px]",
           hasThread && "hidden",
           hasThread && !fullPane && "lg:block",
         )}
