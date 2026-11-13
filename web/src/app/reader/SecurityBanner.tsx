@@ -63,7 +63,7 @@ export function SecurityBanner({ thread }: { thread: ThreadDetail }) {
           </p>
           <ul className="mt-1 max-w-[70ch] list-disc space-y-0.5 pl-5 text-fg-2">{review.data.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
           <p className="mt-1.5 max-w-[70ch] text-fg">{review.data.advice}</p>
-          <p className="mt-1 text-[11px] text-fg-3">AI-generated. FLUENT never sends anything or clicks links for you.</p>
+          <p className="mt-1 text-[11px] text-fg-3">AI-generated. MailIQ never sends anything or clicks links for you.</p>
         </div>
       )}
     </section>
