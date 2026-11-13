@@ -334,6 +334,7 @@ body {
 
 /* The mobile bulk-action bar takes the bottom edge while selecting. */
 body[data-selecting] [data-fab] { display: none; }
+body[data-selecting] [data-mobile-nav] { display: none; }
 
 /* Toasts never cover the open composer's bottom bar (Send, attach, AI tools): lift them above it, and on wide
    screens move them beside the docked composer instead. */
