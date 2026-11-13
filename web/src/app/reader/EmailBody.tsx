@@ -86,7 +86,7 @@ export function EmailBody({ message, accountId }: { message: MessageDetail; acco
         <iframe
           ref={frame}
           title={`Message from ${message.from.name}`}
-          // No allow-scripts: email content can never execute. allow-same-origin only lets FLUENT measure height.
+          // No allow-scripts: email content can never execute. allow-same-origin only lets MailIQ measure height.
           sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="no-referrer"
           srcDoc={rendered.srcDoc}
