@@ -594,7 +594,7 @@ function QuickReply({ thread, message, suggestions, aiOn }: { thread: ThreadDeta
         open={confirm}
         onOpenChange={setConfirm}
         title="Send AI-written reply?"
-        description="FLUENT never sends AI-generated text on its own. Please confirm you've reviewed this reply."
+        description="MailIQ never sends AI-generated text on its own. Please confirm you've reviewed this reply."
         confirmLabel="Send reply"
         loading={sending}
         onConfirm={() => void send(true)}
