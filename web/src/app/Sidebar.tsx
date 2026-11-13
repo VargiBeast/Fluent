@@ -60,12 +60,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   const item = (active: boolean) =>
     cn(
-      "group flex h-9 items-center gap-3 rounded-[10px] px-2.5 text-[13.5px] transition-colors",
-      active ? "bg-surface-3 text-fg font-medium" : "text-fg-2 hover:bg-surface-2 hover:text-fg",
+      "group flex h-9 items-center gap-3 rounded-[var(--radius-md)] px-2.5 text-[13.5px] transition-colors duration-[var(--duration-fast)]",
+      active
+        ? "bg-accent-soft text-fg font-medium ring-1 ring-inset ring-[var(--ai-border)]"
+        : "text-fg-2 hover:bg-surface-2 hover:text-fg",
     );
 
   return (
-    <nav aria-label="Mailboxes" className="flex h-full flex-col gap-1 overflow-y-auto px-3 pb-3 pt-4 scroll-thin">
+    <nav aria-label="Mailboxes" className="flex h-full flex-col gap-0.5 overflow-y-auto px-3 pb-4 pt-4 scroll-thin">
       <div className="flex items-center justify-between px-1 pb-3">
         <Logo />
       </div>

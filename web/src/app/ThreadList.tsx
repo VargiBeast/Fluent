@@ -428,9 +428,13 @@ function Row({ t, selected, onOpen, onSwipeReply, onStar, multiAccount, picked, 
         style={offset ? { transform: `translateX(${offset}px)` } : undefined}
         data-picked={picked ? "" : undefined}
         className={cn(
-          "group relative mx-1.5 flex cursor-pointer touch-pan-y select-none gap-3.5 rounded-2xl px-3 py-[var(--row-py,12px)] transition-colors",
+          "group relative mx-1.5 flex cursor-pointer touch-pan-y select-none gap-3.5 rounded-[var(--radius-lg)] px-3 py-[var(--row-py,12px)] transition-colors duration-[var(--duration-fast)]",
           offset ? "bg-surface" : "transition-transform",
-          picked ? "bg-accent-soft" : selected ? "bg-surface-2" : "hover:bg-surface-2/70",
+          picked
+            ? "bg-accent-soft ring-1 ring-inset ring-[var(--ai-border)]"
+            : selected
+              ? "bg-surface-3 ring-1 ring-inset ring-line-strong"
+              : "hover:bg-surface-2/80",
         )}
         onClick={click}
         onPointerDown={onPointerDown}
