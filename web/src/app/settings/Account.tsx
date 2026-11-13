@@ -65,7 +65,7 @@ function ProfileSection() {
   const [name, setName] = useState(s.profile.displayName);
   const user = session!.user!;
   return (
-    <Panel title="Profile" description="From your Google account. The display name is how you appear in FLUENT; leave it empty to use your Google name.">
+    <Panel title="Profile" description="From your Google account. The display name is how you appear in MailIQ; leave it empty to use your Google name.">
       <div className="flex items-center gap-4 py-3">
         <Avatar name={user.name} email={user.email} src={user.picture} size={56} />
         <div>
@@ -92,13 +92,13 @@ function AccountsSection() {
   const qc = useQueryClient();
   useEffect(() => {
     if (params.get("connected")) toast.success("Gmail account connected");
-    if (params.get("error") === "insufficient_scopes") toast.error("Gmail access wasn't granted", { description: "Tick the Gmail permission checkbox on Google's consent screen so FLUENT can read and organise your mail." });
+    if (params.get("error") === "insufficient_scopes") toast.error("Gmail access wasn't granted", { description: "Tick the Gmail permission checkbox on Google's consent screen so MailIQ can read and organise your mail." });
     if (params.has("connected") || params.has("error")) setParams({}, { replace: true });
   }, [params, setParams]);
   const del = useMutation({
     mutationFn: (a: Account) => api.del<{ revokedAtGoogle: boolean }>(`/accounts/${a.id}`),
     onSuccess: async (r, a) => {
-      toast.success(`Disconnected ${a.email}`, { description: r.revokedAtGoogle ? "Access was revoked at Google." : "Removed from FLUENT. Google didn't confirm revocation — you can also remove access at myaccount.google.com/permissions." });
+      toast.success(`Disconnected ${a.email}`, { description: r.revokedAtGoogle ? "Access was revoked at Google." : "Removed from MailIQ. Google didn't confirm revocation — you can also remove access at myaccount.google.com/permissions." });
       setRemove(null);
       await refresh();
       void qc.invalidateQueries();
@@ -133,7 +133,7 @@ function AccountsSection() {
                   </span>
                 </div>
                 <div className="mt-2 pl-[52px]">
-                  <p className="text-[12px] font-medium text-fg-2">FLUENT can:</p>
+                  <p className="text-[12px] font-medium text-fg-2">MailIQ can:</p>
                   <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-[12px] text-fg-3" aria-label={`Permissions for ${a.email}`}>
                     {scopeText(a.scopes).map((t) => <li key={t}>{t}</li>)}
                   </ul>
@@ -157,7 +157,7 @@ function AccountsSection() {
         open={Boolean(remove)}
         onOpenChange={(o) => !o && setRemove(null)}
         title={`Disconnect ${remove?.email ?? ""}?`}
-        description="FLUENT will revoke its Google access token and delete the stored tokens for this account. Your Gmail itself is not changed."
+        description="MailIQ will revoke provider access tokens and delete the stored tokens for this account. Your mailbox itself is not changed."
         confirmLabel="Disconnect"
         danger
         loading={del.isPending}
@@ -182,7 +182,7 @@ function SecuritySection() {
   const others = sessions.data?.sessions.filter((s) => !s.current).length ?? 0;
   return (
     <>
-      <Panel id="sessions" title="Sessions" description="Browsers signed in to FLUENT. Sessions expire 30 days after sign-in.">
+      <Panel id="sessions" title="Sessions" description="Browsers signed in to MailIQ. Sessions expire 30 days after sign-in.">
         {sessions.isLoading ? <Skeleton className="my-3 h-16 w-full" /> : (
           <ul className="divide-y divide-line">
             {sessions.data?.sessions.map((s) => (
@@ -201,7 +201,7 @@ function SecuritySection() {
           <Button size="sm" variant="ghost" icon={<LogOut className="size-3.5" />} onClick={() => setConfirmAll(true)}>Sign out everywhere</Button>
         </div>
       </Panel>
-      <ConfirmDialog open={confirmAll} onOpenChange={setConfirmAll} title="Sign out everywhere?" description="Every browser, this one included, is signed out of FLUENT. Your Gmail connection stays." confirmLabel="Sign out everywhere" loading={everywhere.isPending} onConfirm={() => everywhere.mutate()} />
+      <ConfirmDialog open={confirmAll} onOpenChange={setConfirmAll} title="Sign out everywhere?" description="Every browser, this one included, is signed out of MailIQ. Your Gmail connection stays." confirmLabel="Sign out everywhere" loading={everywhere.isPending} onConfirm={() => everywhere.mutate()} />
       <Panel title="Security activity" description="Recent sign-ins and sensitive changes. No email content is recorded.">
         {events.isLoading ? <Skeleton className="my-3 h-16 w-full" /> : !events.data?.events.length ? <p className="py-4 text-[13px] text-fg-3">No activity yet.</p> : (
           <ul className="divide-y divide-line">
@@ -242,7 +242,7 @@ function DataSection() {
   });
   return (
     <>
-      <Panel id="data" title="What FLUENT stores" description="Everything FLUENT keeps about you in its database.">
+      <Panel id="data" title="What MailIQ stores" description="Everything MailIQ keeps about you in its database.">
         {data.isLoading ? <Skeleton className="my-3 h-32 w-full" /> : data.isError ? <p className="py-4 text-[13px] text-danger">{errorMessage(data.error)}</p> : (
           <>
             <ul className="divide-y divide-line" aria-label="Stored data">
@@ -270,10 +270,10 @@ function DataSection() {
       </Panel>
       <section aria-labelledby="danger-zone" className="px-1 pt-4">
         <h2 id="danger-zone" className="text-[13px] font-medium text-fg-2">Delete account</h2>
-        <p className="mt-1 text-[12.5px] text-fg-3">Permanently deletes your FLUENT profile, settings, sessions, templates, notes and logs, and revokes FLUENT's access at Google. Your Gmail messages are not touched.</p>
-        <Button className="mt-3" size="sm" variant="ghost" icon={<Trash2 className="size-3.5" />} onClick={() => setOpen(true)}>Delete my FLUENT account…</Button>
+        <p className="mt-1 text-[12.5px] text-fg-3">Permanently deletes your MailIQ profile, settings, sessions, templates, notes and logs, and revokes MailIQ's access at connected providers. Your mailbox messages are not touched.</p>
+        <Button className="mt-3" size="sm" variant="ghost" icon={<Trash2 className="size-3.5" />} onClick={() => setOpen(true)}>Delete my MailIQ account…</Button>
       </section>
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setTyped(""); }} title="Delete your FLUENT account?" description={`This can't be undone. Type “${DELETE_ACCOUNT_PHRASE}” to confirm.`}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setTyped(""); }} title="Delete your MailIQ account?" description={`This can't be undone. Type “${DELETE_ACCOUNT_PHRASE}” to confirm.`}>
         <form onSubmit={(e) => { e.preventDefault(); if (typed === DELETE_ACCOUNT_PHRASE) del.mutate(); }} className="space-y-4">
           <label htmlFor="confirm-delete" className="sr-only">Type {DELETE_ACCOUNT_PHRASE} to confirm</label>
           <Input id="confirm-delete" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={DELETE_ACCOUNT_PHRASE} autoComplete="off" />

@@ -263,7 +263,7 @@ function GeneralSection() {
   const sample = fullDate(new Date().toISOString());
   return (
     <>
-      <Panel title="Language & region" description="FLUENT's menus are in English. Language sets date and time formats and the language of your daily brief.">
+      <Panel title="Language & region" description="MailIQ's menus are in English. Language sets date and time formats and the language of your daily brief.">
         <Row label="Language" description={`Example: ${sample}`}>
           <Select label="Language" value={s.general.language} onChange={(language) => update.mutate({ general: { language } })} options={LANGUAGES} />
         </Row>
@@ -272,7 +272,7 @@ function GeneralSection() {
         </Row>
       </Panel>
       <Panel title="Mail">
-        <Row label="Default view" description="Where FLUENT opens.">
+        <Row label="Default view" description="Where MailIQ opens.">
           <Select label="Default view" value={s.general.defaultView} onChange={(v) => update.mutate({ general: { defaultView: v as (typeof DEFAULT_VIEWS)[number] } })} options={[["inbox", "Inbox"], ["overview", "AI Overview"], ["starred", "Starred"], ["important", "Important"]]} />
         </Row>
         <Row label="Density" description="Compact fits more conversations on screen.">
@@ -294,7 +294,7 @@ function AppearanceSection() {
   const { s, update } = useSettingsData();
   return (
     <Panel title="Theme">
-      <Row label="Theme" description="Dark is FLUENT's default.">
+      <Row label="Theme" description="Dark is MailIQ's default.">
         <Segmented label="Theme" value={s.appearance.theme} onChange={(theme) => update.mutate({ appearance: { theme } })} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} />
       </Row>
       <Row label="Accent colour" description="Used for buttons, links and highlights, in both themes.">
@@ -322,7 +322,7 @@ function NotificationsSection() {
   };
   return (
     <>
-    <Panel title="Alerts" description="FLUENT checks Gmail for changes about every 45 seconds while it's open.">
+    <Panel title="Alerts" description="MailIQ checks your mailbox for changes about every 45 seconds while it's open.">
       <Switch label="In-app alerts" description="Show a toast when new mail arrives." checked={s.notifications.inApp} onChange={(inApp) => update.mutate({ notifications: { inApp } })} />
       <Switch label="Desktop notifications" description={!supported ? "Not supported in this browser." : perm === "denied" ? "Blocked in your browser settings." : "Notify you with a system notification."} checked={s.notifications.desktop} disabled={!supported} onChange={(v) => void enableDesktop(v)} />
     </Panel>
@@ -434,7 +434,7 @@ function PrivacySection() {
     <>
       <div className="ai-block flex gap-3 rounded-[var(--radius-card)] p-4 text-[13px] text-fg-2">
         <ShieldCheck className="mt-0.5 size-5 shrink-0 text-accent-ink" />
-        <p>FLUENT never stores your email bodies. Mail is read live from Gmail. When you use an AI feature, only the emails needed are sent to the AI provider ({aiProviderName(config?.aiProvider)}), which processes them under its API terms. Everything the AI accessed is listed below. Read the <Link to="/privacy" className="text-accent-ink hover:underline">privacy policy</Link>.</p>
+        <p>MailIQ never stores your email bodies. Mail is read live from your connected provider. When you use an AI feature, only the emails needed are sent to the AI provider ({aiProviderName(config?.aiProvider)}), which processes them under its API terms. Everything the AI accessed is listed below. Read the <Link to="/privacy" className="text-accent-ink hover:underline">privacy policy</Link>.</p>
       </div>
 
       <Panel title="Exclude from AI" description="Excluded conversations are never sent to AI. This is enforced on the server before any AI request.">
@@ -553,7 +553,7 @@ function AboutSection() {
   const { config } = useSession();
   return (
     <>
-      <Panel title="FLUENT" description="An AI-first Gmail client. Your mail stays in Gmail; FLUENT reads it live.">
+      <Panel title="MailIQ" description="An AI-assisted email client. Your messages stay with your provider; MailIQ reads them live.">
         <dl className="divide-y divide-line text-[13px]">
           <div className="flex justify-between gap-4 py-2.5"><dt className="text-fg-3">Version</dt><dd className="font-mono text-fg">{__APP_VERSION__}{__APP_COMMIT__ ? ` (${__APP_COMMIT__})` : ""}</dd></div>
           <div className="flex justify-between gap-4 py-2.5"><dt className="text-fg-3">AI provider</dt><dd className="text-fg">{config?.ai ? `${aiProviderName(config.aiProvider)}${config.aiModel ? ` · ${config.aiModel}` : ""}` : "Not configured"}</dd></div>

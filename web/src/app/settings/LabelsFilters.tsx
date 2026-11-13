@@ -124,7 +124,7 @@ function FiltersPanel({ accountId }: { accountId: string }) {
     return { when: when || "any message", then: then || "no action" };
   };
   return (
-    <Panel title="Filters" description="Gmail filters run on new mail, even when FLUENT isn't open." actions={<Button size="sm" icon={<Filter className="size-3.5" />} onClick={() => setOpen(true)}>New filter</Button>}>
+    <Panel title="Filters" description="Gmail filters run on new mail, even when MailIQ isn't open." actions={<Button size="sm" icon={<Filter className="size-3.5" />} onClick={() => setOpen(true)}>New filter</Button>}>
       {filters.isLoading ? <Skeleton className="my-2 h-16 w-full" /> : filters.isError ? <p className="py-3 text-[13px] text-danger">{errorMessage(filters.error)}</p> : !filters.data?.filters.length ? <p className="py-4 text-[13px] text-fg-3">No filters yet.</p> : (
         <ul className="divide-y divide-line" aria-label="Filters">
           {filters.data.filters.map((f) => {

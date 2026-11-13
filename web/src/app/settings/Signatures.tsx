@@ -24,7 +24,7 @@ export function SignaturesSection() {
   return (
     <>
       <p className="text-[13px] text-fg-3">
-        These are your Gmail settings: changes apply in Gmail on the web and on your phone too. FLUENT uses the sender name in the From line of mail you send.
+        These are your Gmail settings: changes apply in Gmail on the web and on your phone too. MailIQ uses the sender name in the From line of mail you send.
       </p>
       {accounts.map((a) => <AccountIdentities key={a.accountId} account={a} />)}
     </>
@@ -94,7 +94,7 @@ function IdentityEditor({ accountId, identity }: { accountId: string; identity: 
         {confirmLossy && !editing && (
           <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[12.5px] text-fg-2">
             <AlertTriangle className="size-4 text-warning" aria-hidden />
-            <span className="flex-1">This signature has images or custom styling. The FLUENT editor keeps text, bold, italic, lists and links only; saving here removes the rest.</span>
+            <span className="flex-1">This signature has images or custom styling. The MailIQ editor keeps text, bold, italic, lists and links only; saving here removes the rest.</span>
             <Button size="sm" variant="ghost" onClick={() => setConfirmLossy(false)}>Keep it</Button>
             <Button size="sm" onClick={() => { setConfirmLossy(false); setEditing(true); }}>Edit anyway</Button>
           </div>
@@ -113,8 +113,8 @@ function IdentityEditor({ accountId, identity }: { accountId: string; identity: 
         )}
         {!empty && !editing && identity.isDefault && (
           <p className="text-[12px] text-fg-3">
-            {fluentSig.trim() === plain.trim() ? "FLUENT's composer adds this signature (as plain text)." : (
-              <>FLUENT's composer adds its own signature from AI preferences. <button type="button" className="text-accent-400 hover:underline" onClick={() => updateSettings.mutate({ ai: { signature: plain } }, { onSuccess: () => toast.success("FLUENT will use your Gmail signature") })}>Use this one in FLUENT too</button></>
+            {fluentSig.trim() === plain.trim() ? "MailIQ's composer adds this signature (as plain text)." : (
+              <>MailIQ's composer adds its own signature from AI preferences. <button type="button" className="text-accent-400 hover:underline" onClick={() => updateSettings.mutate({ ai: { signature: plain } }, { onSuccess: () => toast.success("MailIQ will use your Gmail signature") })}>Use this one in MailIQ too</button></>
             )}
           </p>
         )}
