@@ -29,7 +29,20 @@ const queryClient = new QueryClient({
 function ThemedToaster() {
   const { session } = useSession();
   const theme = session?.settings?.appearance.theme ?? "dark";
-  return <Toaster theme={theme} position="bottom-right" richColors closeButton />;
+  return (
+    <Toaster
+      theme={theme}
+      position="bottom-right"
+      richColors
+      closeButton
+      duration={3600}
+      toastOptions={{
+        classNames: {
+          toast: "animate-slide-up",
+        },
+      }}
+    />
+  );
 }
 
 createRoot(document.getElementById("root")!).render(
